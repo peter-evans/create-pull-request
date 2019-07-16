@@ -55,13 +55,16 @@ action "Create Pull Request" {
   uses = "peter-evans/create-pull-request@v1.0.0"
   secrets = ["GITHUB_TOKEN"]
   env = {
-    PULL_REQUEST_BRANCH = "auto-branch"
+    PULL_REQUEST_BRANCH = "my-patches"
     COMMIT_MESSAGE = "Auto-modify files by my-file-modifier-action"
     PULL_REQUEST_TITLE = "Changes from my-file-modifier-action"
     PULL_REQUEST_BODY = "This is an auto-generated PR with changes from my-file-modifier-action"
   }
 }
 ```
+
+This configuration will create pull requests that look like this:
+![Pull Request Example](pull-request-example.png?raw=true)
 
 ## License
 
