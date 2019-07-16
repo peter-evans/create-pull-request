@@ -4,7 +4,7 @@
 A GitHub action to create a pull request for changes to your repository in the actions workspace.
 
 Changes to a repository in the actions workspace persist between actions in a workflow.
-This action is useful to pair with other actions that modify or add files to your repository.
+This action is designed to pair with other actions that modify or add files to your repository.
 The changes will be automatically committed to a new branch and a pull request created.
 
 Create Pull Request action will:
