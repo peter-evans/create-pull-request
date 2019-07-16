@@ -64,6 +64,7 @@ action "Create Pull Request" {
 ```
 
 This configuration will create pull requests that look like this:
+
 ![Pull Request Example](pull-request-example.png?raw=true)
 
 ## License
