@@ -15,4 +15,4 @@ COPY requirements.txt /tmp/
 RUN pip install --requirement /tmp/requirements.txt
 
 COPY create-pull-request.py /create-pull-request.py
-ENTRYPOINT [ "python", "/create-pull-request.py" ]
+ENTRYPOINT [ "/create-pull-request.py" ]

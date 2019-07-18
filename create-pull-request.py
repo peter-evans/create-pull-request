@@ -1,4 +1,5 @@
-''' create-pull-request.py '''
+#!/usr/bin/env python3
+''' Create Pull Request '''
 import json
 import os
 from git import Repo
