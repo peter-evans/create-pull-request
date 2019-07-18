@@ -1,4 +1,4 @@
-FROM python:3.7.3
+FROM python:3.8.0b1
 
 LABEL maintainer="Peter Evans <mail@peterevans.dev>"
 LABEL repository="https://github.com/peter-evans/create-pull-request"
