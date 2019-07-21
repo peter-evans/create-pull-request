@@ -6,8 +6,8 @@ workflow "Action testing workflow" {
 action "Create report file" {
   uses = "finnp/create-file-action@1.0.0"
   env = {
-    FILE_NAME = "report.md"
-    FILE_DATA = "#Report\nThis is created to test create-pull-request action."
+    FILE_NAME = "report.txt"
+    FILE_DATA = "This is created to test create-pull-request action."
   }
 }
 
