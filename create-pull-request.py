@@ -16,6 +16,10 @@ def get_github_event(github_event_path):
 
 def ignore_event(github_event):
     # Ignore push events on deleted branches
+    # The event we want to ignore occurs when a PR is created but the repository owner decides
+    # not to commit the changes. They close the PR and delete the branch. This creates a 
+    # "push" event that we want to ignore, otherwise it will create another branch and PR on
+    # the same commit.
     deleted = "{deleted}".format(**github_event)
     if deleted == "True":
         print("Ignoring delete branch event.")
