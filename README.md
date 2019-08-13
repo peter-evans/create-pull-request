@@ -13,18 +13,20 @@ Create Pull Request action will:
 2. Commit all changes to a new branch. The commit will be made using the name and email of the `HEAD` commit author.
 3. Create a pull request to merge the new branch into the currently active branch executing the workflow.
 
-Note: In general, it's not good practice to modify your repository during workflows.
+Note: Modifying a repository during workflows is not good practice in general.
+However, this action opens up some interesting possibilities when used carefully.
 This action is experimental and may not work well for repositories that have a very high frequency of commits.
 
 ## Usage
 
-The default `GITHUB_TOKEN` does not have the access neccessary for this action to work correctly.
-Create a new `repo` scoped token [here](https://github.com/settings/tokens) and pass that as a secret to the `REPO_ACCESS_TOKEN` environment variable.
+In addition to the default `GITHUB_TOKEN`, the action requires a `repo` scoped token in order to commit.
+Create one [here](https://github.com/settings/tokens) and pass that as a secret to the `REPO_ACCESS_TOKEN` environment variable.
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.0.0
+      uses: peter-evans/create-pull-request@v1.1.0
       env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 ```
 
@@ -58,8 +60,9 @@ Here is an example that sets all the environment variables.
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.0.0
+      uses: peter-evans/create-pull-request@v1.1.0
       env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         PULL_REQUEST_BRANCH: my-patches
         COMMIT_MESSAGE: Auto-modify files by my-file-modifier-action
