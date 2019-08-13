@@ -24,6 +24,10 @@ def ignore_event(github_event):
     if deleted == "True":
         print("Ignoring delete branch event.")
         return True
+    ref = "{ref}".format(**github_event)
+    if not ref.startswith('refs/heads/'):
+        print("Ignoring events for tags and remotes.")
+        return True
     return False
 
 
