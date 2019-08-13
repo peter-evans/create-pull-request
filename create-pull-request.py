@@ -49,6 +49,10 @@ def set_git_config(git, email, name):
     git.config('--global', 'user.name', '"%s"' % name)
 
 
+def set_git_remote_url(git, token, github_repository):
+    git.remote('set-url', 'origin', "https://%s:x-oauth-basic@github.com/%s" % (token, github_repository))
+
+
 def commit_changes(git, branch, commit_message):
     git.checkout('HEAD', b=branch)
     git.add('-A')
@@ -64,10 +68,11 @@ def create_pull_request(token, repo, head, base, title, body):
         head=head)
 
 
-def process_event(github_event, repo, branch):
+def process_event(github_event, repo, branch, base):
     # Fetch required environment variables
     github_token = os.environ['GITHUB_TOKEN']
     github_repository = os.environ['GITHUB_REPOSITORY']
+    repo_access_token = os.environ['REPO_ACCESS_TOKEN']
     # Fetch remaining optional environment variables
     commit_message = os.getenv(
         'COMMIT_MESSAGE',
@@ -83,9 +88,8 @@ def process_event(github_event, repo, branch):
     author_email, author_name = get_head_author(github_event)
     # Set git configuration
     set_git_config(repo.git, author_email, author_name)
-
-    # Set the target base branch of the pull request
-    base = repo.active_branch.name
+    # Update URL for the 'origin' remote
+    set_git_remote_url(repo.git, repo_access_token, github_repository)
 
     # Commit the repository changes
     print("Committing changes.")
@@ -114,18 +118,26 @@ if not ignore_event(github_event):
 
     # Fetch/Set the branch name
     branch = os.getenv('PULL_REQUEST_BRANCH', 'create-pull-request/patch')
-    # Suffix with the short SHA1 hash
-    branch = "%s-%s" % (branch, get_head_short_sha1(repo))
+    # Set the current branch as the target base branch
+    base = os.environ['GITHUB_REF'][11:]
 
-    # Check if a PR branch already exists for this HEAD commit
-    if not pr_branch_exists(repo, branch):
-        # Check if there are changes to pull request
-        if repo.is_dirty() or len(repo.untracked_files) > 0:
-            print("Repository has modified or untracked files.")
-            process_event(github_event, repo, branch)
+    # Skip if the current branch is a PR branch created by this action
+    if not base.startswith(branch):
+        # Suffix with the short SHA1 hash
+        branch = "%s-%s" % (branch, get_head_short_sha1(repo))
+
+        # Check if a PR branch already exists for this HEAD commit
+        if not pr_branch_exists(repo, branch):
+            # Check if there are changes to pull request
+            if repo.is_dirty() or len(repo.untracked_files) > 0:
+                print("Repository has modified or untracked files.")
+                process_event(github_event, repo, branch, base)
+            else:
+                print("Repository has no modified or untracked files. Skipping.")
         else:
-            print("Repository has no modified or untracked files. Skipping.")
+            print(
+                "Pull request branch '%s' already exists for this commit. Skipping." %
+                branch)
     else:
         print(
-            "Pull request branch '%s' already exists for this commit. Skipping." %
-            branch)
+            "Branch '%s' was created by this action. Skipping." % base)
