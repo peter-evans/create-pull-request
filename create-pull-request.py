@@ -15,6 +15,10 @@ def get_github_event(github_event_path):
 
 
 def ignore_event(github_event):
+    if 'schedule' in github_event:
+        print("Allow schedule event.")
+        return False
+        
     # Ignore push events on deleted branches
     # The event we want to ignore occurs when a PR is created but the repository owner decides
     # not to commit the changes. They close the PR and delete the branch. This creates a 
@@ -39,8 +43,12 @@ def pr_branch_exists(repo, branch):
 
 
 def get_head_author(github_event):
-    email = "{head_commit[author][email]}".format(**github_event)
-    name = "{head_commit[author][name]}".format(**github_event)
+    if 'schedule' in github_event:
+        email=os.environ['GITHUB_ACTOR']
+        name=os.environ['GITHUB_ACTOR'] + '@users.noreply.github.com'
+    else 
+        email = "{head_commit[author][email]}".format(**github_event)
+        name = "{head_commit[author][name]}".format(**github_event)
     return email, name
 
 
