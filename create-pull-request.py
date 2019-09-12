@@ -43,8 +43,8 @@ def pr_branch_exists(repo, branch):
 
 def get_head_author(github_event):
     if 'schedule' in github_event:
-        email=os.environ['GITHUB_ACTOR']
-        name=os.environ['GITHUB_ACTOR'] + '@users.noreply.github.com'
+        email = os.environ['GITHUB_ACTOR'] + '@users.noreply.github.com'
+        name = os.environ['GITHUB_ACTOR']
     else:
         email = "{head_commit[author][email]}".format(**github_event)
         name = "{head_commit[author][name]}".format(**github_event)
