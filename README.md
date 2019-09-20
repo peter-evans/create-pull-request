@@ -19,15 +19,11 @@ This action is experimental and may not work well for repositories that have a v
 
 ## Usage
 
-In addition to the default `GITHUB_TOKEN`, the action requires a `repo` scoped token in order to commit.
-Create one [here](https://github.com/settings/tokens) and pass that as a secret to the `REPO_ACCESS_TOKEN` environment variable.
-
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.1.4
+      uses: peter-evans/create-pull-request@v1.2.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
 ```
 
 #### Environment variables
@@ -60,10 +56,9 @@ Here is an example that sets all the environment variables.
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.1.4
+      uses: peter-evans/create-pull-request@v1.2.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
         PULL_REQUEST_BRANCH: my-patches
         COMMIT_MESSAGE: Auto-modify files by my-file-modifier-action
         PULL_REQUEST_TITLE: Changes from my-file-modifier-action
