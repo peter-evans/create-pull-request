@@ -24,7 +24,7 @@ Create one [here](https://github.com/settings/tokens) and pass that as a secret 
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.1.3
+      uses: peter-evans/create-pull-request@v1.1.4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
@@ -60,7 +60,7 @@ Here is an example that sets all the environment variables.
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.1.3
+      uses: peter-evans/create-pull-request@v1.1.4
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         REPO_ACCESS_TOKEN: ${{ secrets.REPO_ACCESS_TOKEN }}
