@@ -60,7 +60,7 @@ def set_git_config(git, email, name):
 
 
 def set_git_remote_url(git, token, github_repository):
-    git.remote('set-url', 'origin', "https://%s:x-oauth-basic@github.com/%s" % (token, github_repository))
+    git.remote('set-url', 'origin', "https://x-access-token:%s@github.com/%s" % (token, github_repository))
 
 
 def commit_changes(git, branch, commit_message):
@@ -82,7 +82,6 @@ def process_event(event_name, event_data, repo, branch, base):
     # Fetch required environment variables
     github_token = os.environ['GITHUB_TOKEN']
     github_repository = os.environ['GITHUB_REPOSITORY']
-    repo_access_token = os.environ['REPO_ACCESS_TOKEN']
     # Fetch remaining optional environment variables
     commit_message = os.getenv(
         'COMMIT_MESSAGE',
@@ -99,7 +98,7 @@ def process_event(event_name, event_data, repo, branch, base):
     # Set git configuration
     set_git_config(repo.git, author_email, author_name)
     # Update URL for the 'origin' remote
-    set_git_remote_url(repo.git, repo_access_token, github_repository)
+    set_git_remote_url(repo.git, github_token, github_repository)
 
     # Commit the repository changes
     print("Committing changes.")
