@@ -10,27 +10,26 @@ def get_github_event(github_event_path):
     with open(github_event_path) as f:
         github_event = json.load(f)
     if os.environ.get('DEBUG_EVENT') is not None:
+        print(os.environ['GITHUB_EVENT_NAME'])
         print(json.dumps(github_event, sort_keys=True, indent=2))
     return github_event
 
 
-def ignore_event(github_event):
-    if 'schedule' in github_event:
-        print("Allow schedule event.")
-        return False
-    # Ignore push events on deleted branches
-    # The event we want to ignore occurs when a PR is created but the repository owner decides
-    # not to commit the changes. They close the PR and delete the branch. This creates a 
-    # "push" event that we want to ignore, otherwise it will create another branch and PR on
-    # the same commit.
-    deleted = "{deleted}".format(**github_event)
-    if deleted == "True":
-        print("Ignoring delete branch event.")
-        return True
-    ref = "{ref}".format(**github_event)
-    if not ref.startswith('refs/heads/'):
-        print("Ignoring events for tags and remotes.")
-        return True
+def ignore_event(event_name, event_data):
+    if event_name == "push":
+        # Ignore push events on deleted branches
+        # The event we want to ignore occurs when a PR is created but the repository owner decides
+        # not to commit the changes. They close the PR and delete the branch. This creates a 
+        # "push" event that we want to ignore, otherwise it will create another branch and PR on
+        # the same commit.
+        deleted = "{deleted}".format(**event_data)
+        if deleted == "True":
+            print("Ignoring delete branch event.")
+            return True
+        ref = "{ref}".format(**event_data)
+        if not ref.startswith('refs/heads/'):
+            print("Ignoring events for tags and remotes.")
+            return True
     return False
 
 
@@ -41,13 +40,13 @@ def pr_branch_exists(repo, branch):
     return False
 
 
-def get_head_author(github_event):
-    if 'schedule' in github_event:
+def get_head_author(event_name, event_data):
+    if event_name == "push":
+        email = "{head_commit[author][email]}".format(**event_data)
+        name = "{head_commit[author][name]}".format(**event_data)
+    else:
         email = os.environ['GITHUB_ACTOR'] + '@users.noreply.github.com'
         name = os.environ['GITHUB_ACTOR']
-    else:
-        email = "{head_commit[author][email]}".format(**github_event)
-        name = "{head_commit[author][name]}".format(**github_event)
     return email, name
 
 
@@ -79,7 +78,7 @@ def create_pull_request(token, repo, head, base, title, body):
         head=head)
 
 
-def process_event(github_event, repo, branch, base):
+def process_event(event_name, event_data, repo, branch, base):
     # Fetch required environment variables
     github_token = os.environ['GITHUB_TOKEN']
     github_repository = os.environ['GITHUB_REPOSITORY']
@@ -96,7 +95,7 @@ def process_event(github_event, repo, branch, base):
         "[create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub Action")
 
     # Get the HEAD committer's email and name
-    author_email, author_name = get_head_author(github_event)
+    author_email, author_name = get_head_author(event_name, event_data)
     # Set git configuration
     set_git_config(repo.git, author_email, author_name)
     # Update URL for the 'origin' remote
@@ -121,9 +120,10 @@ def process_event(github_event, repo, branch, base):
 
 
 # Get the JSON event data
-github_event = get_github_event(os.environ['GITHUB_EVENT_PATH'])
+event_name = os.environ['GITHUB_EVENT_NAME']
+event_data = get_github_event(os.environ['GITHUB_EVENT_PATH'])
 # Check if this event should be ignored
-if not ignore_event(github_event):
+if not ignore_event(event_name, event_data):
     # Set the repo to the working directory
     repo = Repo(os.getcwd())
 
@@ -142,7 +142,7 @@ if not ignore_event(github_event):
             # Check if there are changes to pull request
             if repo.is_dirty() or len(repo.untracked_files) > 0:
                 print("Repository has modified or untracked files.")
-                process_event(github_event, repo, branch, base)
+                process_event(event_name, event_data, repo, branch, base)
             else:
                 print("Repository has no modified or untracked files. Skipping.")
         else:
