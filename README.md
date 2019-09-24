@@ -34,7 +34,12 @@ These variables are all optional. If not set, a default value will be used.
 - `COMMIT_MESSAGE` - The message to use when committing changes.
 - `PULL_REQUEST_TITLE` - The title of the pull request.
 - `PULL_REQUEST_BODY` - The body of the pull request.
-- `SKIP_IGNORE` - If present, the `ignore_event` function will not run
+- `BRANCH_SUFFIX` - Valid values are `short-commit-hash` and `timestamp`. See **Branch naming** below for details.
+
+The following parameters are available for debugging and troubleshooting.
+
+- `DEBUG_EVENT` - If present, outputs the event data that triggered the workflow.
+- `SKIP_IGNORE` - If present, the `ignore_event` function will be skipped.
 
 #### Branch naming
 
@@ -47,13 +52,21 @@ create-pull-request/patch-fcdfb59
 create-pull-request/patch-394710b
 ```
 
+Alternatively, branches can be suffixed with a timestamp by setting the environment variable `BRANCH_SUFFIX` to the value `timestamp`. This option may be necessary if multiple pull requests will be created during the execution of a workflow.
+
+e.g.
+```
+create-pull-request/patch-1569322532
+create-pull-request/patch-1569322552
+```
+
 #### Ignoring files
 
 If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
 
 ## Example
 
-Here is an example that sets all the environment variables (except `SKIP_IGNORE`).
+Here is an example that sets all the main environment variables.
 
 ```yml
     - name: Create Pull Request

@@ -2,6 +2,7 @@
 ''' Create Pull Request '''
 import json
 import os
+import time
 from git import Repo
 from github import Github
 
@@ -9,14 +10,14 @@ from github import Github
 def get_github_event(github_event_path):
     with open(github_event_path) as f:
         github_event = json.load(f)
-    if os.environ.get('DEBUG_EVENT') is not None:
+    if bool(os.environ.get('DEBUG_EVENT')):
         print(os.environ['GITHUB_EVENT_NAME'])
         print(json.dumps(github_event, sort_keys=True, indent=2))
     return github_event
 
 
-def ignore_event(event_name, event_data, skip_ignore):
-    if event_name == "push" and not skip_ignore:
+def ignore_event(event_name, event_data):
+    if event_name == "push":
         # Ignore push events on deleted branches
         # The event we want to ignore occurs when a PR is created but the repository owner decides
         # not to commit the changes. They close the PR and delete the branch. This creates a 
@@ -123,7 +124,7 @@ event_name = os.environ['GITHUB_EVENT_NAME']
 event_data = get_github_event(os.environ['GITHUB_EVENT_PATH'])
 # Check if this event should be ignored
 skip_ignore_event = bool(os.environ.get('SKIP_IGNORE'))
-if not ignore_event(event_name, event_data, skip_ignore_event):
+if skip_ignore_event or not ignore_event(event_name, event_data):
     # Set the repo to the working directory
     repo = Repo(os.getcwd())
 
@@ -134,8 +135,14 @@ if not ignore_event(event_name, event_data, skip_ignore_event):
 
     # Skip if the current branch is a PR branch created by this action
     if not base.startswith(branch):
-        # Suffix with the short SHA1 hash
-        branch = "%s-%s" % (branch, get_head_short_sha1(repo))
+        # Fetch an optional environment variable to determine the branch suffix
+        branch_suffix = os.getenv('BRANCH_SUFFIX', 'short-commit-hash')
+        if branch_suffix == "timestamp":
+            # Suffix with the current timestamp
+            branch = "%s-%s" % (branch, int(time.time()))
+        else:
+            # Suffix with the short SHA1 hash
+            branch = "%s-%s" % (branch, get_head_short_sha1(repo))
 
         # Check if a PR branch already exists for this HEAD commit
         if not pr_branch_exists(repo, branch):
