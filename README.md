@@ -15,7 +15,7 @@ Create Pull Request action will:
 
 Note: Modifying a repository during workflows is not good practice in general.
 However, this action opens up some interesting possibilities when used carefully.
-This action is experimental and may not work well for repositories that have a very high frequency of commits.
+This action is experimental and may not work well for some use cases.
 
 ## Usage
 
