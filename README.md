@@ -31,10 +31,10 @@ This action is experimental and may not work well for repositories that have a v
 These variables are all optional. If not set, a default value will be used.
 
 - `PULL_REQUEST_BRANCH` - The branch name. See **Branch naming** below for details.
+- `BRANCH_SUFFIX` - Valid values are `short-commit-hash` and `timestamp`. See **Branch naming** below for details.
 - `COMMIT_MESSAGE` - The message to use when committing changes.
 - `PULL_REQUEST_TITLE` - The title of the pull request.
 - `PULL_REQUEST_BODY` - The body of the pull request.
-- `BRANCH_SUFFIX` - Valid values are `short-commit-hash` and `timestamp`. See **Branch naming** below for details.
 
 The following parameters are available for debugging and troubleshooting.
 
@@ -74,6 +74,7 @@ Here is an example that sets all the main environment variables.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PULL_REQUEST_BRANCH: my-patches
+        BRANCH_SUFFIX: short-commit-hash
         COMMIT_MESSAGE: Auto-modify files by my-file-modifier-action
         PULL_REQUEST_TITLE: Changes from my-file-modifier-action
         PULL_REQUEST_BODY: This is an auto-generated PR with changes from my-file-modifier-action
