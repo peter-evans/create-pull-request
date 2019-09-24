@@ -34,6 +34,7 @@ These variables are all optional. If not set, a default value will be used.
 - `COMMIT_MESSAGE` - The message to use when committing changes.
 - `PULL_REQUEST_TITLE` - The title of the pull request.
 - `PULL_REQUEST_BODY` - The body of the pull request.
+- `SKIP_IGNORE` - If present, the `ignore_event` function will not run
 
 #### Branch naming
 
@@ -52,7 +53,7 @@ If there are files or directories you want to ignore you can simply add them to 
 
 ## Example
 
-Here is an example that sets all the environment variables.
+Here is an example that sets all the environment variables (except `SKIP_IGNORE`).
 
 ```yml
     - name: Create Pull Request
