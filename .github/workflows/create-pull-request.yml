@@ -1,6 +1,6 @@
 on:
   repository_dispatch:
-    types: [test]
+    types: [create-pull-request]
 name: create-pull-request action testing workflow
 jobs:
   createPullRequest:
@@ -8,10 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
     - name: Create report file
-      uses: finnp/create-file-action@1.0.0
-      env:
-        FILE_DATA: This is created to test create-pull-request action.
-        FILE_NAME: report.txt
+      run: touch report.txt
     - name: Create Pull Request
       uses: ./
       env:
