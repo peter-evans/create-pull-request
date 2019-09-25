@@ -3,13 +3,13 @@
 
 A GitHub action to create a pull request for changes to your repository in the actions workspace.
 
-Changes to a repository in the actions workspace persist between actions in a workflow.
-This action is designed to be used in conjunction with other actions that modify or add files to your repository.
+Changes to a repository in the Actions workspace persist between steps in a workflow.
+This action is designed to be used in conjunction with other steps that modify or add files to your repository.
 The changes will be automatically committed to a new branch and a pull request created.
 
 Create Pull Request action will:
 
-1. Check for repository changes in the actions workspace. This includes untracked (new) files as well as modified files.
+1. Check for repository changes in the Actions workspace. This includes untracked (new) files as well as modified files.
 2. Commit all changes to a new branch. The commit will be made using the name and email of the `HEAD` commit author.
 3. Create a pull request to merge the new branch into the currently active branch executing the workflow.
 
@@ -40,7 +40,7 @@ Multi platform - Linux, MacOS, Windows (beta)
 These variables are all optional. If not set, a default value will be used.
 
 - `PULL_REQUEST_BRANCH` - The branch name. See **Branch naming** below for details.
-- `BRANCH_SUFFIX` - Valid values are `short-commit-hash` and `timestamp`. See **Branch naming** below for details.
+- `BRANCH_SUFFIX` - The branch suffix type. Valid values are `short-commit-hash` (default) and `timestamp`. See **Branch naming** below for details.
 - `COMMIT_MESSAGE` - The message to use when committing changes.
 - `PULL_REQUEST_TITLE` - The title of the pull request.
 - `PULL_REQUEST_BODY` - The body of the pull request.
@@ -61,7 +61,7 @@ create-pull-request/patch-fcdfb59
 create-pull-request/patch-394710b
 ```
 
-Alternatively, branches can be suffixed with a timestamp by setting the environment variable `BRANCH_SUFFIX` to the value `timestamp`. This option may be necessary if multiple pull requests will be created during the execution of a workflow.
+Alternatively, branches can be suffixed with a timestamp by setting the environment variable `BRANCH_SUFFIX` to the value `timestamp`. This option must be used if multiple pull requests will be created during the execution of a workflow.
 
 e.g.
 ```
