@@ -19,9 +19,18 @@ This action is experimental and may not work well for some use cases.
 
 ## Usage
 
+Linux
 ```yml
     - name: Create Pull Request
       uses: peter-evans/create-pull-request@v1.2.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+Multi platform - Linux, MacOS, Windows (beta)
+```yml
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v1.2.1-multi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
