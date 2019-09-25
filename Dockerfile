@@ -1,4 +1,4 @@
-FROM python:3.7.3
+FROM alpine:3.10.2
 
 LABEL maintainer="Peter Evans <mail@peterevans.dev>"
 LABEL repository="https://github.com/peter-evans/create-pull-request"
@@ -11,8 +11,10 @@ LABEL com.github.actions.color="gray-dark"
 
 COPY LICENSE README.md /
 
+RUN apk add python3-dev git git-lfs
+
 COPY requirements.txt /tmp/
-RUN pip install --requirement /tmp/requirements.txt
+RUN pip3 install --requirement /tmp/requirements.txt
 
 COPY create-pull-request.py /create-pull-request.py
 ENTRYPOINT [ "/create-pull-request.py" ]
