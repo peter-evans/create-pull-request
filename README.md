@@ -30,7 +30,7 @@ Linux
 Multi platform - Linux, MacOS, Windows (beta)
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.2.1-multi
+      uses: peter-evans/create-pull-request@v1.3.1-multi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
