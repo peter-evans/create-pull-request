@@ -71,19 +71,18 @@ def commit_changes(git, branch, commit_message):
     return git.push('--set-upstream', 'origin', branch)
 
 
-def create_pull_request(token, repo, head, base, title, body):
-    return Github(token).get_repo(repo).create_pull(
-        title=title,
-        body=body,
-        base=base,
-        head=head)
+def cs_string_to_list(str):
+    # Split the comma separated string into a list
+    l = [i.strip() for i in str.split(',')]
+    # Remove empty strings
+    return list(filter(None, l))
 
 
 def process_event(event_name, event_data, repo, branch, base):
     # Fetch required environment variables
     github_token = os.environ['GITHUB_TOKEN']
     github_repository = os.environ['GITHUB_REPOSITORY']
-    # Fetch remaining optional environment variables
+    # Fetch optional environment variables with default values
     commit_message = os.getenv(
         'COMMIT_MESSAGE',
         "Auto-committed changes by create-pull-request action")
@@ -93,6 +92,12 @@ def process_event(event_name, event_data, repo, branch, base):
     body = os.getenv(
         'PULL_REQUEST_BODY', "Auto-generated pull request by "
         "[create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub Action")
+    # Fetch optional environment variables with no default values
+    pull_request_labels = os.environ.get('PULL_REQUEST_LABELS')
+    pull_request_assignees = os.environ.get('PULL_REQUEST_ASSIGNEES')
+    pull_request_milestone = os.environ.get('PULL_REQUEST_MILESTONE')
+    pull_request_reviewers = os.environ.get('PULL_REQUEST_REVIEWERS')
+    pull_request_team_reviewers = os.environ.get('PULL_REQUEST_TEAM_REVIEWERS')
 
     # Get the HEAD committer's email and name
     author_email, author_name = get_head_author(event_name, event_data)
@@ -108,15 +113,33 @@ def process_event(event_name, event_data, repo, branch, base):
 
     # Create the pull request
     print("Creating a request to pull %s into %s." % (branch, base))
-    pull_request = create_pull_request(
-        github_token,
-        github_repository,
-        branch,
-        base,
-        title,
-        body
-    )
+    github_repo = Github(github_token).get_repo(github_repository)
+    pull_request = github_repo.create_pull(
+        title=title,
+        body=body,
+        base=base,
+        head=branch)
     print("Created pull request %d." % pull_request.number)
+
+    # Set labels, assignees and milestone
+    if pull_request_labels is not None:
+        print("Applying labels")
+        pull_request.as_issue().edit(labels=cs_string_to_list(pull_request_labels))
+    if pull_request_assignees is not None:
+        print("Applying assignees")
+        pull_request.as_issue().edit(assignees=cs_string_to_list(pull_request_assignees))
+    if pull_request_milestone is not None:
+        print("Applying milestone")
+        milestone = github_repo.get_milestone(int(pull_request_milestone))
+        pull_request.as_issue().edit(milestone=milestone)
+
+    # Set pull request reviewers and team reviewers
+    if pull_request_reviewers is not None:
+        print("Requesting reviewers")
+        pull_request.create_review_request(reviewers=cs_string_to_list(pull_request_reviewers))
+    if pull_request_team_reviewers is not None:
+        print("Requesting team reviewers")
+        pull_request.create_review_request(team_reviewers=cs_string_to_list(pull_request_team_reviewers))
 
 
 # Get the JSON event data
