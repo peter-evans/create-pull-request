@@ -22,7 +22,7 @@ This action is experimental and may not work well for some use cases.
 Linux
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.2.1
+      uses: peter-evans/create-pull-request@v1.3.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -79,7 +79,7 @@ Here is an example that sets all the main environment variables.
 
 ```yml
     - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.2.1
+      uses: peter-evans/create-pull-request@v1.3.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         PULL_REQUEST_BRANCH: my-patches
