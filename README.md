@@ -10,29 +10,25 @@ The changes will be automatically committed to a new branch and a pull request c
 Create Pull Request action will:
 
 1. Check for repository changes in the Actions workspace. This includes untracked (new) files as well as modified files.
-2. Commit all changes to a new branch. The commit will be made using the name and email of the `HEAD` commit author.
+2. Commit all changes to a new branch, or update an existing pull request branch. The commit will be made using the name and email of the `HEAD` commit author.
 3. Create a pull request to merge the new branch into the currently active branch executing the workflow.
-
-Note: Modifying a repository during workflows is not good practice in general.
-However, this action opens up some interesting possibilities when used carefully.
-This action is experimental and may not work well for some use cases.
 
 ## Usage
 
 Linux
 ```yml
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.3.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 Multi platform - Linux, MacOS, Windows (beta)
 ```yml
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.2.1-multi
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1.3.1-multi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 #### Environment variables
@@ -48,7 +44,11 @@ These variables are all optional. If not set, a default value will be used.
 - `PULL_REQUEST_TEAM_REVIEWERS` - A comma separated list of GitHub teams to request a review from.
 - `PULL_REQUEST_MILESTONE` - The number of the milestone to associate this pull request with.
 - `PULL_REQUEST_BRANCH` - The branch name. See **Branch naming** below for details.
-- `BRANCH_SUFFIX` - The branch suffix type. Valid values are `short-commit-hash` (default) and `timestamp`. See **Branch naming** below for details.
+- `BRANCH_SUFFIX` - The branch suffix type. Valid values are `short-commit-hash` (default), `timestamp`, `random` and `none`. See **Branch naming** below for details.
+
+Output environment variables
+
+- `PULL_REQUEST_NUMBER` - The number of the pull request created.
 
 The following parameters are available for debugging and troubleshooting.
 
@@ -57,22 +57,31 @@ The following parameters are available for debugging and troubleshooting.
 
 #### Branch naming
 
-The variable `PULL_REQUEST_BRANCH` defaults to `create-pull-request/patch`.
-Commits will be made to a branch with this name and suffixed with the short SHA1 commit hash.
+For branch naming there are two strategies. Always create a new branch each time there are changes to be committed, OR, create a pull request branch that will be updated with any new commits until it is merged or closed.
 
-e.g.
-```
-create-pull-request/patch-fcdfb59
-create-pull-request/patch-394710b
-```
+**Strategy A - Always create a new pull request branch (default)**
 
-Alternatively, branches can be suffixed with a timestamp by setting the environment variable `BRANCH_SUFFIX` to the value `timestamp`. This option must be used if multiple pull requests will be created during the execution of a workflow.
+For this strategy there are three options to suffix the branch name.
+The branch name is defined by the variable `PULL_REQUEST_BRANCH` and defaults to `create-pull-request/patch`.
 
-e.g.
-```
-create-pull-request/patch-1569322532
-create-pull-request/patch-1569322552
-```
+1. `short-commit-hash` (default)
+
+    Commits will be made to a branch suffixed with the short SHA1 commit hash.
+    eg. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
+
+2. `timestamp`
+
+    Commits will be made to a branch suffixed by a timestamp.
+    eg. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
+
+3. `random`
+
+    Commits will be made to a branch suffixed with a random alpha-numeric string. This option must be used if multiple pull requests will be created during the execution of a workflow.
+    eg. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
+
+**Strategy B - Create and update a pull request branch**
+
+To use this strategy, set `BRANCH_SUFFIX` to the value `none`. The variable `PULL_REQUEST_BRANCH` defaults to `create-pull-request/patch`. Commits will be made to this branch and a pull request created. Any subsequent changes will be committed to the same branch and reflected in the existing pull request.
 
 #### Ignoring files
 
@@ -91,22 +100,26 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Create report file
-      run: touch report.txt
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v1.3.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COMMIT_MESSAGE: Add report file
-        PULL_REQUEST_BODY: This PR is auto-generated by [create-pull-request](https://github.com/peter-evans/create-pull-request).
-        PULL_REQUEST_TITLE: '[Example] New report'
-        PULL_REQUEST_LABELS: report, automated pr
-        PULL_REQUEST_ASSIGNEES: peter-evans
-        PULL_REQUEST_REVIEWERS: peter-evans
-        PULL_REQUEST_MILESTONE: 1
-        PULL_REQUEST_BRANCH: example-patches
-        BRANCH_SUFFIX: short-commit-hash
+      - uses: actions/checkout@v1
+      - name: Create report file
+        run: date +%s > report.txt
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: Add report file
+          PULL_REQUEST_BODY: >
+            This PR is auto-generated by 
+            [create-pull-request](https://github.com/peter-evans/create-pull-request).
+          PULL_REQUEST_TITLE: '[Example] Add report file'
+          PULL_REQUEST_LABELS: report, automated pr
+          PULL_REQUEST_ASSIGNEES: peter-evans
+          PULL_REQUEST_REVIEWERS: peter-evans
+          PULL_REQUEST_MILESTONE: 1
+          PULL_REQUEST_BRANCH: example-patches
+          BRANCH_SUFFIX: short-commit-hash
+      - name: Check output environment variable
+        run: echo "Pull Request Number - $PULL_REQUEST_NUMBER"
 ```
 
 This configuration will create pull requests that look like this:
@@ -115,4 +128,4 @@ This configuration will create pull requests that look like this:
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details
+[MIT](LICENSE)

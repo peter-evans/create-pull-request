@@ -2,6 +2,9 @@
 ''' Create Pull Request '''
 import json
 import os
+import random
+import string
+import sys
 import time
 from git import Repo
 from github import Github
@@ -34,7 +37,15 @@ def ignore_event(event_name, event_data):
     return False
 
 
-def pr_branch_exists(repo, branch):
+def get_head_short_sha1(repo):
+    return repo.git.rev_parse('--short', 'HEAD')
+
+
+def get_random_suffix(size=7, chars=string.ascii_lowercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
+def remote_branch_exists(repo, branch):
     for ref in repo.remotes.origin.refs:
         if ref.name == ("origin/%s" % branch):
             return True
@@ -51,10 +62,6 @@ def get_head_author(event_name, event_data):
     return email, name
 
 
-def get_head_short_sha1(repo):
-    return repo.git.rev_parse('--short', 'HEAD')
-
-
 def set_git_config(git, email, name):
     git.config('--global', 'user.email', '"%s"' % email)
     git.config('--global', 'user.name', '"%s"' % name)
@@ -64,11 +71,15 @@ def set_git_remote_url(git, token, github_repository):
     git.remote('set-url', 'origin', "https://x-access-token:%s@github.com/%s" % (token, github_repository))
 
 
-def commit_changes(git, branch, commit_message):
-    git.checkout('HEAD', b=branch)
+def push_changes(git, remote_exists, branch, commit_message):
     git.add('-A')
     git.commit(m=commit_message)
-    return git.push('--set-upstream', 'origin', branch)
+    if remote_exists:
+        git.checkout(branch)
+        git.rebase('-Xtheirs', '-')
+    else:
+        git.checkout('HEAD', b=branch)
+    return git.push('-f', '--set-upstream', 'origin', branch)
 
 
 def cs_string_to_list(str):
@@ -78,7 +89,7 @@ def cs_string_to_list(str):
     return list(filter(None, l))
 
 
-def process_event(event_name, event_data, repo, branch, base):
+def process_event(event_name, event_data, repo, branch, base, remote_exists):
     # Fetch required environment variables
     github_token = os.environ['GITHUB_TOKEN']
     github_repository = os.environ['GITHUB_REPOSITORY']
@@ -106,10 +117,15 @@ def process_event(event_name, event_data, repo, branch, base):
     # Update URL for the 'origin' remote
     set_git_remote_url(repo.git, github_token, github_repository)
 
-    # Commit the repository changes
-    print("Committing changes.")
-    commit_result = commit_changes(repo.git, branch, commit_message)
-    print(commit_result)
+    # Push the local changes to the remote branch
+    print("Pushing changes.")
+    push_result = push_changes(repo.git, remote_exists, branch, commit_message)
+    print(push_result)
+
+    # If the remote existed then a PR likely exists and we can finish here
+    if remote_exists:
+        print("Updated pull request branch %s." % branch)
+        sys.exit()
 
     # Create the pull request
     print("Creating a request to pull %s into %s." % (branch, base))
@@ -120,6 +136,7 @@ def process_event(event_name, event_data, repo, branch, base):
         base=base,
         head=branch)
     print("Created pull request %d." % pull_request.number)
+    os.system('echo ::set-env name=PULL_REQUEST_NUMBER::%d' % pull_request.number)
 
     # Set labels, assignees and milestone
     if pull_request_labels is not None:
@@ -157,28 +174,34 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
     base = os.environ['GITHUB_REF'][11:]
 
     # Skip if the current branch is a PR branch created by this action
-    if not base.startswith(branch):
-        # Fetch an optional environment variable to determine the branch suffix
-        branch_suffix = os.getenv('BRANCH_SUFFIX', 'short-commit-hash')
-        if branch_suffix == "timestamp":
-            # Suffix with the current timestamp
-            branch = "%s-%s" % (branch, int(time.time()))
-        else:
-            # Suffix with the short SHA1 hash
-            branch = "%s-%s" % (branch, get_head_short_sha1(repo))
+    if base.startswith(branch):
+        print("Branch '%s' was created by this action. Skipping." % base)
+        sys.exit()
 
-        # Check if a PR branch already exists for this HEAD commit
-        if not pr_branch_exists(repo, branch):
-            # Check if there are changes to pull request
-            if repo.is_dirty() or len(repo.untracked_files) > 0:
-                print("Repository has modified or untracked files.")
-                process_event(event_name, event_data, repo, branch, base)
-            else:
-                print("Repository has no modified or untracked files. Skipping.")
-        else:
-            print(
-                "Pull request branch '%s' already exists for this commit. Skipping." %
-                branch)
+    # Fetch an optional environment variable to determine the branch suffix
+    branch_suffix = os.getenv('BRANCH_SUFFIX', 'short-commit-hash')
+    if branch_suffix == "short-commit-hash":
+        # Suffix with the short SHA1 hash
+        branch = "%s-%s" % (branch, get_head_short_sha1(repo))
+    elif branch_suffix == "timestamp":
+        # Suffix with the current timestamp
+        branch = "%s-%s" % (branch, int(time.time()))
+    elif branch_suffix == "random":
+        # Suffix with the current timestamp
+        branch = "%s-%s" % (branch, get_random_suffix())
+
+    # Check if the remote branch exists
+    remote_exists = remote_branch_exists(repo, branch)
+
+    # If using short commit hash prefixes, check if a remote 
+    # branch already exists for this HEAD commit
+    if branch_suffix == 'short-commit-hash' and remote_exists:
+        print("Pull request branch '%s' already exists for this commit. Skipping." % branch)
+        sys.exit()
+
+    # Check if there are changes to pull request
+    if repo.is_dirty() or len(repo.untracked_files) > 0:
+        print("Repository has modified or untracked files.")
+        process_event(event_name, event_data, repo, branch, base, remote_exists)
     else:
-        print(
-            "Branch '%s' was created by this action. Skipping." % base)
+        print("Repository has no modified or untracked files. Skipping.")
