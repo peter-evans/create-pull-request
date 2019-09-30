@@ -26,12 +26,12 @@ Linux
 Multi platform - Linux, MacOS, Windows (beta)
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.3.1-multi
+        uses: peter-evans/create-pull-request@v1.4.0-multi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-#### Environment variables
+### Environment variables
 
 These variables are all optional. If not set, a default value will be used.
 
@@ -55,35 +55,26 @@ The following parameters are available for debugging and troubleshooting.
 - `DEBUG_EVENT` - If present, outputs the event data that triggered the workflow.
 - `SKIP_IGNORE` - If present, the `ignore_event` function will be skipped.
 
-#### Branch naming
+### Branch naming
 
-For branch naming there are two strategies. Always create a new branch each time there are changes to be committed, OR, create a pull request branch that will be updated with any new commits until it is merged or closed.
+For branch naming there are two strategies. Always create a new branch each time there are changes to be committed, OR, create a fixed-name pull request branch that will be updated with any new commits until it is merged or closed.
 
-**Strategy A - Always create a new pull request branch (default)**
+#### Strategy A - Always create a new pull request branch (default)
 
 For this strategy there are three options to suffix the branch name.
-The branch name is defined by the variable `PULL_REQUEST_BRANCH` and defaults to `create-pull-request/patch`.
+The branch name is defined by the variable `PULL_REQUEST_BRANCH` and defaults to `create-pull-request/patch`. The following options are values for `BRANCH_SUFFIX`.
 
-1. `short-commit-hash` (default)
+- `short-commit-hash` (default) - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
 
-    Commits will be made to a branch suffixed with the short SHA1 commit hash.
-    eg. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
+- `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
 
-2. `timestamp`
+- `random` - Commits will be made to a branch suffixed with a random alpha-numeric string. This option should be used if multiple pull requests will be created during the execution of a workflow. e.g. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
 
-    Commits will be made to a branch suffixed by a timestamp.
-    eg. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
+#### Strategy B - Create and update a pull request branch
 
-3. `random`
+To use this strategy, set `BRANCH_SUFFIX` to the value `none`. The variable `PULL_REQUEST_BRANCH` defaults to `create-pull-request/patch`. Commits will be made to this branch and a pull request created. Any subsequent changes will be committed to the *same* branch and reflected in the existing pull request.
 
-    Commits will be made to a branch suffixed with a random alpha-numeric string. This option must be used if multiple pull requests will be created during the execution of a workflow.
-    eg. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
-
-**Strategy B - Create and update a pull request branch**
-
-To use this strategy, set `BRANCH_SUFFIX` to the value `none`. The variable `PULL_REQUEST_BRANCH` defaults to `create-pull-request/patch`. Commits will be made to this branch and a pull request created. Any subsequent changes will be committed to the same branch and reflected in the existing pull request.
-
-#### Ignoring files
+### Ignoring files
 
 If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
 
