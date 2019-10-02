@@ -18,7 +18,7 @@ Create Pull Request action will:
 Linux
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.4.0
+        uses: peter-evans/create-pull-request@v1.4.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -26,7 +26,7 @@ Linux
 Multi platform - Linux, MacOS, Windows (beta)
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.4.0-multi
+        uses: peter-evans/create-pull-request@v1.4.1-multi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -95,7 +95,7 @@ jobs:
       - name: Create report file
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.4.0
+        uses: peter-evans/create-pull-request@v1.4.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: Add report file
