@@ -1,5 +1,9 @@
 name: 'Create Pull Request'
+author: 'Peter Evans'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
 runs:
   using: 'node12'
   main: 'index.js'
+branding:
+  icon: 'git-pull-request'  
+  color: 'gray-dark'
