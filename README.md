@@ -31,6 +31,9 @@ Multi platform - Linux, MacOS, Windows (beta)
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+**Note**: If you want pull requests created by this action to trigger an `on: pull_request` workflow then you must use a Personal Access Token instead of the default `GITHUB_TOKEN`.
+See [this issue](https://github.com/peter-evans/create-pull-request/issues/48) for further details.
+
 ### Environment variables
 
 These variables are all optional. If not set, a default value will be used.
