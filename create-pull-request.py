@@ -71,14 +71,22 @@ def set_git_remote_url(git, token, github_repository):
     git.remote('set-url', 'origin', "https://x-access-token:%s@github.com/%s" % (token, github_repository))
 
 
-def push_changes(git, remote_exists, branch, commit_message):
-    git.add('-A')
-    git.commit(m=commit_message)
+def checkout_branch(git, remote_exists, branch):
     if remote_exists:
+        git.stash('--include-untracked')
         git.checkout(branch)
-        git.rebase('-Xtheirs', '-')
+        try:
+            git.stash('pop')
+        except:
+            git.checkout('--theirs', '.')
+            git.reset()
     else:
         git.checkout('HEAD', b=branch)
+
+
+def push_changes(git, branch, commit_message):
+    git.add('-A')
+    git.commit(m=commit_message)
     return git.push('-f', '--set-upstream', 'origin', branch)
 
 
@@ -110,16 +118,12 @@ def process_event(event_name, event_data, repo, branch, base, remote_exists):
     pull_request_reviewers = os.environ.get('PULL_REQUEST_REVIEWERS')
     pull_request_team_reviewers = os.environ.get('PULL_REQUEST_TEAM_REVIEWERS')
 
-    # Get the HEAD committer's email and name
-    author_email, author_name = get_head_author(event_name, event_data)
-    # Set git configuration
-    set_git_config(repo.git, author_email, author_name)
     # Update URL for the 'origin' remote
     set_git_remote_url(repo.git, github_token, github_repository)
 
     # Push the local changes to the remote branch
     print("Pushing changes.")
-    push_result = push_changes(repo.git, remote_exists, branch, commit_message)
+    push_result = push_changes(repo.git, branch, commit_message)
     print(push_result)
 
     # If the remote existed then a PR likely exists and we can finish here
@@ -198,6 +202,13 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
     if branch_suffix == 'short-commit-hash' and remote_exists:
         print("Pull request branch '%s' already exists for this commit. Skipping." % branch)
         sys.exit()
+
+    # Get the HEAD committer's email and name
+    author_email, author_name = get_head_author(event_name, event_data)
+    # Set git configuration
+    set_git_config(repo.git, author_email, author_name)
+    # Checkout branch
+    checkout_branch(repo.git, remote_exists, branch)
 
     # Check if there are changes to pull request
     if repo.is_dirty() or len(repo.untracked_files) > 0:
