@@ -118,7 +118,7 @@ jobs:
 
 This configuration will create pull requests that look like this:
 
-![Pull Request Example](pull-request-example.png?raw=true)
+![Pull Request Example](https://github.com/peter-evans/create-pull-request/blob/master/pull-request-example.png?raw=true)
 
 ## License
 
