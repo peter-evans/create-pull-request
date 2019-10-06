@@ -52,7 +52,7 @@ def remote_branch_exists(repo, branch):
     return False
 
 
-def get_head_author(event_name, event_data):
+def get_author_default(event_name, event_data):
     if event_name == "push":
         email = "{head_commit[author][email]}".format(**event_data)
         name = "{head_commit[author][name]}".format(**event_data)
@@ -203,8 +203,11 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
         print("Pull request branch '%s' already exists for this commit. Skipping." % branch)
         sys.exit()
 
-    # Get the HEAD committer's email and name
-    author_email, author_name = get_head_author(event_name, event_data)
+    # Get the default for author email and name
+    author_email, author_name = get_author_default(event_name, event_data)
+    # Set commit author overrides
+    author_email = os.getenv('COMMIT_AUTHOR_EMAIL', author_email)
+    author_name = os.getenv('COMMIT_AUTHOR_NAME', author_name)
     # Set git configuration
     set_git_config(repo.git, author_email, author_name)
     # Checkout branch
