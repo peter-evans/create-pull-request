@@ -23,7 +23,7 @@ def ignore_event(event_name, event_data):
     if event_name == "push":
         # Ignore push events on deleted branches
         # The event we want to ignore occurs when a PR is created but the repository owner decides
-        # not to commit the changes. They close the PR and delete the branch. This creates a 
+        # not to commit the changes. They close the PR and delete the branch. This creates a
         # "push" event that we want to ignore, otherwise it will create another branch and PR on
         # the same commit.
         deleted = "{deleted}".format(**event_data)
@@ -68,7 +68,9 @@ def set_git_config(git, email, name):
 
 
 def set_git_remote_url(git, token, github_repository):
-    git.remote('set-url', 'origin', "https://x-access-token:%s@github.com/%s" % (token, github_repository))
+    git.remote(
+        'set-url', 'origin', "https://x-access-token:%s@github.com/%s" %
+        (token, github_repository))
 
 
 def checkout_branch(git, remote_exists, branch):
@@ -77,7 +79,7 @@ def checkout_branch(git, remote_exists, branch):
         git.checkout(branch)
         try:
             git.stash('pop')
-        except:
+        except BaseException:
             git.checkout('--theirs', '.')
             git.reset()
     else:
@@ -140,7 +142,9 @@ def process_event(event_name, event_data, repo, branch, base, remote_exists):
         base=base,
         head=branch)
     print("Created pull request %d." % pull_request.number)
-    os.system('echo ::set-env name=PULL_REQUEST_NUMBER::%d' % pull_request.number)
+    os.system(
+        'echo ::set-env name=PULL_REQUEST_NUMBER::%d' %
+        pull_request.number)
 
     # Set labels, assignees and milestone
     if pull_request_labels is not None:
@@ -157,10 +161,12 @@ def process_event(event_name, event_data, repo, branch, base, remote_exists):
     # Set pull request reviewers and team reviewers
     if pull_request_reviewers is not None:
         print("Requesting reviewers")
-        pull_request.create_review_request(reviewers=cs_string_to_list(pull_request_reviewers))
+        pull_request.create_review_request(
+            reviewers=cs_string_to_list(pull_request_reviewers))
     if pull_request_team_reviewers is not None:
         print("Requesting team reviewers")
-        pull_request.create_review_request(team_reviewers=cs_string_to_list(pull_request_team_reviewers))
+        pull_request.create_review_request(
+            team_reviewers=cs_string_to_list(pull_request_team_reviewers))
 
 
 # Get the JSON event data
@@ -174,8 +180,15 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
 
     # Fetch/Set the branch name
     branch = os.getenv('PULL_REQUEST_BRANCH', 'create-pull-request/patch')
-    # Set the current branch as the target base branch
-    base = os.environ['GITHUB_REF'][11:]
+
+    # Set the base branch
+    github_ref = os.environ['GITHUB_REF']
+    if github_ref.startswith('refs/pull/'):
+        base = os.environ['GITHUB_HEAD_REF']
+        # Reset to the merging branch instead of the merge commit
+        repo.git.checkout(base)
+    else:
+        base = github_ref[11:]
 
     # Skip if the current branch is a PR branch created by this action
     if base.startswith(branch):
@@ -197,10 +210,12 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
     # Check if the remote branch exists
     remote_exists = remote_branch_exists(repo, branch)
 
-    # If using short commit hash prefixes, check if a remote 
+    # If using short commit hash prefixes, check if a remote
     # branch already exists for this HEAD commit
     if branch_suffix == 'short-commit-hash' and remote_exists:
-        print("Pull request branch '%s' already exists for this commit. Skipping." % branch)
+        print(
+            "Pull request branch '%s' already exists for this commit. Skipping." %
+            branch)
         sys.exit()
 
     # Get the default for author email and name
@@ -216,6 +231,12 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
     # Check if there are changes to pull request
     if repo.is_dirty() or len(repo.untracked_files) > 0:
         print("Repository has modified or untracked files.")
-        process_event(event_name, event_data, repo, branch, base, remote_exists)
+        process_event(
+            event_name,
+            event_data,
+            repo,
+            branch,
+            base,
+            remote_exists)
     else:
         print("Repository has no modified or untracked files. Skipping.")
