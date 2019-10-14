@@ -129,7 +129,7 @@ This configuration will create pull requests that look like this:
 ![Pull Request Example](https://github.com/peter-evans/create-pull-request/blob/master/pull-request-example.png?raw=true)
 
 
-### Example usage with 'on: pull_request' workflows
+### Example usage with `on: pull_request` workflows
 
 The following is an example workflow for a use-case where [autopep8](https://github.com/peter-evans/autopep8) action runs as both a check on pull requests and raises a further pull request to apply code fixes.
 
