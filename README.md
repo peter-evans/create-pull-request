@@ -129,7 +129,7 @@ This configuration will create pull requests that look like this:
 ![Pull Request Example](https://github.com/peter-evans/create-pull-request/blob/master/pull-request-example.png?raw=true)
 
 
-### Example usage to automate periodic dependency updates
+### Example workflow to automate periodic dependency updates
 
 This example workflow executes once a week and will create a pull request for any dependency updates.
 
@@ -173,6 +173,7 @@ jobs:
 The following is an example workflow for a use-case where [autopep8 action](https://github.com/peter-evans/autopep8) runs as both a check on pull requests and raises a further pull request to apply code fixes. This is a pattern that would work well for any automated code-linting and fixing.
 
 How it works:
+
 1. When a pull request is raised the workflow executes as a check
 2. If autopep8 makes any fixes a pull request will be raised for those fixes to be merged into the current pull request branch. The workflow then deliberately causes the check to fail.
 3. When the pull request containing the fixes is merged the workflow runs again. This time autopep8 makes no changes and the check passes.
