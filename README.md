@@ -92,10 +92,10 @@ If there are files or directories you want to ignore you can simply add them to 
 Here is an example that sets all the main environment variables.
 
 ```yml
+name: create-pull-request workflow
 on:
   repository_dispatch:
     types: [create-pull-request]
-name: create-pull-request workflow
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
@@ -128,6 +128,45 @@ This configuration will create pull requests that look like this:
 
 ![Pull Request Example](https://github.com/peter-evans/create-pull-request/blob/master/pull-request-example.png?raw=true)
 
+
+### Example usage to automate periodic dependency updates
+
+This example workflow executes once a week and will create a pull request for any dependency updates.
+
+```yml
+name: Update Dependencies
+on:
+  schedule:
+    - cron:  '0 10 * * 1'
+jobs:
+  update-deps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: Update dependencies
+        id: vars
+        run: |
+          cd create-pull-request-multi
+          npm install -g npm-check-updates
+          ncu -u
+          npm install
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v1.5.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_MESSAGE: update dependencies
+          COMMIT_AUTHOR_EMAIL: peter-evans@users.noreply.github.com
+          COMMIT_AUTHOR_NAME: Peter Evans
+          PULL_REQUEST_TITLE: Automated Dependency Updates
+          PULL_REQUEST_BODY: This is an auto-generated PR with dependency updates.
+          PULL_REQUEST_LABELS: dep-updates, automated pr
+          PULL_REQUEST_REVIEWERS: peter-evans
+          PULL_REQUEST_BRANCH: dep-updates
+          BRANCH_SUFFIX: none
+```
 
 ### Example usage with `on: pull_request` workflows
 
