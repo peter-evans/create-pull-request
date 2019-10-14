@@ -1,7 +1,7 @@
+name: create-pull-request workflow
 on:
   repository_dispatch:
     types: [create-pull-request-multi]
-name: create-pull-request workflow
 jobs:
   createPullRequest:
     name: Testing on ${{ matrix.platform }}
