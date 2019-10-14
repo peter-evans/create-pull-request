@@ -131,7 +131,7 @@ This configuration will create pull requests that look like this:
 
 ### Example workflow to automate periodic dependency updates
 
-This example workflow executes once a week and will create a pull request for any dependency updates.
+This example workflow executes once a week and will create a pull request for any dependency updates. This pattern will work well for updating any kind of static content from an external source.
 
 ```yml
 name: Update Dependencies
