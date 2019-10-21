@@ -184,11 +184,16 @@ if skip_ignore_event or not ignore_event(event_name, event_data):
     # Set the base branch
     github_ref = os.environ['GITHUB_REF']
     if github_ref.startswith('refs/pull/'):
+        # Switch to the merging branch instead of the merge commit
         base = os.environ['GITHUB_HEAD_REF']
-        # Reset to the merging branch instead of the merge commit
-        repo.git.checkout(base)
     else:
         base = github_ref[11:]
+
+    # Optional base override
+    base = os.getenv('PULL_REQUEST_BASE', base)
+
+    # Checkout the base branch
+    repo.git.checkout(base)
 
     # Skip if the current branch is a PR branch created by this action
     if base.startswith(branch):

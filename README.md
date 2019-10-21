@@ -51,6 +51,7 @@ These variables are *all optional*. If not set, sensible default values will be 
 | `PULL_REQUEST_TEAM_REVIEWERS` | A comma separated list of GitHub teams to request a review from. | none |
 | `PULL_REQUEST_MILESTONE` | The number of the milestone to associate this pull request with. | none |
 | `PULL_REQUEST_BRANCH` | The branch name. See **Branch naming** below for details. | `create-pull-request/patch` |
+| `PULL_REQUEST_BASE` | Overrides the base branch. **Use with caution!** | Defaults to the currently checked out branch. |
 | `BRANCH_SUFFIX` | The branch suffix type. Valid values are `short-commit-hash`, `timestamp`, `random` and `none`. See **Branch naming** below for details. | `short-commit-hash` |
 
 **Output environment variables**
