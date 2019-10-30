@@ -19,15 +19,6 @@ def get_github_event(github_event_path):
     return github_event
 
 
-def ignore_event(event_name, event_data):
-    if event_name == "push":
-        ref = "{ref}".format(**event_data)
-        if not ref.startswith('refs/heads/'):
-            print("Ignoring events for tags and remotes.")
-            return True
-    return False
-
-
 def get_head_short_sha1(repo):
     return repo.git.rev_parse('--short', 'HEAD')
 
@@ -90,10 +81,7 @@ def cs_string_to_list(str):
     return list(filter(None, l))
 
 
-def process_event(event_name, event_data, repo, branch, base, remote_exists):
-    # Fetch required environment variables
-    github_token = os.environ['GITHUB_TOKEN']
-    github_repository = os.environ['GITHUB_REPOSITORY']
+def process_event(github_token, github_repository, repo, branch, base, remote_exists):
     # Fetch optional environment variables with default values
     commit_message = os.getenv(
         'COMMIT_MESSAGE',
@@ -110,9 +98,6 @@ def process_event(event_name, event_data, repo, branch, base, remote_exists):
     pull_request_milestone = os.environ.get('PULL_REQUEST_MILESTONE')
     pull_request_reviewers = os.environ.get('PULL_REQUEST_REVIEWERS')
     pull_request_team_reviewers = os.environ.get('PULL_REQUEST_TEAM_REVIEWERS')
-
-    # Update URL for the 'origin' remote
-    set_git_remote_url(repo.git, github_token, github_repository)
 
     # Push the local changes to the remote branch
     print("Pushing changes.")
@@ -161,97 +146,99 @@ def process_event(event_name, event_data, repo, branch, base, remote_exists):
             team_reviewers=cs_string_to_list(pull_request_team_reviewers))
 
 
-# Get the JSON event data
+# Fetch environment variables
+github_token = os.environ['GITHUB_TOKEN']
+github_repository = os.environ['GITHUB_REPOSITORY']
+github_ref = os.environ['GITHUB_REF']
 event_name = os.environ['GITHUB_EVENT_NAME']
+# Get the JSON event data
 event_data = get_github_event(os.environ['GITHUB_EVENT_PATH'])
-# Check if this event should be ignored
-skip_ignore_event = bool(os.environ.get('SKIP_IGNORE'))
-if skip_ignore_event or not ignore_event(event_name, event_data):
-    # Set the repo to the working directory
-    repo = Repo(os.getcwd())
-    # Get the default for author email and name
-    author_email, author_name = get_author_default(event_name, event_data)
-    # Set commit author overrides
-    author_email = os.getenv('COMMIT_AUTHOR_EMAIL', author_email)
-    author_name = os.getenv('COMMIT_AUTHOR_NAME', author_name)
-    # Set git configuration
-    set_git_config(repo.git, author_email, author_name)
 
-    # Fetch/Set the branch name
-    branch_prefix = os.getenv(
-        'PULL_REQUEST_BRANCH',
-        'create-pull-request/patch')
-    # Fetch the git ref
-    github_ref = os.environ['GITHUB_REF']
-    # Fetch an optional base branch override
-    base_override = os.environ.get('PULL_REQUEST_BASE')
+# Set the repo to the working directory
+repo = Repo(os.getcwd())
+# Get the default for author email and name
+author_email, author_name = get_author_default(event_name, event_data)
+# Set commit author overrides
+author_email = os.getenv('COMMIT_AUTHOR_EMAIL', author_email)
+author_name = os.getenv('COMMIT_AUTHOR_NAME', author_name)
+# Set git configuration
+set_git_config(repo.git, author_email, author_name)
+# Update URL for the 'origin' remote
+set_git_remote_url(repo.git, github_token, github_repository)
 
-    # Set the base branch
-    if base_override is not None:
-        base = base_override
-        checkout_branch(repo.git, True, base)
-    elif github_ref.startswith('refs/pull/'):
-        # Switch to the merging branch instead of the merge commit
-        base = os.environ['GITHUB_HEAD_REF']
-        repo.git.checkout(base)
-    else:
-        base = github_ref[11:]
+# Fetch/Set the branch name
+branch_prefix = os.getenv(
+    'PULL_REQUEST_BRANCH',
+    'create-pull-request/patch')
+# Fetch an optional base branch override
+base_override = os.environ.get('PULL_REQUEST_BASE')
 
-    # Skip if the current branch is a PR branch created by this action.
-    # This may occur when using a PAT instead of GITHUB_TOKEN.
-    if base.startswith(branch_prefix):
-        print("Branch '%s' was created by this action. Skipping." % base)
-        sys.exit()
+# Set the base branch
+if base_override is not None:
+    base = base_override
+    checkout_branch(repo.git, True, base)
+elif github_ref.startswith('refs/pull/'):
+    # Switch to the merging branch instead of the merge commit
+    base = os.environ['GITHUB_HEAD_REF']
+    repo.git.checkout(base)
+else:
+    base = github_ref[11:]
 
-    # Fetch an optional environment variable to determine the branch suffix
-    branch_suffix = os.getenv('BRANCH_SUFFIX', 'short-commit-hash')
-    if branch_suffix == "short-commit-hash":
-        # Suffix with the short SHA1 hash
-        branch = "%s-%s" % (branch_prefix, get_head_short_sha1(repo))
-    elif branch_suffix == "timestamp":
-        # Suffix with the current timestamp
-        branch = "%s-%s" % (branch_prefix, int(time.time()))
-    elif branch_suffix == "random":
-        # Suffix with the current timestamp
-        branch = "%s-%s" % (branch_prefix, get_random_suffix())
-    elif branch_suffix == "none":
-        # Fixed branch name
-        branch = branch_prefix
-    else:
+# Skip if the current branch is a PR branch created by this action.
+# This may occur when using a PAT instead of GITHUB_TOKEN.
+if base.startswith(branch_prefix):
+    print("Branch '%s' was created by this action. Skipping." % base)
+    sys.exit()
+
+# Fetch an optional environment variable to determine the branch suffix
+branch_suffix = os.getenv('BRANCH_SUFFIX', 'short-commit-hash')
+if branch_suffix == "short-commit-hash":
+    # Suffix with the short SHA1 hash
+    branch = "%s-%s" % (branch_prefix, get_head_short_sha1(repo))
+elif branch_suffix == "timestamp":
+    # Suffix with the current timestamp
+    branch = "%s-%s" % (branch_prefix, int(time.time()))
+elif branch_suffix == "random":
+    # Suffix with the current timestamp
+    branch = "%s-%s" % (branch_prefix, get_random_suffix())
+elif branch_suffix == "none":
+    # Fixed branch name
+    branch = branch_prefix
+else:
+    print(
+        "Branch suffix '%s' is not a valid value." %
+        branch_suffix)
+    sys.exit(1)
+
+# Check if the remote branch exists
+remote_exists = remote_branch_exists(repo, branch)
+
+if remote_exists:
+    if branch_suffix == 'short-commit-hash':
+        # A remote branch already exists for the HEAD commit
         print(
-            "Branch suffix '%s' is not a valid value." %
-            branch_suffix)
+            "Pull request branch '%s' already exists for this commit. Skipping." %
+            branch)
+        sys.exit()
+    elif branch_suffix in ['timestamp', 'random']:
+        # Generated branch name clash with an existing branch
+        print(
+            "Pull request branch '%s' already exists. Please re-run." %
+            branch)
         sys.exit(1)
 
-    # Check if the remote branch exists
-    remote_exists = remote_branch_exists(repo, branch)
+# Checkout branch
+checkout_branch(repo.git, remote_exists, branch)
 
-    if remote_exists:
-        if branch_suffix == 'short-commit-hash':
-            # A remote branch already exists for the HEAD commit
-            print(
-                "Pull request branch '%s' already exists for this commit. Skipping." %
-                branch)
-            sys.exit()
-        elif branch_suffix in ['timestamp', 'random']:
-            # Generated branch name clash with an existing branch
-            print(
-                "Pull request branch '%s' already exists. Please re-run." %
-                branch)
-            sys.exit(1)
-
-    # Checkout branch
-    checkout_branch(repo.git, remote_exists, branch)
-
-    # Check if there are changes to pull request
-    if repo.is_dirty() or len(repo.untracked_files) > 0:
-        print("Repository has modified or untracked files.")
-        process_event(
-            event_name,
-            event_data,
-            repo,
-            branch,
-            base,
-            remote_exists)
-    else:
-        print("Repository has no modified or untracked files. Skipping.")
+# Check if there are changes to pull request
+if repo.is_dirty() or len(repo.untracked_files) > 0:
+    print("Repository has modified or untracked files.")
+    process_event(
+        github_token,
+        github_repository,
+        repo,
+        branch,
+        base,
+        remote_exists)
+else:
+    print("Repository has no modified or untracked files. Skipping.")
