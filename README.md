@@ -18,7 +18,7 @@ Create Pull Request action will:
 Linux
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -26,7 +26,7 @@ Linux
 Multi platform - Linux, MacOS, Windows (beta)
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3-multi
+        uses: peter-evans/create-pull-request@v1.5.4-multi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -105,7 +105,7 @@ jobs:
       - name: Create report file
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: Add report file
@@ -157,7 +157,7 @@ jobs:
           ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: update dependencies
@@ -201,7 +201,7 @@ jobs:
         run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: autopep8 action fixes
@@ -232,7 +232,7 @@ The recommended method is to use `set-output`. Note that the step where output v
           echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULL_REQUEST_TITLE: ${{ steps.vars.outputs.pr_title }}
@@ -248,7 +248,7 @@ Since the action reads environment variables from the system, it's technically n
           echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.5.3
+        uses: peter-evans/create-pull-request@v1.5.4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
