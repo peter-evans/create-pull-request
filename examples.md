@@ -1,9 +1,9 @@
 # Examples
 
-- [Use case: Create a pull request to update X periodically](#use-case:-create-a-pull-request-to-update-x-periodically)
+- [Use case: Create a pull request to update X periodically](#use-case-create-a-pull-request-to-update-x-periodically)
   - [Update NPM dependencies](#update-npm-dependencies)
   - [Keep Go up to date](#keep-go-up-to-date)
-- [Use case: Create a pull request to modify/fix pull requests](#)
+- [Use case: Create a pull request to modify/fix pull requests](#use-case-create-a-pull-request-to-modifyfix-pull-requests)
   - [autopep8](#autopep8)
 - [Misc workflow tips](#misc-workflow-tips)
   - [Filtering push events](#filtering-push-events)
