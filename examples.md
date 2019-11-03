@@ -144,7 +144,7 @@ jobs:
         id: autopep8
         uses: peter-evans/autopep8@v1.1.0
         with:
-          args: --exit-code --recursive --in-place --aggressive --aggressive .
+          args: --exit-code --recursive --in-place --aggressive .
       - name: Set autopep8 branch name
         id: vars
         run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
