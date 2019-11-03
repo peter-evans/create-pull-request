@@ -15,6 +15,8 @@ Create Pull Request action will:
 
 ## Usage
 
+See [examples](examples.md) for detailed use cases.
+
 Linux
 ```yml
       - name: Create Pull Request
@@ -87,10 +89,10 @@ To use this strategy, set `BRANCH_SUFFIX` to the value `none`. The variable `PUL
 
 If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
 
-## Examples
+## Reference Example
 
-This first example workflow is a reference example that sets all the main environment variables.
-See further examples below for more realistic use cases.
+This workflow is a reference example that sets all the main environment variables.
+See [examples](examples.md) for more realistic use cases.
 
 ```yml
 name: Create Pull Request
@@ -126,148 +128,9 @@ jobs:
         run: echo "Pull Request Number - $PULL_REQUEST_NUMBER"
 ```
 
-This configuration will create pull requests that look like this:
+This reference configuration will create pull requests that look like this:
 
 ![Pull Request Example](assets/pull-request-example.png)
-
-
-### Use case: Create a pull request to update X periodically
-
-This example workflow executes once a week and will create a pull request for any dependency updates.
-This pattern will work well for updating any kind of static content from an external source.
-
-```yml
-name: Update Dependencies
-on:
-  schedule:
-    - cron:  '0 10 * * 1'
-jobs:
-  update-deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-      - name: Update dependencies
-        id: vars
-        run: |
-          npm install -g npm-check-updates
-          ncu -u
-          npm install
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: update dependencies
-          COMMIT_AUTHOR_EMAIL: peter-evans@users.noreply.github.com
-          COMMIT_AUTHOR_NAME: Peter Evans
-          PULL_REQUEST_TITLE: Automated Dependency Updates
-          PULL_REQUEST_BODY: This is an auto-generated PR with dependency updates.
-          PULL_REQUEST_LABELS: dep-updates, automated pr
-          PULL_REQUEST_REVIEWERS: peter-evans
-          PULL_REQUEST_BRANCH: dep-updates
-          BRANCH_SUFFIX: none
-```
-
-### Use case: Create a pull request to modify/fix pull requests
-
-The following is an example workflow for a use case where [autopep8 action](https://github.com/peter-evans/autopep8) runs as both a check on pull requests and raises a further pull request to apply code fixes. This is a pattern that would work well for any automated code linting and fixing.
-
-How it works:
-
-1. When a pull request is raised the workflow executes as a check
-2. If autopep8 makes any fixes a pull request will be raised for those fixes to be merged into the current pull request branch. The workflow then deliberately causes the check to fail.
-3. When the pull request containing the fixes is merged the workflow runs again. This time autopep8 makes no changes and the check passes.
-4. The original pull request can now be merged.
-
-```yml
-name: autopep8
-on: pull_request
-jobs:
-  autopep8:
-    if: startsWith(github.head_ref, 'autopep8-patches') == false
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: autopep8
-        id: autopep8
-        uses: peter-evans/autopep8@v1.1.0
-        with:
-          args: --exit-code --recursive --in-place --aggressive --aggressive .
-      - name: Set autopep8 branch name
-        id: vars
-        run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
-      - name: Create Pull Request
-        if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v1.6.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: autopep8 action fixes
-          COMMIT_AUTHOR_EMAIL: peter-evans@users.noreply.github.com
-          COMMIT_AUTHOR_NAME: Peter Evans
-          PULL_REQUEST_TITLE: Fixes by autopep8 action
-          PULL_REQUEST_BODY: This is an auto-generated PR with fixes by autopep8.
-          PULL_REQUEST_LABELS: autopep8, automated pr
-          PULL_REQUEST_REVIEWERS: peter-evans
-          PULL_REQUEST_BRANCH: ${{ steps.vars.outputs.branch-name }}
-          BRANCH_SUFFIX: none
-      - name: Fail if autopep8 made changes
-        if: steps.autopep8.outputs.exit-code == 2
-        run: exit 1
-```
-
-### Filtering push events
-
-For workflows using `on: push` you may want to ignore push events for tags and remotes.
-These can be filtered out with the following `if` condition.
-
-```yml
-name: Create Pull Request
-on: push
-jobs:
-  createPullRequest:
-    if: startsWith(github.ref, 'refs/heads/')
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      ...
-```
-
-### Dynamic configuration using variables
-
-The following examples show how configuration for the action can be dynamically defined in a previous workflow step.
-
-The recommended method is to use `set-output`. Note that the step where output variables are defined must have an id.
-
-```yml
-      - name: Set output variables
-        id: vars
-        run: |
-          echo ::set-output name=pr_title::"[Test] Add report file $(date +%d-%m-%Y)"
-          echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
-            by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_TITLE: ${{ steps.vars.outputs.pr_title }}
-          PULL_REQUEST_BODY: ${{ steps.vars.outputs.pr_body }}
-```
-
-Since the action reads environment variables from the system, it's technically not necessary to explicitly pass them as long as they exist in the environment. So the following method using `set-env` *also* works, but explicitly passing the configuration parameters using the previous method is perferred for its clarity.
-
-```yml
-      - name: Set environment variables
-        run: |
-          echo ::set-env name=PULL_REQUEST_TITLE::"[Test] Add report file $(date +%d-%m-%Y)"
-          echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
-            by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
 
 ## License
 
