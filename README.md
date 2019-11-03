@@ -91,7 +91,8 @@ If there are files or directories you want to ignore you can simply add them to 
 
 ## Reference Example
 
-This workflow is a reference example that sets all the main environment variables.
+The following workflow is a reference example that sets all the main environment variables.
+
 See [examples](examples.md) for more realistic use cases.
 
 ```yml
