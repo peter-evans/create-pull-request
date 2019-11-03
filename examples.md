@@ -3,7 +3,6 @@
 - [Use case: Create a pull request to update X periodically](#use-case-create-a-pull-request-to-update-x-periodically)
   - [Update NPM dependencies](#update-npm-dependencies)
   - [Keep Go up to date](#keep-go-up-to-date)
-  - [Spider and download a website](#spider-and-download-a-website)
 - [Use case: Create a pull request to modify/fix pull requests](#use-case-create-a-pull-request-to-modifyfix-pull-requests)
   - [autopep8](#autopep8)
 - [Misc workflow tips](#misc-workflow-tips)
@@ -41,8 +40,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: update dependencies
+          COMMIT_AUTHOR_EMAIL: peter-evans@users.noreply.github.com
+          COMMIT_AUTHOR_NAME: Peter Evans
           PULL_REQUEST_TITLE: Automated Dependency Updates
           PULL_REQUEST_BODY: This is an auto-generated PR with dependency updates.
+          PULL_REQUEST_LABELS: dep-updates, automated pr
+          PULL_REQUEST_REVIEWERS: peter-evans
           PULL_REQUEST_BRANCH: dep-updates
           BRANCH_SUFFIX: none
 ```
@@ -63,7 +66,7 @@ jobs:
   fresh_go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@master
         with:
           ref: master
       - uses: jmhodges/ensure-latest-go@v1.0.2
@@ -81,40 +84,6 @@ jobs:
           PULL_REQUEST_BRANCH: ensure-latest-go/patch-${{ steps.ensure_go.outputs.go_version }}
 ```
 
-### Spider and download a website
-
-```yml
-name: Download Website
-on:
-  schedule:
-    - cron:  '0 10 * * *'
-jobs:
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - name: Download website
-        run: |
-          wget \
-            --recursive \
-            --level=2 \
-            --wait=1 \
-            --no-clobber \
-            --page-requisites \
-            --html-extension \
-            --convert-links \
-            --domains quotes.toscrape.com \
-            http://quotes.toscrape.com/
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMIT_MESSAGE: update local website copy
-          PULL_REQUEST_TITLE: Automated Updates to Local Website Copy
-          PULL_REQUEST_BODY: This is an auto-generated PR with website updates.
-          PULL_REQUEST_BRANCH: website-updates
-          BRANCH_SUFFIX: none
-```
 
 ## Use case: Create a pull request to modify/fix pull requests
 
@@ -144,7 +113,7 @@ jobs:
         id: autopep8
         uses: peter-evans/autopep8@v1.1.0
         with:
-          args: --exit-code --recursive --in-place --aggressive --aggressive .
+          args: --exit-code --recursive --in-place --aggressive .
       - name: Set autopep8 branch name
         id: vars
         run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
@@ -154,9 +123,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: autopep8 action fixes
+          COMMIT_AUTHOR_EMAIL: peter-evans@users.noreply.github.com
+          COMMIT_AUTHOR_NAME: Peter Evans
           PULL_REQUEST_TITLE: Fixes by autopep8 action
           PULL_REQUEST_BODY: This is an auto-generated PR with fixes by autopep8.
           PULL_REQUEST_LABELS: autopep8, automated pr
+          PULL_REQUEST_REVIEWERS: peter-evans
           PULL_REQUEST_BRANCH: ${{ steps.vars.outputs.branch-name }}
           BRANCH_SUFFIX: none
       - name: Fail if autopep8 made changes
