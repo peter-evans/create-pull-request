@@ -187,7 +187,7 @@ jobs:
 
 The following examples show how configuration for the action can be dynamically defined in a previous workflow step.
 
-The recommended method is to use `set-output`. Note that the step where output variables are defined must have an id.
+The recommended method is to use [`set-output`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-output-parameter-set-output). Note that the step where output variables are defined must have an id.
 
 ```yml
       - name: Set output variables
