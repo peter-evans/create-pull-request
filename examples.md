@@ -37,7 +37,7 @@ jobs:
           ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: update dependencies
@@ -71,7 +71,7 @@ jobs:
       - run: echo "##[set-output name=pr_title;]update to latest Go release ${{ steps.ensure_go.outputs.go_version}}"
         id: pr_title_maker
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           PULL_REQUEST_TITLE: ${{ steps.pr_title_maker.outputs.pr_title }}
           PULL_REQUEST_BODY: Auto-generated pull request created by the GitHub Actions [create-pull-request](https://github.com/peter-evans/create-pull-request) and [ensure-latest-go](https://github.com/jmhodges/ensure-latest-go).
@@ -106,7 +106,7 @@ jobs:
             --domains quotes.toscrape.com \
             http://quotes.toscrape.com/
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: update local website copy
@@ -150,7 +150,7 @@ jobs:
         run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_MESSAGE: autopep8 action fixes
@@ -197,7 +197,7 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
           echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PULL_REQUEST_TITLE: ${{ steps.vars.outputs.pr_title }}
@@ -213,7 +213,7 @@ Since the action reads environment variables from the system, it's technically n
           echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.6.0
+        uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
