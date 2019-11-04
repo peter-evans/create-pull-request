@@ -8,6 +8,7 @@ import sys
 import time
 from git import Repo
 from github import Github
+from github import GithubException
 
 
 def get_github_event(github_event_path):
@@ -81,7 +82,7 @@ def cs_string_to_list(str):
     return list(filter(None, l))
 
 
-def process_event(github_token, github_repository, repo, branch, base, remote_exists):
+def process_event(github_token, github_repository, repo, branch, base):
     # Fetch optional environment variables with default values
     commit_message = os.getenv(
         'COMMIT_MESSAGE',
@@ -104,21 +105,29 @@ def process_event(github_token, github_repository, repo, branch, base, remote_ex
     push_result = push_changes(repo.git, branch, commit_message)
     print(push_result)
 
-    # If the remote existed then we are using fixed branch strategy.
-    # A PR should already exist and we can finish here.
-    if remote_exists:
-        print("Updated pull request branch %s." % branch)
-        sys.exit()
-
     # Create the pull request
-    print("Creating a request to pull %s into %s." % (branch, base))
     github_repo = Github(github_token).get_repo(github_repository)
-    pull_request = github_repo.create_pull(
-        title=title,
-        body=body,
-        base=base,
-        head=branch)
-    print("Created pull request %d." % pull_request.number)
+    try:
+        pull_request = github_repo.create_pull(
+            title=title,
+            body=body,
+            base=base,
+            head=branch)
+        print("Created pull request #%d (%s => %s)" %
+            (pull_request.number, branch, base))
+    except GithubException as e:
+        if e.status == 422:
+            pull_request = github_repo.get_pulls(
+                state='open', 
+                base=base,
+                head=branch)[1]
+            print("Updated pull request #%d (%s => %s)" %
+                (pull_request.number, branch, base))
+        else:
+            print(str(e))
+            sys.exit(1)
+
+    # Set the output variable
     os.system(
         'echo ::set-env name=PULL_REQUEST_NUMBER::%d' %
         pull_request.number)
@@ -135,11 +144,18 @@ def process_event(github_token, github_repository, repo, branch, base, remote_ex
         milestone = github_repo.get_milestone(int(pull_request_milestone))
         pull_request.as_issue().edit(milestone=milestone)
 
-    # Set pull request reviewers and team reviewers
+    # Set pull request reviewers
     if pull_request_reviewers is not None:
         print("Requesting reviewers")
-        pull_request.create_review_request(
-            reviewers=cs_string_to_list(pull_request_reviewers))
+        try:
+            pull_request.create_review_request(
+                reviewers=cs_string_to_list(pull_request_reviewers))
+        except GithubException as e:
+            # Likely caused by "Review cannot be requested from pull request author."
+            if e.status == 422:
+                print("Requesting reviewers failed - %s" % e.data["message"])
+
+    # Set pull request team reviewers
     if pull_request_team_reviewers is not None:
         print("Requesting team reviewers")
         pull_request.create_review_request(
@@ -238,7 +254,6 @@ if repo.is_dirty() or len(repo.untracked_files) > 0:
         github_repository,
         repo,
         branch,
-        base,
-        remote_exists)
+        base)
 else:
     print("Repository has no modified or untracked files. Skipping.")
