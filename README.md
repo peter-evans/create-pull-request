@@ -126,7 +126,7 @@ jobs:
           PULL_REQUEST_BRANCH: example-patches
           BRANCH_SUFFIX: short-commit-hash
       - name: Check output environment variable
-        run: echo "Pull Request Number - $PULL_REQUEST_NUMBER"
+        run: echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
 ```
 
 This reference configuration will create pull requests that look like this:
