@@ -204,7 +204,7 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
           PULL_REQUEST_BODY: ${{ steps.vars.outputs.pr_body }}
 ```
 
-Since the action reads environment variables from the system, it's technically not necessary to explicitly pass them as long as they exist in the environment. So the following method using `set-env` *also* works, but explicitly passing the configuration parameters using the previous method is perferred for its clarity.
+Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env) can be used to create environment variables.
 
 ```yml
       - name: Set environment variables
@@ -216,4 +216,6 @@ Since the action reads environment variables from the system, it's technically n
         uses: peter-evans/create-pull-request@v1.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_TITLE: ${{ env.PULL_REQUEST_TITLE }}
+          PULL_REQUEST_BODY: ${{ env.PULL_REQUEST_BODY }}
 ```
