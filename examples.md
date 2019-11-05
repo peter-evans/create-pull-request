@@ -4,6 +4,7 @@
   - [Update NPM dependencies](#update-npm-dependencies)
   - [Keep Go up to date](#keep-go-up-to-date)
   - [Spider and download a website](#spider-and-download-a-website)
+- [Use case: Create a pull request to update X by calling the GitHub API](#use-case-create-a-pull-request-to-update-x-by-calling-the-github-api)
 - [Use case: Create a pull request to modify/fix pull requests](#use-case-create-a-pull-request-to-modifyfix-pull-requests)
   - [autopep8](#autopep8)
 - [Misc workflow tips](#misc-workflow-tips)
@@ -115,6 +116,33 @@ jobs:
           PULL_REQUEST_BRANCH: website-updates
           BRANCH_SUFFIX: none
 ```
+
+## Use case: Create a pull request to update X by calling the GitHub API
+
+You can use the GitHub API to trigger a webhook event called [`repository_dispatch`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/events-that-trigger-workflows#external-events-repository_dispatch) when you want to trigger a workflow for activity that happens outside of GitHub.
+This pattern will work well for updating any kind of static content from an external source.
+
+You can modify any of the examples in the previous section to work in this fashion.
+
+1. Set the workflow to execute `on: repository_dispatch`.
+    ```
+    on:
+      repository_dispatch:
+        types: [create-pull-request]
+    ```
+
+2. To trigger the workflow call the GitHub API as follows.
+    - `[username]` is a GitHub username
+    - `[token]` is a `repo` scoped [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line)
+    - `[repository]` is the name of the repository the workflow resides in.
+  
+      ```
+      curl -XPOST -u "[username]:[token]" \
+        -H "Accept: application/vnd.github.everest-preview+json" \
+        -H "Content-Type: application/json" \
+        https://api.github.com/repos/[username]/[repository]/dispatches \
+        --data '{"event_type": "create-pull-request"}'
+      ```
 
 ## Use case: Create a pull request to modify/fix pull requests
 
