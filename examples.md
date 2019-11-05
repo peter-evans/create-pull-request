@@ -120,6 +120,8 @@ jobs:
 
 This is a pattern that works well for any automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
+Note that due to [limitations on forked repositories](https://help.github.com/en/github/automating-your-workflow-with-github-actions/virtual-environments-for-github-actions#token-permissions) workflows for this use case do not work for pull requests raised from forks.
+
 ### autopep8
 
 The following is an example workflow for a use case where [autopep8 action](https://github.com/peter-evans/autopep8) runs as both a check on pull requests and raises a further pull request to apply code fixes.
@@ -136,7 +138,8 @@ name: autopep8
 on: pull_request
 jobs:
   autopep8:
-    if: startsWith(github.head_ref, 'autopep8-patches') == false
+    # Check if the PR is not raised by this workflow and is not from a fork
+    if: startsWith(github.head_ref, 'autopep8-patches') == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
