@@ -1,9 +1,38 @@
 name: 'Create Pull Request'
-author: 'Peter Evans'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
+inputs:
+  token:
+    description: 'The GitHub authentication token'
+    required: true
+  commit-message:
+    description: 'The message to use when committing changes.'
+  author-email:
+    description: 'The email address of the commit author.'
+  author-name:
+    description: 'The name of the commit author.'
+  title:
+    description: 'The title of the pull request.'
+  body:
+    description: 'The body of the pull request.'
+  labels:
+    description: 'A comma separated list of labels.'
+  assignees:
+    description: 'A comma separated list of assignees (GitHub usernames).'
+  reviewers:
+    description: 'A comma separated list of reviewers (GitHub usernames) to request a review from.'
+  team-reviewers:
+    description: 'A comma separated list of GitHub teams to request a review from.'
+  milestone:
+    description: 'The number of the milestone to associate this pull request with.'
+  branch:
+    description: 'The pull request branch name.'
+  base:
+    description: 'Overrides the base branch.'
+  branch-suffix:
+    description: 'The branch suffix type.'
 runs:
-  using: 'docker'
-  image: 'docker://peterevans/create-pull-request:1.6.1'
+  using: 'node12'
+  main: 'dist/index.js'
 branding:
   icon: 'git-pull-request'  
   color: 'gray-dark'
