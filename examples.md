@@ -128,7 +128,8 @@ This pattern will work well for updating any kind of static content from an exte
 You can modify any of the examples in the previous section to work in this fashion.
 
 Set the workflow to execute `on: repository_dispatch`.
-```
+
+```yml
 on:
   repository_dispatch:
     types: [create-pull-request]
@@ -154,7 +155,7 @@ curl -XPOST -u "[username]:[token]" \
 
 An `on: repository_dispatch` workflow can be triggered from another workflow with [repository-dispatch](https://github.com/peter-evans/repository-dispatch) action.
 
-```
+```yml
 - name: Repository Dispatch
   uses: peter-evans/repository-dispatch@v1.0.0
   with:
