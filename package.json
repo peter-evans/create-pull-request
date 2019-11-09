@@ -1,0 +1,28 @@
+{
+  "name": "create-pull-request",
+  "version": "1.7.0",
+  "description": "Creates a pull request for changes to your repository in the actions workspace",
+  "main": "index.js",
+  "scripts": {
+    "build": "ncc build index.js -o dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peter-evans/create-pull-request.git"
+  },
+  "keywords": [],
+  "author": "Peter Evans",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/peter-evans/create-pull-request/issues"
+  },
+  "homepage": "https://github.com/peter-evans/create-pull-request",
+  "dependencies": {
+    "@actions/core": "^1.1.1",
+    "@actions/exec": "^1.0.1",
+    "@actions/tool-cache": "^1.1.2"
+  },
+  "devDependencies": {
+    "@zeit/ncc": "^0.20.5"
+  }
+}
