@@ -127,9 +127,12 @@ def process_event(github_token, github_repository, repo, branch, base):
             print(str(e))
             sys.exit(1)
 
-    # Set the output variable
+    # Set the output variables
     os.system(
         'echo ::set-env name=PULL_REQUEST_NUMBER::%d' %
+        pull_request.number)
+    os.system(
+        'echo ::set-output name=pr_number::%d' %
         pull_request.number)
 
     # Set labels, assignees and milestone
