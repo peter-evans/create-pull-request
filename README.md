@@ -19,7 +19,7 @@ See [examples](examples.md) for detailed use cases.
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.0
+        uses: peter-evans/create-pull-request@v1.7.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -55,7 +55,7 @@ Note that in order to read the step output the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v1.7.0
+        uses: peter-evans/create-pull-request@v1.7.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check outputs
@@ -105,7 +105,7 @@ jobs:
         run: date +%s > report.txt
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v1.7.0
+        uses: peter-evans/create-pull-request@v1.7.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file

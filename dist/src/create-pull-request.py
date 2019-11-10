@@ -120,7 +120,7 @@ def process_event(github_token, github_repository, repo, branch, base):
             pull_request = github_repo.get_pulls(
                 state='open', 
                 base=base,
-                head=branch)[1]
+                head=branch)[0]
             print("Updated pull request #%d (%s => %s)" %
                 (pull_request.number, branch, base))
         else:
