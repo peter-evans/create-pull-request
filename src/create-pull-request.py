@@ -117,10 +117,13 @@ def process_event(github_token, github_repository, repo, branch, base):
             (pull_request.number, branch, base))
     except GithubException as e:
         if e.status == 422:
+            # Format the branch name
+            head_branch = "%s:%s" % (github_repository.split("/")[0], branch)
+            # Get the pull request
             pull_request = github_repo.get_pulls(
                 state='open', 
                 base=base,
-                head=branch)[0]
+                head=head_branch)[0]
             print("Updated pull request #%d (%s => %s)" %
                 (pull_request.number, branch, base))
         else:
