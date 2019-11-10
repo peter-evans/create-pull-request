@@ -30,6 +30,9 @@ inputs:
     description: 'Overrides the base branch.'
   branch-suffix:
     description: 'The branch suffix type.'
+outputs:
+  pr_number:
+    description: 'The pull request number'
 runs:
   using: 'node12'
   main: 'dist/index.js'
