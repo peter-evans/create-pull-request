@@ -336,37 +336,39 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
 
 ### Debugging GitHub Actions
 
-**Step Debug Logging** : To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
+#### Step Debug Logging
 
-**Output Various Contexts**
+To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
+
+#### Output Various Contexts
 
 ```yml
-      - name: Dump event JSON
-        env:
-          EVENT_JSON_FILENAME: ${{ github.event_path }}
-        run: cat "$EVENT_JSON_FILENAME"
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-      - name: Dump job context
-        env:
-          JOB_CONTEXT: ${{ toJson(job) }}
-        run: echo "$JOB_CONTEXT"
-      - name: Dump steps context
-        env:
-          STEPS_CONTEXT: ${{ toJson(steps) }}
-        run: echo "$STEPS_CONTEXT"
-      - name: Dump runner context
-        env:
-          RUNNER_CONTEXT: ${{ toJson(runner) }}
-        run: echo "$RUNNER_CONTEXT"
-      - name: Dump strategy context
-        env:
-          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-        run: echo "$STRATEGY_CONTEXT"
-      - name: Dump matrix context
-        env:
-          MATRIX_CONTEXT: ${{ toJson(matrix) }}
-        run: echo "$MATRIX_CONTEXT"
+- name: Dump event JSON
+  env:
+    EVENT_JSON_FILENAME: ${{ github.event_path }}
+  run: cat "$EVENT_JSON_FILENAME"
+- name: Dump GitHub context
+  env:
+    GITHUB_CONTEXT: ${{ toJson(github) }}
+  run: echo "$GITHUB_CONTEXT"
+- name: Dump job context
+  env:
+    JOB_CONTEXT: ${{ toJson(job) }}
+  run: echo "$JOB_CONTEXT"
+- name: Dump steps context
+  env:
+    STEPS_CONTEXT: ${{ toJson(steps) }}
+  run: echo "$STEPS_CONTEXT"
+- name: Dump runner context
+  env:
+    RUNNER_CONTEXT: ${{ toJson(runner) }}
+  run: echo "$RUNNER_CONTEXT"
+- name: Dump strategy context
+  env:
+    STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+  run: echo "$STRATEGY_CONTEXT"
+- name: Dump matrix context
+  env:
+    MATRIX_CONTEXT: ${{ toJson(matrix) }}
+  run: echo "$MATRIX_CONTEXT"
 ```
