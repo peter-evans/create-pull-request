@@ -7,8 +7,7 @@ import string
 import sys
 import time
 from git import Repo
-from github import Github
-from github import GithubException
+from github import Github, GithubException
 
 
 def get_github_event(github_event_path):
@@ -46,6 +45,7 @@ def get_author_default(event_name, event_data):
 
 
 def set_git_config(git, email, name):
+    print("Configuring git user as '%s <%s>'" % (name, email))
     git.config('--global', 'user.email', '"%s"' % email)
     git.config('--global', 'user.name', '"%s"' % name)
 
@@ -58,6 +58,7 @@ def set_git_remote_url(git, token, github_repository):
 
 def checkout_branch(git, remote_exists, branch):
     if remote_exists:
+        print("Checking out branch '%s'" % branch)
         git.stash('--include-untracked')
         git.checkout(branch)
         try:
@@ -66,6 +67,7 @@ def checkout_branch(git, remote_exists, branch):
             git.checkout('--theirs', '.')
             git.reset()
     else:
+        print("Creating new branch '%s'" % branch)
         git.checkout('HEAD', b=branch)
 
 
@@ -101,7 +103,7 @@ def process_event(github_token, github_repository, repo, branch, base):
     pull_request_team_reviewers = os.environ.get('PULL_REQUEST_TEAM_REVIEWERS')
 
     # Push the local changes to the remote branch
-    print("Pushing changes.")
+    print("Pushing changes to 'origin/%s'" % branch)
     push_result = push_changes(repo.git, branch, commit_message)
     print(push_result)
 
@@ -114,18 +116,18 @@ def process_event(github_token, github_repository, repo, branch, base):
             base=base,
             head=branch)
         print("Created pull request #%d (%s => %s)" %
-            (pull_request.number, branch, base))
+              (pull_request.number, branch, base))
     except GithubException as e:
         if e.status == 422:
             # Format the branch name
             head_branch = "%s:%s" % (github_repository.split("/")[0], branch)
             # Get the pull request
             pull_request = github_repo.get_pulls(
-                state='open', 
+                state='open',
                 base=base,
                 head=head_branch)[0]
             print("Updated pull request #%d (%s => %s)" %
-                (pull_request.number, branch, base))
+                  (pull_request.number, branch, base))
         else:
             print(str(e))
             sys.exit(1)
@@ -140,30 +142,31 @@ def process_event(github_token, github_repository, repo, branch, base):
 
     # Set labels, assignees and milestone
     if pull_request_labels is not None:
-        print("Applying labels")
+        print("Applying labels '%s'" % pull_request_labels)
         pull_request.as_issue().edit(labels=cs_string_to_list(pull_request_labels))
     if pull_request_assignees is not None:
-        print("Applying assignees")
+        print("Applying assignees '%s'" % pull_request_assignees)
         pull_request.as_issue().edit(assignees=cs_string_to_list(pull_request_assignees))
     if pull_request_milestone is not None:
-        print("Applying milestone")
+        print("Applying milestone '%s'" % pull_request_milestone)
         milestone = github_repo.get_milestone(int(pull_request_milestone))
         pull_request.as_issue().edit(milestone=milestone)
 
     # Set pull request reviewers
     if pull_request_reviewers is not None:
-        print("Requesting reviewers")
+        print("Requesting reviewers '%s'" % pull_request_reviewers)
         try:
             pull_request.create_review_request(
                 reviewers=cs_string_to_list(pull_request_reviewers))
         except GithubException as e:
-            # Likely caused by "Review cannot be requested from pull request author."
+            # Likely caused by "Review cannot be requested from pull request
+            # author."
             if e.status == 422:
                 print("Requesting reviewers failed - %s" % e.data["message"])
 
     # Set pull request team reviewers
     if pull_request_team_reviewers is not None:
-        print("Requesting team reviewers")
+        print("Requesting team reviewers '%s'" % pull_request_team_reviewers)
         pull_request.create_review_request(
             team_reviewers=cs_string_to_list(pull_request_team_reviewers))
 
@@ -198,16 +201,29 @@ base_override = os.environ.get('PULL_REQUEST_BASE')
 # Set the base branch
 if base_override is not None:
     base = base_override
+    print("Overriding the base with branch '%s'" % base)
     checkout_branch(repo.git, True, base)
 elif github_ref.startswith('refs/pull/'):
+    # Check the PR is not raised from a fork of the repository
+    head_repo = "{pull_request[head][repo][full_name]}".format(**event_data)
+    if head_repo != github_repository:
+        print("::warning::Pull request was raised from a fork of the repository. " +
+        "Limitations on forked repositories have been imposed by GitHub Actions. " +
+        "Unable to continue. Exiting.")
+        sys.exit()
     # Switch to the merging branch instead of the merge commit
     base = os.environ['GITHUB_HEAD_REF']
-    repo.git.checkout(base)
+    print(
+        "Removing the merge commit by switching to the pull request head branch '%s'" %
+        base)
+    checkout_branch(repo.git, True, base)
 else:
     base = github_ref[11:]
+    print("Currently checked out base assumed to be branch '%s'" % base)
 
 # Skip if the current branch is a PR branch created by this action.
-# This may occur when using a PAT instead of GITHUB_TOKEN.
+# This may occur when using a PAT instead of GITHUB_TOKEN because
+# a PAT allows workflow actions to trigger further events.
 if base.startswith(branch_prefix):
     print("Branch '%s' was created by this action. Skipping." % base)
     sys.exit()
@@ -232,10 +248,15 @@ else:
         branch_suffix)
     sys.exit(1)
 
-# Check if the remote branch exists
-remote_exists = remote_branch_exists(repo, branch)
+# Output head branch
+print("Pull request branch to create/update set to '%s'" % branch)
 
+# Check if the determined head branch exists as a remote
+remote_exists = remote_branch_exists(repo, branch)
 if remote_exists:
+    print(
+        "Pull request branch '%s' already exists as remote branch 'origin/%s'" %
+        (branch, branch))
     if branch_suffix == 'short-commit-hash':
         # A remote branch already exists for the HEAD commit
         print(
@@ -243,9 +264,9 @@ if remote_exists:
             branch)
         sys.exit()
     elif branch_suffix in ['timestamp', 'random']:
-        # Generated branch name clash with an existing branch
+        # Generated branch name collision with an existing branch
         print(
-            "Pull request branch '%s' already exists. Please re-run." %
+            "Pull request branch '%s' collided with a branch of the same name. Please re-run." %
             branch)
         sys.exit(1)
 
@@ -253,8 +274,15 @@ if remote_exists:
 checkout_branch(repo.git, remote_exists, branch)
 
 # Check if there are changes to pull request
+if remote_exists:
+    print("Checking for local working copy changes indicating a " +
+    "diff with existing pull request branch 'origin/%s'" % branch)
+else:
+    print("Checking for local working copy changes indicating a " +
+    "diff with base 'origin/%s'" % base)
+
 if repo.is_dirty() or len(repo.untracked_files) > 0:
-    print("Repository has modified or untracked files.")
+    print("Modified or untracked files detected.")
     process_event(
         github_token,
         github_repository,
@@ -262,4 +290,4 @@ if repo.is_dirty() or len(repo.untracked_files) > 0:
         branch,
         base)
 else:
-    print("Repository has no modified or untracked files. Skipping.")
+    print("No modified or untracked files detected. Skipping.")
