@@ -19,10 +19,12 @@ See [examples](examples.md) for detailed use cases.
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v1.x.x`
 
 **Note**: If you want pull requests created by this action to trigger an `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`.
 See [this issue](https://github.com/peter-evans/create-pull-request/issues/48) for further details.
@@ -55,7 +57,7 @@ Note that in order to read the step output the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check outputs
@@ -105,7 +107,7 @@ jobs:
         run: date +%s > report.txt
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file

@@ -42,7 +42,7 @@ jobs:
           ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update dependencies
@@ -76,7 +76,7 @@ jobs:
       - run: echo "##[set-output name=pr_title;]update to latest Go release ${{ steps.ensure_go.outputs.go_version}}"
         id: pr_title_maker
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ steps.pr_title_maker.outputs.pr_title }}
@@ -128,7 +128,7 @@ jobs:
           # Update current release
           echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
@@ -172,7 +172,7 @@ jobs:
             --domains quotes.toscrape.com \
             http://quotes.toscrape.com/
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update local website copy
@@ -264,7 +264,7 @@ jobs:
         run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: autopep8 action fixes
@@ -311,7 +311,7 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
           echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ steps.vars.outputs.pr_title }}
@@ -327,7 +327,7 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
           echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1.7.2
+        uses: peter-evans/create-pull-request@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ env.PULL_REQUEST_TITLE }}
