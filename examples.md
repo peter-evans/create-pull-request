@@ -231,7 +231,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 This is a pattern that works well for any automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
-Note that due to [limitations on forked repositories](https://help.github.com/en/github/automating-your-workflow-with-github-actions/virtual-environments-for-github-actions#token-permissions) workflows for this use case do not work for pull requests raised from forks.
+Note that due to [limitations on forked repositories](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token) workflows for this use case do not work for pull requests raised from forks.
 
 ### autopep8
 
@@ -338,7 +338,7 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
 
 #### Step Debug Logging
 
-To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
+To enable [step debug logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-step-debug-logging) set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
 
 #### Output Various Contexts
 
