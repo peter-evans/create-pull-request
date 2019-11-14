@@ -336,39 +336,42 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
 
 ### Debugging GitHub Actions
 
+#### Runner Diagnostic Logging
+
+[Runner diagnostic logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-runner-diagnostic-logging) provides additional log files that contain information about how a runner is executing an action.
+To enable runner diagnostic logging, set the secret `ACTIONS_RUNNER_DEBUG` to `true` in the repository that contains the workflow.
+
 #### Step Debug Logging
 
-To enable [step debug logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-step-debug-logging) set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
+[Step debug logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-step-debug-logging) increases the verbosity of a job's logs during and after a job's execution.
+To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
 
 #### Output Various Contexts
 
 ```yml
-- name: Dump event JSON
-  env:
-    EVENT_JSON_FILENAME: ${{ github.event_path }}
-  run: cat "$EVENT_JSON_FILENAME"
-- name: Dump GitHub context
-  env:
-    GITHUB_CONTEXT: ${{ toJson(github) }}
-  run: echo "$GITHUB_CONTEXT"
-- name: Dump job context
-  env:
-    JOB_CONTEXT: ${{ toJson(job) }}
-  run: echo "$JOB_CONTEXT"
-- name: Dump steps context
-  env:
-    STEPS_CONTEXT: ${{ toJson(steps) }}
-  run: echo "$STEPS_CONTEXT"
-- name: Dump runner context
-  env:
-    RUNNER_CONTEXT: ${{ toJson(runner) }}
-  run: echo "$RUNNER_CONTEXT"
-- name: Dump strategy context
-  env:
-    STRATEGY_CONTEXT: ${{ toJson(strategy) }}
-  run: echo "$STRATEGY_CONTEXT"
-- name: Dump matrix context
-  env:
-    MATRIX_CONTEXT: ${{ toJson(matrix) }}
-  run: echo "$MATRIX_CONTEXT"
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - name: Dump job context
+        env:
+          JOB_CONTEXT: ${{ toJson(job) }}
+        run: echo "$JOB_CONTEXT"
+      - name: Dump steps context
+        env:
+          STEPS_CONTEXT: ${{ toJson(steps) }}
+        run: echo "$STEPS_CONTEXT"
+      - name: Dump runner context
+        env:
+          RUNNER_CONTEXT: ${{ toJson(runner) }}
+        run: echo "$RUNNER_CONTEXT"
+      - name: Dump strategy context
+        env:
+          STRATEGY_CONTEXT: ${{ toJson(strategy) }}
+        run: echo "$STRATEGY_CONTEXT"
+      - name: Dump matrix context
+        env:
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
+        run: echo "$MATRIX_CONTEXT"
 ```
