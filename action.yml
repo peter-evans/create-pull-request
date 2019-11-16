@@ -27,7 +27,7 @@ inputs:
   branch:
     description: 'The pull request branch name.'
   base:
-    description: 'Overrides the base branch.'
+    description: 'Sets the pull request base branch.'
   branch-suffix:
     description: 'The branch suffix type.'
 outputs:
