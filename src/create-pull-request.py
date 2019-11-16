@@ -217,9 +217,13 @@ elif github_ref.startswith('refs/pull/'):
         "Removing the merge commit by switching to the pull request head branch '%s'" %
         base)
     checkout_branch(repo.git, True, base)
-else:
+elif github_ref.startswith('refs/heads/'):
     base = github_ref[11:]
     print("Currently checked out base assumed to be branch '%s'" % base)
+else:
+    print(f"::warning::Currently checked out ref '{github_ref}' is not a valid base for a pull request. " +
+    "Unable to continue. Exiting.")
+    sys.exit()
 
 # Skip if the current branch is a PR branch created by this action.
 # This may occur when using a PAT instead of GITHUB_TOKEN because
