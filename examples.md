@@ -282,8 +282,16 @@ jobs:
 
 ### Filtering push events
 
-For workflows using `on: push` you may want to ignore push events for tags and remotes.
-These can be filtered out with the following `if` condition.
+For workflows using `on: push` you may want to ignore push events for tags and only execute for branches. Specifying `branches` causes only events on branches to trigger the workflow. The `'**'` wildcard will match any branch name.
+
+```yml
+on:
+  push:
+    branches:
+      - '**' 
+```
+
+If you have a workflow that contains jobs to handle push events on branches as well as tags, you can make sure that the job where you use `create-pull-request` action only executes when `github.ref` is a branch by using an `if` condition as follows.
 
 ```yml
 name: Create Pull Request
@@ -291,6 +299,12 @@ on: push
 jobs:
   createPullRequest:
     if: startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      ...
+
+  someOtherJob:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
