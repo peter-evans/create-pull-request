@@ -294,7 +294,6 @@ on:
 If you have a workflow that contains jobs to handle push events on branches as well as tags, you can make sure that the job where you use `create-pull-request` action only executes when `github.ref` is a branch by using an `if` condition as follows.
 
 ```yml
-name: Create Pull Request
 on: push
 jobs:
   createPullRequest:
