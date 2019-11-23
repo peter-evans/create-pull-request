@@ -1,10 +1,10 @@
 {
   "name": "create-pull-request",
-  "version": "1.7.4",
+  "version": "1.8.0",
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "index.js",
   "scripts": {
-    "build": "ncc build index.js -o dist"
+    "package": "ncc build index.js -o dist"
   },
   "repository": {
     "type": "git",
