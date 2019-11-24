@@ -45,6 +45,8 @@ These inputs are *all optional*. If not set, sensible default values will be use
 | `reviewers` | A comma separated list of reviewers (GitHub usernames) to request a review from. | none |
 | `team-reviewers` | A comma separated list of GitHub teams to request a review from. | none |
 | `milestone` | The number of the milestone to associate this pull request with. | none |
+| `project` | The name of the project for which a card should be created. Requires `project-column`. | none |
+| `project-column` | The name of the project column under which a card should be created. Requires `project`. | none |
 | `branch` | The branch name. See **Branch naming** below for details. | `create-pull-request/patch` |
 | `base` | Sets the pull request base branch. | Defaults to the currently checked out branch, `GITHUB_REF`. For `pull_request` events, `GITHUB_HEAD_REF` |
 | `branch-suffix` | The branch suffix type. Valid values are `short-commit-hash`, `timestamp`, `random` and `none`. See **Branch naming** below for details. | `short-commit-hash` |
@@ -124,6 +126,8 @@ jobs:
           assignees: peter-evans
           reviewers: peter-evans
           milestone: 1
+          project: Example Project
+          project-column: To do
           branch: example-patches
           branch-suffix: short-commit-hash
       - name: Check outputs
