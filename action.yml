@@ -24,6 +24,10 @@ inputs:
     description: 'A comma separated list of GitHub teams to request a review from.'
   milestone:
     description: 'The number of the milestone to associate this pull request with.'
+  project:
+    description: 'The name of the project for which a card should be created.'
+  project-column:
+    description: 'The name of the project column under which a card should be created.'
   branch:
     description: 'The pull request branch name.'
   base:

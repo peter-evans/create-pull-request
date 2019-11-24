@@ -36,6 +36,8 @@ jobs:
           assignees: peter-evans
           reviewers: peter-evans
           milestone: 1
+          project: Example Project
+          project-column: To do
           branch: example-patches
           branch-suffix: random
       - name: Check outputs

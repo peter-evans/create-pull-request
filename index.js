@@ -32,6 +32,8 @@ async function run() {
       reviewers: core.getInput("reviewers"),
       teamReviewers: core.getInput("team-reviewers"),
       milestone: core.getInput("milestone"),
+      project: core.getInput("project"),
+      projectColumn: core.getInput("project-column"),
       branch: core.getInput("branch"),
       base: core.getInput("base"),
       branchSuffix: core.getInput("branch-suffix"),
@@ -51,6 +53,8 @@ async function run() {
     if (inputs.reviewers) process.env.PULL_REQUEST_REVIEWERS = inputs.reviewers;
     if (inputs.teamReviewers) process.env.PULL_REQUEST_TEAM_REVIEWERS = inputs.teamReviewers;
     if (inputs.milestone) process.env.PULL_REQUEST_MILESTONE = inputs.milestone;
+    if (inputs.project) process.env.PROJECT_NAME = inputs.project;
+    if (inputs.projectColumn) process.env.PROJECT_COLUMN_NAME = inputs.projectColumn;
     if (inputs.branch) process.env.PULL_REQUEST_BRANCH = inputs.branch;
     if (inputs.base) process.env.PULL_REQUEST_BASE = inputs.base;
     if (inputs.branchSuffix) process.env.BRANCH_SUFFIX = inputs.branchSuffix;
