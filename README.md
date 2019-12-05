@@ -85,7 +85,7 @@ The branch name is defined by the input `branch` and defaults to `create-pull-re
 
 #### Strategy B - Create and update a pull request branch
 
-To use this strategy, set `branch-suffix` to the value `none`. The input `branch` defaults to `create-pull-request/patch`. Commits will be made to this branch and a pull request created. Any subsequent changes will be committed to the *same* branch and reflected in the existing pull request.
+To use this strategy, set `branch-suffix` to the value `none`. The input `branch` defaults to `create-pull-request/patch`. Commits will be made to this branch and a pull request created. Any subsequent changes will be committed to the *same* branch and reflected in the open pull request. If the pull request is merged or closed a new one will be created.
 
 ### Ignoring files
 
