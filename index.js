@@ -23,8 +23,10 @@ async function run() {
     const inputs = {
       token: core.getInput("token"),
       commitMessage: core.getInput("commit-message"),
-      commitAuthorEmail: core.getInput("author-email"),
       commitAuthorName: core.getInput("author-name"),
+      commitAuthorEmail: core.getInput("author-email"),
+      committerName: core.getInput("committer-name"),
+      committerEmail: core.getInput("committer-email"),
       title: core.getInput("title"),
       body: core.getInput("body"),
       labels: core.getInput("labels"),
@@ -44,8 +46,10 @@ async function run() {
     // Set environment variables from inputs.
     if (inputs.token) process.env.GITHUB_TOKEN = inputs.token;
     if (inputs.commitMessage) process.env.COMMIT_MESSAGE = inputs.commitMessage;
-    if (inputs.commitAuthorEmail) process.env.COMMIT_AUTHOR_EMAIL = inputs.commitAuthorEmail;
     if (inputs.commitAuthorName) process.env.COMMIT_AUTHOR_NAME = inputs.commitAuthorName;
+    if (inputs.commitAuthorEmail) process.env.COMMIT_AUTHOR_EMAIL = inputs.commitAuthorEmail;
+    if (inputs.committerName) process.env.COMMITTER_NAME = inputs.committerName;
+    if (inputs.committerEmail) process.env.COMMITTER_EMAIL = inputs.committerEmail;
     if (inputs.title) process.env.PULL_REQUEST_TITLE = inputs.title;
     if (inputs.body) process.env.PULL_REQUEST_BODY = inputs.body;
     if (inputs.labels) process.env.PULL_REQUEST_LABELS = inputs.labels;
