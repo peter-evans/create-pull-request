@@ -44,12 +44,6 @@ def get_author_default(event_name, event_data):
     return email, name
 
 
-def set_git_config(git, email, name):
-    print("Configuring git user as '%s <%s>'" % (name, email))
-    git.config("--global", "user.email", '"%s"' % email)
-    git.config("--global", "user.name", '"%s"' % name)
-
-
 def set_git_remote_url(git, token, github_repository):
     git.remote(
         "set-url",
@@ -229,15 +223,26 @@ event_name = os.environ["GITHUB_EVENT_NAME"]
 # Get the JSON event data
 event_data = get_github_event(os.environ["GITHUB_EVENT_PATH"])
 
-# Set the repo to the working directory
-repo = Repo(os.getcwd())
 # Get the default for author email and name
 author_email, author_name = get_author_default(event_name, event_data)
-# Set commit author overrides
-author_email = os.getenv("COMMIT_AUTHOR_EMAIL", author_email)
+# Set author name and email overrides
 author_name = os.getenv("COMMIT_AUTHOR_NAME", author_name)
-# Set git configuration
-set_git_config(repo.git, author_email, author_name)
+author_email = os.getenv("COMMIT_AUTHOR_EMAIL", author_email)
+# Set committer name and email overrides
+committer_name = os.getenv("COMMITTER_NAME", author_name)
+committer_email = os.getenv("COMMITTER_EMAIL", author_email)
+
+# Set the repo to the working directory
+repo = Repo(os.getcwd())
+# Set git environment. This will not persist after the action completes.
+print("Configuring git author as '%s <%s>'" % (author_name, author_email))
+print("Configuring git committer as '%s <%s>'" % (committer_name, committer_email))
+repo.git.update_environment(
+    GIT_AUTHOR_NAME=author_name,
+    GIT_AUTHOR_EMAIL=author_email,
+    GIT_COMMITTER_NAME=committer_name,
+    GIT_COMMITTER_EMAIL=committer_email,
+)
 # Update URL for the 'origin' remote
 set_git_remote_url(repo.git, github_token, github_repository)
 

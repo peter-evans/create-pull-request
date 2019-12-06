@@ -6,10 +6,14 @@ inputs:
     required: true
   commit-message:
     description: 'The message to use when committing changes.'
-  author-email:
-    description: 'The email address of the commit author.'
   author-name:
     description: 'The name of the commit author.'
+  author-email:
+    description: 'The email address of the commit author.'
+  committer-name:
+    description: 'The name of the committer.'
+  committer-email:
+    description: 'The email address of the committer.'
   title:
     description: 'The title of the pull request.'
   body:
