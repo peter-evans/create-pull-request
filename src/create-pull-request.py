@@ -44,12 +44,8 @@ def get_author_default(event_name, event_data):
     return email, name
 
 
-def set_git_remote_url(git, token, github_repository):
-    git.remote(
-        "set-url",
-        "origin",
-        "https://x-access-token:%s@github.com/%s" % (token, github_repository),
-    )
+def get_repo_url(token, github_repository):
+    return "https://x-access-token:%s@github.com/%s" % (token, github_repository)
 
 
 def checkout_branch(git, remote_exists, branch):
@@ -67,10 +63,11 @@ def checkout_branch(git, remote_exists, branch):
         git.checkout("HEAD", b=branch)
 
 
-def push_changes(git, branch, commit_message):
+def push_changes(git, token, github_repository, branch, commit_message):
     git.add("-A")
     git.commit(m=commit_message)
-    return git.push("-f", "--set-upstream", "origin", branch)
+    repo_url = get_repo_url(token, github_repository)
+    return git.push("-f", repo_url, f"HEAD:refs/heads/{branch}")
 
 
 def cs_string_to_list(str):
@@ -135,7 +132,9 @@ def process_event(github_token, github_repository, repo, branch, base):
 
     # Push the local changes to the remote branch
     print("Pushing changes to 'origin/%s'" % branch)
-    push_result = push_changes(repo.git, branch, commit_message)
+    push_result = push_changes(
+        repo.git, github_token, github_repository, branch, commit_message
+    )
     print(push_result)
 
     # Create the pull request
@@ -243,8 +242,6 @@ repo.git.update_environment(
     GIT_COMMITTER_NAME=committer_name,
     GIT_COMMITTER_EMAIL=committer_email,
 )
-# Update URL for the 'origin' remote
-set_git_remote_url(repo.git, github_token, github_repository)
 
 # Fetch/Set the branch name
 branch_prefix = os.getenv("PULL_REQUEST_BRANCH", "create-pull-request/patch")
