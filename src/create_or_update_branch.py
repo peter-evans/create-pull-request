@@ -134,9 +134,7 @@ def create_or_update_branch(repo, repo_url, commit_message, base, branch):
             action = "updated"
             print(f"Updated branch '{branch}'")
         else:
-            print(
-                f"Branch '{branch}' is even with its remote and will not be updated"
-            )
+            print(f"Branch '{branch}' is even with its remote and will not be updated")
 
         # Check if the pull request branch is ahead of the base
         diff = is_ahead(repo, base, branch)

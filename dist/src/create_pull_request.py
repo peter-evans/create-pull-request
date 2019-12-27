@@ -3,7 +3,7 @@
 import common as cmn
 import create_or_update_branch as coub
 import create_or_update_pull_request as coupr
-from git import Repo
+from git import Repo, GitCommandError
 import json
 import os
 import sys
@@ -17,6 +17,41 @@ DEFAULT_AUTHOR = (
 )
 
 
+def get_git_config_value(repo, name):
+    try:
+        return repo.git.config("--get", name)
+    except GitCommandError:
+        return None
+
+
+def git_user_config_is_set(repo):
+    name = get_git_config_value(repo, "user.name")
+    email = get_git_config_value(repo, "user.email")
+
+    if name is not None and email is not None:
+        print(f"Git user already configured as '{name} <{email}>'")
+        return True
+
+    committer_name = get_git_config_value(repo, "committer.name")
+    committer_email = get_git_config_value(repo, "committer.email")
+    author_name = get_git_config_value(repo, "author.name")
+    author_email = get_git_config_value(repo, "author.email")
+
+    if (
+        committer_name is not None
+        and committer_email is not None
+        and author_name is not None
+        and author_email is not None
+    ):
+        print(
+            f"Git committer already configured as '{committer_name} <{committer_email}>'"
+        )
+        print(f"Git author already configured as '{author_name} <{author_email}>'")
+        return True
+
+    return False
+
+
 def set_committer_author(repo, committer, author):
     # If either committer or author is supplied they will be cross used
     if committer is None and author is not None:
@@ -26,10 +61,11 @@ def set_committer_author(repo, committer, author):
         print("Supplied committer will also be used as the author.")
         author = committer
 
-    # TODO If no overrides have been supplied, check if already set in config
-    # If not set, continue to use defaults
-    # If set, return
-    # https://git-scm.com/docs/git-config#Documentation/git-config.txt-username
+    # If no committer/author has been supplied but user configuration already
+    # exists in git config we can exit and use the existing config as-is.
+    if committer is None and author is None:
+        if git_user_config_is_set(repo):
+            return
 
     # Set defaults if no committer/author has been supplied
     if committer is None and author is None:
