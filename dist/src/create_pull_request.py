@@ -18,16 +18,18 @@ DEFAULT_AUTHOR = (
 
 
 def set_committer_author(repo, committer, author):
-    # When the user intends for the committer and author to be the same,
-    # ideally, just the committer should be supplied. When just the author
-    # is supplied, the same user intention is assumed.
+    # If either committer or author is supplied they will be cross used
     if committer is None and author is not None:
         print("Supplied author will also be used as the committer.")
         committer = author
+    if author is None and committer is not None:
+        print("Supplied committer will also be used as the author.")
+        author = committer
 
-    # TODO Get committer and author from git config
-    # If just a committer exists, only set committer
-    # If just author exists also use for the committer
+    # TODO If no overrides have been supplied, check if already set in config
+    # If not set, continue to use defaults
+    # If set, return
+    # https://git-scm.com/docs/git-config#Documentation/git-config.txt-username
 
     # Set defaults if no committer/author has been supplied
     if committer is None and author is None:
@@ -36,20 +38,15 @@ def set_committer_author(repo, committer, author):
 
     # Set git environment. This will not persist after the action completes.
     committer_name, committer_email = cmn.parse_display_name_email(committer)
-    print(f"Configuring git committer as '{committer_name} <{committer_email}>'")
-    if author is not None:
-        author_name, author_email = cmn.parse_display_name_email(author)
-        print(f"Configuring git author as '{author_name} <{author_email}>'")
-        repo.git.update_environment(
-            GIT_COMMITTER_NAME=committer_name,
-            GIT_COMMITTER_EMAIL=committer_email,
-            GIT_AUTHOR_NAME=author_name,
-            GIT_AUTHOR_EMAIL=author_email,
-        )
-    else:
-        repo.git.update_environment(
-            GIT_COMMITTER_NAME=committer_name, GIT_COMMITTER_EMAIL=committer_email,
-        )
+    author_name, author_email = cmn.parse_display_name_email(author)
+    repo.git.update_environment(
+        GIT_COMMITTER_NAME=committer_name,
+        GIT_COMMITTER_EMAIL=committer_email,
+        GIT_AUTHOR_NAME=author_name,
+        GIT_AUTHOR_EMAIL=author_email,
+    )
+    print(f"Configured git committer as '{committer_name} <{committer_email}>'")
+    print(f"Configured git author as '{author_name} <{author_email}>'")
 
 
 # Get required environment variables
