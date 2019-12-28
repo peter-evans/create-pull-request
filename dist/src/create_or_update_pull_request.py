@@ -63,55 +63,49 @@ def create_or_update_pull_request(
         pull_request = github_repo.create_pull(
             title=title, body=body, base=base, head=branch
         )
-        print(
-            "Created pull request #%d (%s => %s)" % (pull_request.number, branch, base)
-        )
+        print(f"Created pull request #{pull_request.number} ({branch} => {base})")
     except GithubException as e:
         if e.status == 422:
-            # Format the branch name
-            head_branch = "%s:%s" % (github_repository.split("/")[0], branch)
+            # A pull request exists for this branch and base
+            head_branch = "{}:{}".format(github_repository.split("/")[0], branch)
             # Get the pull request
             pull_request = github_repo.get_pulls(
                 state="open", base=base, head=head_branch
             )[0]
-            print(
-                "Updated pull request #%d (%s => %s)"
-                % (pull_request.number, branch, base)
-            )
+            print(f"Updated pull request #{pull_request.number} ({branch} => {base})")
         else:
             print(str(e))
             raise
 
     # Set the output variables
-    os.system("echo ::set-env name=PULL_REQUEST_NUMBER::%d" % pull_request.number)
-    os.system("echo ::set-output name=pr_number::%d" % pull_request.number)
+    os.system(f"echo ::set-env name=PULL_REQUEST_NUMBER::{pull_request.number}")
+    os.system(f"echo ::set-output name=pr_number::{pull_request.number}")
 
     # Set labels, assignees and milestone
     if labels is not None:
-        print("Applying labels '%s'" % labels)
+        print(f"Applying labels '{labels}'")
         pull_request.as_issue().edit(labels=cs_string_to_list(labels))
     if assignees is not None:
-        print("Applying assignees '%s'" % assignees)
+        print(f"Applying assignees '{assignees}'")
         pull_request.as_issue().edit(assignees=cs_string_to_list(assignees))
     if milestone is not None:
-        print("Applying milestone '%s'" % milestone)
+        print(f"Applying milestone '{milestone}'")
         milestone = github_repo.get_milestone(int(milestone))
         pull_request.as_issue().edit(milestone=milestone)
 
     # Set pull request reviewers
     if reviewers is not None:
-        print("Requesting reviewers '%s'" % reviewers)
+        print(f"Requesting reviewers '{reviewers}'")
         try:
             pull_request.create_review_request(reviewers=cs_string_to_list(reviewers))
         except GithubException as e:
-            # Likely caused by "Review cannot be requested from pull request
-            # author."
+            # Likely caused by "Review cannot be requested from pull request author."
             if e.status == 422:
-                print("Requesting reviewers failed - %s" % e.data["message"])
+                print("Request reviewers failed - {}".format(e.data["message"]))
 
     # Set pull request team reviewers
     if team_reviewers is not None:
-        print("Requesting team reviewers '%s'" % team_reviewers)
+        print(f"Requesting team reviewers '{team_reviewers}'")
         pull_request.create_review_request(
             team_reviewers=cs_string_to_list(team_reviewers)
         )
@@ -126,5 +120,7 @@ def create_or_update_pull_request(
             # Likely caused by "Project already has the associated issue."
             if e.status == 422:
                 print(
-                    "Create project card failed - %s" % e.data["errors"][0]["message"]
+                    "Create project card failed - {}".format(
+                        e.data["errors"][0]["message"]
+                    )
                 )
