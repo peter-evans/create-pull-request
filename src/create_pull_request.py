@@ -170,6 +170,13 @@ if result["action"] in ["created", "updated"]:
     # Set the base. It would have been 'None' if not specified as an input
     base = result["base"]
 
+    # If there is no longer a diff with the base delete the branch and exit
+    if not result["diff"]:
+        print(f"Branch '{branch}' no longer differs from base branch '{base}'")
+        print(f"Closing pull request and deleting branch '{branch}'")
+        repo.git.push("--delete", "--force", repo_url, f"refs/heads/{branch}")
+        sys.exit()
+
     # TODO Figure out what to do when there is no diff with the base anymore
     # if not result["diff"]:
 
