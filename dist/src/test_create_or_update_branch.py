@@ -8,12 +8,11 @@ import sys
 import time
 
 
+# Set git environment
 author_name = "github-actions[bot]"
 author_email = "41898282+github-actions[bot]@users.noreply.github.com"
 committer_name = "GitHub"
 committer_email = "noreply@github.com"
-
-# Set git environment
 repo = Repo(os.getcwd())
 repo.git.update_environment(
     GIT_AUTHOR_NAME=author_name,
@@ -718,31 +717,31 @@ def coub_wbnb_changes_and_commits_on_base_and_working_base():
 
 # pytest -v -s ~/git/create-pull-request/src
 
-# test_coub_fetch_successful = coub_fetch_successful
+test_coub_fetch_successful = coub_fetch_successful
 
-# test_coub_no_changes_on_create = coub_no_changes_on_create
-# test_coub_tracked_changes = coub_tracked_changes
-# test_coub_untracked_changes = coub_untracked_changes
-# test_coub_identical_changes = coub_identical_changes
-# test_coub_commits_on_base = coub_commits_on_base
+test_coub_no_changes_on_create = coub_no_changes_on_create
+test_coub_tracked_changes = coub_tracked_changes
+test_coub_untracked_changes = coub_untracked_changes
+test_coub_identical_changes = coub_identical_changes
+test_coub_commits_on_base = coub_commits_on_base
 
-# test_coub_changes_no_diff = coub_changes_no_diff
-# test_coub_commits_on_base_no_diff = coub_commits_on_base_no_diff
+test_coub_changes_no_diff = coub_changes_no_diff
+test_coub_commits_on_base_no_diff = coub_commits_on_base_no_diff
 
-# test_coub_commits_on_working_base = coub_commits_on_working_base
-# test_coub_changes_and_commits_on_working_base = coub_changes_and_commits_on_working_base
-# test_coub_changes_and_commits_on_base_and_working_base = coub_changes_and_commits_on_base_and_working_base
+test_coub_commits_on_working_base = coub_commits_on_working_base
+test_coub_changes_and_commits_on_working_base = coub_changes_and_commits_on_working_base
+test_coub_changes_and_commits_on_base_and_working_base = coub_changes_and_commits_on_base_and_working_base
 
-# # WBNB
-# test_coub_wbnb_no_changes_on_create = coub_wbnb_no_changes_on_create
-# test_coub_wbnb_tracked_changes = coub_wbnb_tracked_changes
-# test_coub_wbnb_untracked_changes = coub_wbnb_untracked_changes
-# test_coub_wbnb_identical_changes = coub_wbnb_identical_changes
-# test_coub_wbnb_commits_on_base = coub_wbnb_commits_on_base
+# WBNB
+test_coub_wbnb_no_changes_on_create = coub_wbnb_no_changes_on_create
+test_coub_wbnb_tracked_changes = coub_wbnb_tracked_changes
+test_coub_wbnb_untracked_changes = coub_wbnb_untracked_changes
+test_coub_wbnb_identical_changes = coub_wbnb_identical_changes
+test_coub_wbnb_commits_on_base = coub_wbnb_commits_on_base
 
-# test_coub_wbnb_changes_no_diff = coub_wbnb_changes_no_diff
-# test_coub_wbnb_commits_on_base_no_diff = coub_wbnb_commits_on_base_no_diff
+test_coub_wbnb_changes_no_diff = coub_wbnb_changes_no_diff
+test_coub_wbnb_commits_on_base_no_diff = coub_wbnb_commits_on_base_no_diff
 
-# test_coub_wbnb_commits_on_working_base = coub_wbnb_commits_on_working_base
-# test_coub_wbnb_changes_and_commits_on_working_base = coub_wbnb_changes_and_commits_on_working_base
-# test_coub_wbnb_changes_and_commits_on_base_and_working_base = coub_wbnb_changes_and_commits_on_base_and_working_base
+test_coub_wbnb_commits_on_working_base = coub_wbnb_commits_on_working_base
+test_coub_wbnb_changes_and_commits_on_working_base = coub_wbnb_changes_and_commits_on_working_base
+test_coub_wbnb_changes_and_commits_on_base_and_working_base = coub_wbnb_changes_and_commits_on_base_and_working_base
