@@ -20,7 +20,7 @@ def create_project_card(github_repo, project_name, project_column_name, pull_req
             break
 
     if not project:
-        print("::warning::Project not found. Unable to create project card.")
+        print("::error::Project not found. Unable to create project card.")
         return
 
     # Locate the column by name
@@ -31,7 +31,7 @@ def create_project_card(github_repo, project_name, project_column_name, pull_req
             break
 
     if not column:
-        print("::warning::Project column not found. Unable to create project card.")
+        print("::error::Project column not found. Unable to create project card.")
         return
 
     # Create a project card for the pull request
