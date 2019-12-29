@@ -114,8 +114,8 @@ repo = Repo(os.getcwd())
 # - HEAD is a tag
 try:
     working_base = repo.git.symbolic_ref("HEAD", "--short")
-except:
-    print(f"::debug::{working_base}")
+except GitCommandError as e:
+    print(f"::debug::{e.stderr}")
     print(
         f"::error::The checked out ref is not a valid base for a pull request. "
         + "Unable to continue. Exiting."
