@@ -24,6 +24,9 @@ See [examples](examples.md) for detailed use cases.
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
+A major version update is in beta. Feel free to try it out using `peter-evans/create-pull-request@v2-beta`.
+Be warned that there are breaking changes from `v1`. [Documentation](https://github.com/peter-evans/create-pull-request/tree/v2-beta) is in progress. Some details [here](https://github.com/peter-evans/create-pull-request/issues/82#issuecomment-569236164).
+
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v1.x.x`
 
 **Note**: If you want pull requests created by this action to trigger an `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`.
