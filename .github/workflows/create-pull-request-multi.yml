@@ -4,13 +4,13 @@ on:
     types: [create-pull-request-multi]
 jobs:
   createPullRequest:
-    name: Testing on ${{ matrix.platform }}
+    name: CPR on ${{ matrix.platform }}
     strategy:
       matrix:
         platform: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Create report file
         if:  matrix.platform == 'ubuntu-latest' || matrix.platform == 'macos-latest'
         run: date +%s > report.txt
@@ -23,8 +23,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
-          author-email: peter-evans@users.noreply.github.com
-          author-name: Peter Evans
+          committer: Peter Evans <peter-evans@users.noreply.github.com>
           title: '[Example] Add report file'
           body: |
             New report
