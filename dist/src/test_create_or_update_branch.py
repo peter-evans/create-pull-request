@@ -30,7 +30,7 @@ DEFAULT_BRANCH = "tests/master"
 NOT_BASE_BRANCH = "tests/branch-that-is-not-the-base"
 NOT_EXIST_BRANCH = "tests/branch-that-does-not-exist"
 
-COMMIT_MESSAGE = "Changes by create-pull-request action"
+COMMIT_MESSAGE = "[create-pull-request] automated change"
 BRANCH = "tests/create-pull-request/patch"
 BASE = DEFAULT_BRANCH
 
@@ -730,7 +730,9 @@ test_coub_commits_on_base_no_diff = coub_commits_on_base_no_diff
 
 test_coub_commits_on_working_base = coub_commits_on_working_base
 test_coub_changes_and_commits_on_working_base = coub_changes_and_commits_on_working_base
-test_coub_changes_and_commits_on_base_and_working_base = coub_changes_and_commits_on_base_and_working_base
+test_coub_changes_and_commits_on_base_and_working_base = (
+    coub_changes_and_commits_on_base_and_working_base
+)
 
 # WBNB
 test_coub_wbnb_no_changes_on_create = coub_wbnb_no_changes_on_create
@@ -743,5 +745,9 @@ test_coub_wbnb_changes_no_diff = coub_wbnb_changes_no_diff
 test_coub_wbnb_commits_on_base_no_diff = coub_wbnb_commits_on_base_no_diff
 
 test_coub_wbnb_commits_on_working_base = coub_wbnb_commits_on_working_base
-test_coub_wbnb_changes_and_commits_on_working_base = coub_wbnb_changes_and_commits_on_working_base
-test_coub_wbnb_changes_and_commits_on_base_and_working_base = coub_wbnb_changes_and_commits_on_base_and_working_base
+test_coub_wbnb_changes_and_commits_on_working_base = (
+    coub_wbnb_changes_and_commits_on_working_base
+)
+test_coub_wbnb_changes_and_commits_on_base_and_working_base = (
+    coub_wbnb_changes_and_commits_on_base_and_working_base
+)
