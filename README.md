@@ -25,7 +25,7 @@ See [examples](examples.md) for detailed use cases.
 ```
 
 A major version update is in beta. Feel free to try it out using `peter-evans/create-pull-request@v2-beta`.
-Be warned that there are breaking changes from `v1`. [Documentation](https://github.com/peter-evans/create-pull-request/tree/v2-beta) is in progress. Some details [here](https://github.com/peter-evans/create-pull-request/issues/82#issuecomment-569236164).
+See [this documentation](https://github.com/peter-evans/create-pull-request/blob/v2-beta/updating.md) for details of breaking changes and new features.
 
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v1.x.x`
 
