@@ -225,7 +225,9 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 ## Use case: Create a pull request to modify/fix pull requests
 
-This is a pattern that works well for any automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
+**Note**: While the following approach does work in some cases, my strong recommendation would be to use a slash command style "ChatOps" solution for operations on pull requests. See [slash-command-dispatch](https://github.com/peter-evans/slash-command-dispatch) for such a solution.
+
+This is a pattern that lends itself to automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
 Note that due to [limitations on forked repositories](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token) workflows for this use case do not work for pull requests raised from forks.
 
@@ -250,6 +252,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
       - name: autopep8
         id: autopep8
         uses: peter-evans/autopep8@v1.1.0
@@ -257,7 +261,7 @@ jobs:
           args: --exit-code --recursive --in-place --aggressive --aggressive .
       - name: Set autopep8 branch name
         id: vars
-        run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
+        run: echo ::set-output name=branch-name::"autopep8-patches/${{ github.head_ref }}"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
         uses: peter-evans/create-pull-request@v2-beta
