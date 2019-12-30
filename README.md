@@ -71,6 +71,17 @@ Note that in order to read the step output the action step must have an id.
           echo "Pull Request Number - ${{ steps.cpr.outputs.pr_number }}"
 ```
 
+### Checkout
+
+This action expects repositories to be checked out with `actions/checkout@v2`.
+
+If there is some reason you need to use `actions/checkout@v1` the following step can be added to checkout the branch.
+
+```yml
+      - uses: actions/checkout@v1
+      - run: git checkout "${GITHUB_REF:11}"
+```
+
 ### Branch naming
 
 For branch naming there are two strategies. Create a fixed-name pull request branch that will be updated with new changes until it is merged or closed, OR, always create a new unique branch each time there are changes to be committed.
