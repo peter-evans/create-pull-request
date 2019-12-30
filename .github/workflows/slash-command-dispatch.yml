@@ -11,6 +11,6 @@ jobs:
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
-          commands: test, clean
+          commands: test, pytest, clean
           permission: admin
           repository: peter-evans/create-pull-request-tests
