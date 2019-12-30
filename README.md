@@ -118,6 +118,30 @@ In most cases, where the committer and author are the same, just the committer c
           committer: Peter Evans <peter-evans@users.noreply.github.com>
 ```
 
+### Controlling commits
+
+As well as relying on the action to handle uncommitted changes, you can additionally make your own commits before the action runs.
+
+```yml
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create commits
+        run: |
+          git config user.name 'Peter Evans'
+          git config user.email 'peter-evans@users.noreply.github.com'
+          date +%s > report.txt
+          git commit -am "Modify tracked file during workflow"
+          date +%s > new-report.txt
+          git add -A
+          git commit -m "Add untracked file during workflow"
+      - name: Uncommitted change
+        run: date +%s > report.txt
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2-beta
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ## Reference Example
 
 The following workflow is a reference example that sets all the main inputs.
