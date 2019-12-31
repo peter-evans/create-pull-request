@@ -9,8 +9,8 @@ import time
 
 
 # Set git repo
-repo_path = os.getenv("COUB_REPO_PATH", os.getcwd())
-repo = Repo(repo_path)
+REPO_PATH = os.getenv("COUB_REPO_PATH", os.getcwd())
+repo = Repo(REPO_PATH)
 
 # Set git environment
 author_name = "github-actions[bot]"
@@ -42,7 +42,7 @@ def create_tracked_change(content=None):
     if content is None:
         content = str(time.time())
     # Create a tracked file change
-    with open(TRACKED_FILE, "w") as f:
+    with open(os.path.join(REPO_PATH, TRACKED_FILE), "w") as f:
         f.write(content)
     return content
 
@@ -51,20 +51,20 @@ def create_untracked_change(content=None):
     if content is None:
         content = str(time.time())
     # Create an untracked file change
-    with open(UNTRACKED_FILE, "w") as f:
+    with open(os.path.join(REPO_PATH, UNTRACKED_FILE), "w") as f:
         f.write(content)
     return content
 
 
 def get_tracked_content():
     # Read the content of the tracked file
-    with open(TRACKED_FILE, "r") as f:
+    with open(os.path.join(REPO_PATH, TRACKED_FILE), "r") as f:
         return f.read()
 
 
 def get_untracked_content():
     # Read the content of the untracked file
-    with open(UNTRACKED_FILE, "r") as f:
+    with open(os.path.join(REPO_PATH, UNTRACKED_FILE), "r") as f:
         return f.read()
 
 
