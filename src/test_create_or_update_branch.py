@@ -93,6 +93,7 @@ def before_after_all():
     assert not repo.is_dirty(untracked_files=True)
 
     # Create a new default branch for the test run
+    repo.remotes.origin.fetch()
     repo.git.checkout("master")
     repo.git.checkout("HEAD", b=NOT_BASE_BRANCH)
     create_tracked_change()
