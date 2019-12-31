@@ -8,12 +8,15 @@ import sys
 import time
 
 
+# Set git repo
+REPO_PATH = os.getenv("COUB_REPO_PATH", os.getcwd())
+repo = Repo(REPO_PATH)
+
 # Set git environment
 author_name = "github-actions[bot]"
 author_email = "41898282+github-actions[bot]@users.noreply.github.com"
 committer_name = "GitHub"
 committer_email = "noreply@github.com"
-repo = Repo(os.getcwd())
 repo.git.update_environment(
     GIT_AUTHOR_NAME=author_name,
     GIT_AUTHOR_EMAIL=author_email,
@@ -39,7 +42,7 @@ def create_tracked_change(content=None):
     if content is None:
         content = str(time.time())
     # Create a tracked file change
-    with open(TRACKED_FILE, "w") as f:
+    with open(os.path.join(REPO_PATH, TRACKED_FILE), "w") as f:
         f.write(content)
     return content
 
@@ -48,20 +51,20 @@ def create_untracked_change(content=None):
     if content is None:
         content = str(time.time())
     # Create an untracked file change
-    with open(UNTRACKED_FILE, "w") as f:
+    with open(os.path.join(REPO_PATH, UNTRACKED_FILE), "w") as f:
         f.write(content)
     return content
 
 
 def get_tracked_content():
     # Read the content of the tracked file
-    with open(TRACKED_FILE, "r") as f:
+    with open(os.path.join(REPO_PATH, TRACKED_FILE), "r") as f:
         return f.read()
 
 
 def get_untracked_content():
     # Read the content of the untracked file
-    with open(UNTRACKED_FILE, "r") as f:
+    with open(os.path.join(REPO_PATH, UNTRACKED_FILE), "r") as f:
         return f.read()
 
 
@@ -93,6 +96,7 @@ def before_after_all():
     assert not repo.is_dirty(untracked_files=True)
 
     # Create a new default branch for the test run
+    repo.remotes.origin.fetch()
     repo.git.checkout("master")
     repo.git.checkout("HEAD", b=NOT_BASE_BRANCH)
     create_tracked_change()
