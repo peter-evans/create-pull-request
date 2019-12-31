@@ -8,12 +8,15 @@ import sys
 import time
 
 
+# Set git repo
+repo_path = os.getenv("COUB_REPO_PATH", os.getcwd())
+repo = Repo(repo_path)
+
 # Set git environment
 author_name = "github-actions[bot]"
 author_email = "41898282+github-actions[bot]@users.noreply.github.com"
 committer_name = "GitHub"
 committer_email = "noreply@github.com"
-repo = Repo(os.getcwd())
 repo.git.update_environment(
     GIT_AUTHOR_NAME=author_name,
     GIT_AUTHOR_EMAIL=author_email,
