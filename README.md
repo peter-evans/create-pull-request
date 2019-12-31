@@ -24,7 +24,7 @@ See [examples](examples.md) for detailed use cases.
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-Branch [v2-beta](https://github.com/peter-evans/create-pull-request/blob/v2-beta) is the beta testing release of a major version update.
+Branch [v2-beta](https://github.com/peter-evans/create-pull-request/tree/v2-beta) is the beta testing release of a major version update.
 Try it out using `peter-evans/create-pull-request@v2-beta`.
 See [this documentation](https://github.com/peter-evans/create-pull-request/blob/v2-beta/updating.md) for details of breaking changes and new features.
 
