@@ -31,7 +31,7 @@ jobs:
   update-deps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - uses: actions/setup-node@v1
         with:
           node-version: '10.x'
@@ -42,14 +42,13 @@ jobs:
           ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update dependencies
           title: Automated Dependency Updates
           body: This is an auto-generated PR with dependency updates.
           branch: dep-updates
-          branch-suffix: none
 ```
 
 ### Keep Go up to date
@@ -68,7 +67,7 @@ jobs:
   fresh_go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
         with:
           ref: master
       - uses: jmhodges/ensure-latest-go@v1.0.2
@@ -76,13 +75,12 @@ jobs:
       - run: echo "##[set-output name=pr_title;]update to latest Go release ${{ steps.ensure_go.outputs.go_version}}"
         id: pr_title_maker
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ steps.pr_title_maker.outputs.pr_title }}
           body: Auto-generated pull request created by the GitHub Actions [create-pull-request](https://github.com/peter-evans/create-pull-request) and [ensure-latest-go](https://github.com/jmhodges/ensure-latest-go).
           commit-message: ${{ steps.pr_title_maker.outputs.pr_title }}
-          branch-suffix: none
           branch: ensure-latest-go/patch-${{ steps.ensure_go.outputs.go_version }}
 ```
 
@@ -100,7 +98,7 @@ jobs:
   updateSwagger:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         run: |
@@ -128,7 +126,7 @@ jobs:
           # Update current release
           echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
@@ -142,7 +140,6 @@ jobs:
             [2]: https://github.com/peter-evans/create-pull-request
           labels: dependencies, automated pr
           branch: swagger-ui-updates
-          branch-suffix: none
 ```
 
 ### Spider and download a website
@@ -158,7 +155,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: Download website
         run: |
           wget \
@@ -172,14 +169,13 @@ jobs:
             --domains quotes.toscrape.com \
             http://quotes.toscrape.com/
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update local website copy
           title: Automated Updates to Local Website Copy
           body: This is an auto-generated PR with website updates.
           branch: website-updates
-          branch-suffix: none
 ```
 
 ## Use case: Create a pull request to update X by calling the GitHub API
@@ -229,7 +225,9 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 ## Use case: Create a pull request to modify/fix pull requests
 
-This is a pattern that works well for any automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
+**Note**: While the following approach does work in some cases, my strong recommendation would be to use a slash command style "ChatOps" solution for operations on pull requests. See [slash-command-dispatch](https://github.com/peter-evans/slash-command-dispatch) for such a solution.
+
+This is a pattern that lends itself to automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
 Note that due to [limitations on forked repositories](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token) workflows for this use case do not work for pull requests raised from forks.
 
@@ -253,7 +251,9 @@ jobs:
     if: startsWith(github.head_ref, 'autopep8-patches') == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
+        with:
+          ref: ${{ github.head_ref }}
       - name: autopep8
         id: autopep8
         uses: peter-evans/autopep8@v1.1.0
@@ -261,10 +261,10 @@ jobs:
           args: --exit-code --recursive --in-place --aggressive --aggressive .
       - name: Set autopep8 branch name
         id: vars
-        run: echo ::set-output name=branch-name::"autopep8-patches/$GITHUB_HEAD_REF"
+        run: echo ::set-output name=branch-name::"autopep8-patches/${{ github.head_ref }}"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: autopep8 action fixes
@@ -272,7 +272,6 @@ jobs:
           body: This is an auto-generated PR with fixes by autopep8.
           labels: autopep8, automated pr
           branch: ${{ steps.vars.outputs.branch-name }}
-          branch-suffix: none
       - name: Fail if autopep8 made changes
         if: steps.autopep8.outputs.exit-code == 2
         run: exit 1
@@ -300,13 +299,13 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       ...
 
   someOtherJob:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       ...
 ```
 
@@ -324,7 +323,7 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
           echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ steps.vars.outputs.pr_title }}
@@ -340,7 +339,7 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
           echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v1
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ env.PULL_REQUEST_TITLE }}

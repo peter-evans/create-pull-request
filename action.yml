@@ -6,14 +6,10 @@ inputs:
     required: true
   commit-message:
     description: 'The message to use when committing changes.'
-  author-name:
-    description: 'The name of the commit author.'
-  author-email:
-    description: 'The email address of the commit author.'
-  committer-name:
-    description: 'The name of the committer.'
-  committer-email:
-    description: 'The email address of the committer.'
+  committer:
+    description: 'The committer name and email address.'
+  author:
+    description: 'The author name and email address.'
   title:
     description: 'The title of the pull request.'
   body:
@@ -35,7 +31,7 @@ inputs:
   branch:
     description: 'The pull request branch name.'
   base:
-    description: 'Sets the pull request base branch.'
+    description: 'The pull request base branch.'
   branch-suffix:
     description: 'The branch suffix type.'
 outputs:
