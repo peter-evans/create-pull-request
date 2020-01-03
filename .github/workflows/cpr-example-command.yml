@@ -1,4 +1,4 @@
-name: Create Pull Request
+name: Create Pull Request Example Command
 on:
   repository_dispatch:
     types: [cpr-example-command]
@@ -34,3 +34,10 @@ jobs:
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
           echo "Pull Request Number - ${{ steps.cpr.outputs.pr_number }}"
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reaction-type: hooray
