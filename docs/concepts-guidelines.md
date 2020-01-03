@@ -30,7 +30,7 @@ The default can be overridden by specifying a `ref` on checkout.
 ```yml
       - uses: actions/checkout@v2
         with:
-          ref: master
+          ref: develop
 ```
 
 ## How the action works
