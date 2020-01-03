@@ -1,7 +1,7 @@
 name: Create Pull Request
 on:
   repository_dispatch:
-    types: [create-pull-request]
+    types: [cpr-example-command]
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
