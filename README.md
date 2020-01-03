@@ -16,9 +16,13 @@ Create Pull Request action will:
 2. Commit all changes to a new branch, or update an existing pull request branch.
 3. Create a pull request to merge the new branch into the base&mdash;the branch checked out in the workflow.
 
-## Usage
+## Documentation
 
-See [examples](examples.md) for detailed use cases.
+- [Concepts and guidelines](docs/concepts-guidelines.md)
+- [Examples](docs/examples.md)
+- [Updating from v1](docs/updating.md)
+
+## Usage
 
 ```yml
       - name: Create Pull Request
@@ -146,7 +150,7 @@ As well as relying on the action to handle uncommitted changes, you can addition
 
 The following workflow is a reference example that sets all the main inputs.
 
-See [examples](examples.md) for more realistic use cases.
+See [examples](docs/examples.md) for more realistic use cases.
 
 ```yml
 name: Create Pull Request
