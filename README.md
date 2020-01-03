@@ -26,7 +26,7 @@ Create Pull Request action will:
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2-beta
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -66,7 +66,7 @@ Note that in order to read the step output the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2-beta
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check outputs
@@ -116,7 +116,7 @@ If neither `committer` or `author` inputs are supplied the action will default t
 In most cases, where the committer and author are the same, just the committer can be set.
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2-beta
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           committer: Peter Evans <peter-evans@users.noreply.github.com>
@@ -141,7 +141,7 @@ As well as relying on the action to handle uncommitted changes, you can addition
       - name: Uncommitted change
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2-beta
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -164,7 +164,7 @@ jobs:
         run: date +%s > report.txt
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2-beta
+        uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
