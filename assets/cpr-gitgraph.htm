@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>create-pull-request GitHub action</title>
+</head>
+
+<body>
+    <!-- partial:index.partial.html -->
+    <div id="graph-container"></div>
+    <!-- partial -->
+    <script src='https://cdn.jsdelivr.net/npm/@gitgraph/js'></script>
+    <script>
+        const graphContainer = document.getElementById("graph-container");
+
+        const customTemplate = GitgraphJS.templateExtend(GitgraphJS.TemplateName.Metro, {
+            commit: {
+                message: {
+                    displayAuthor: false,
+                    displayHash: false,
+                },
+            },
+        });
+
+        // Instantiate the graph.
+        const gitgraph = GitgraphJS.createGitgraph(graphContainer, {
+            template: customTemplate,
+            orientation: "vertical-reverse"
+        });
+
+        const master = gitgraph.branch("master");
+        master.commit("Last commit on base");
+        const localMaster = gitgraph.branch("<#1> master (local)");
+        localMaster.commit({
+            subject: "<uncommited changes>",
+            body: "Changes made to the local base during the workflow",
+        })
+        const remotePatch = gitgraph.branch("create-pull-request/patch");
+        remotePatch.merge({
+            branch: localMaster,
+            commitOptions: {
+                subject: "[create-pull-request] automated change",
+                body: "Changes pushed to create the remote branch",
+            },
+        });
+        master.commit("New commit on base");
+
+        const localMaster2 = gitgraph.branch("<#2> master (local)");
+        localMaster2.commit({
+            subject: "<uncommited changes>",
+            body: "Changes made to the updated local base during the workflow",
+        })
+        remotePatch.merge({
+            branch: localMaster2,
+            commitOptions: {
+                subject: "[create-pull-request] automated change",
+                body: "Changes force pushed to update the remote branch",
+            },
+        });
+
+        master.merge(remotePatch);
+
+    </script>
+
+</body>
+
+</html>

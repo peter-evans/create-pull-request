@@ -45,7 +45,7 @@ Workflow steps:
 
 The following git diagram shows how the action creates and updates a pull request branch.
 
-WIP
+![Create Pull Request GitGraph](../assets/cpr-gitgraph.png)
 
 ## Guidelines
 
