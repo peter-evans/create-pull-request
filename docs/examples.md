@@ -23,7 +23,7 @@ This pattern will work well for updating any kind of static content based on pus
 
 ### Update project authors
 
-Updates a file called `AUTHORS` with the git user names and email addresses of contributors.
+Raises a pull request to update a file called `AUTHORS` with the git user names and email addresses of contributors.
 
 ```yml
 name: Update AUTHORS
