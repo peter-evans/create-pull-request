@@ -21,7 +21,8 @@ jobs:
               {
                 "command": "pytest",
                 "permission": "admin",
-                "repository": "peter-evans/create-pull-request-tests"
+                "repository": "peter-evans/create-pull-request-tests",
+                "named_args": true
               },
               {
                 "command": "clean",
