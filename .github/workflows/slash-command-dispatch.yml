@@ -16,7 +16,8 @@ jobs:
               {
                 "command": "test",
                 "permission": "admin",
-                "repository": "peter-evans/create-pull-request-tests"
+                "repository": "peter-evans/create-pull-request-tests",
+                "named_args": true
               },
               {
                 "command": "pytest",
