@@ -1,8 +1,9 @@
 # Examples
 
+- [Use case: Create a pull request to update X on push](#use-case-create-a-pull-request-to-update-x-on-push)
+  - [Update project authors](#update-project-authors)
 - [Use case: Create a pull request to update X periodically](#use-case-create-a-pull-request-to-update-x-periodically)
   - [Update NPM dependencies](#update-npm-dependencies)
-  - [Keep Go up to date](#keep-go-up-to-date)
   - [Update SwaggerUI for GitHub Pages](#update-swaggerui-for-github-pages)
   - [Spider and download a website](#spider-and-download-a-website)
 - [Use case: Create a pull request to update X by calling the GitHub API](#use-case-create-a-pull-request-to-update-x-by-calling-the-github-api)
@@ -15,6 +16,40 @@
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Debugging GitHub Actions](#debugging-github-actions)
 
+
+## Use case: Create a pull request to update X on push
+
+This pattern will work well for updating any kind of static content based on pushed changes. Care should be taken when using this pattern in repositories with a high frequency of commits.
+
+### Update project authors
+
+Updates a file called `AUTHORS` with the git user names and email addresses of contributors.
+
+```yml
+name: Update AUTHORS
+on:
+  push:
+    branches:
+      - master
+jobs:
+  updateAuthors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Update AUTHORS
+        run: |
+          git log --format='%aN <%aE>%n%cN <%cE>' | sort -u > AUTHORS
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: update authors
+          title: Update AUTHORS
+          body: Credit new contributors by updating AUTHORS
+          branch: update-authors
+```
 
 ## Use case: Create a pull request to update X periodically
 
@@ -49,39 +84,6 @@ jobs:
           title: Automated Dependency Updates
           body: This is an auto-generated PR with dependency updates.
           branch: dep-updates
-```
-
-### Keep Go up to date
-
-Keep Go up to date with [ensure-latest-go](https://github.com/jmhodges/ensure-latest-go) action.
-
-```yml
-name: Keeping Go up to date
-on:
-  schedule:
-    - cron: 47 4 * * *
-  push:
-    branches:
-      - master
-jobs:
-  fresh_go:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: master
-      - uses: jmhodges/ensure-latest-go@v1.0.2
-        id: ensure_go
-      - run: echo "##[set-output name=pr_title;]update to latest Go release ${{ steps.ensure_go.outputs.go_version}}"
-        id: pr_title_maker
-      - name: Create pull request
-        uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          title: ${{ steps.pr_title_maker.outputs.pr_title }}
-          body: Auto-generated pull request created by the GitHub Actions [create-pull-request](https://github.com/peter-evans/create-pull-request) and [ensure-latest-go](https://github.com/jmhodges/ensure-latest-go).
-          commit-message: ${{ steps.pr_title_maker.outputs.pr_title }}
-          branch: ensure-latest-go/patch-${{ steps.ensure_go.outputs.go_version }}
 ```
 
 ### Update SwaggerUI for GitHub Pages
