@@ -23,6 +23,6 @@
     "@actions/tool-cache": "^1.1.2"
   },
   "devDependencies": {
-    "@zeit/ncc": "0.20.5"
+    "@zeit/ncc": "0.21.0"
   }
 }
