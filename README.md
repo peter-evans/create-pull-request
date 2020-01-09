@@ -33,15 +33,17 @@ Create Pull Request action will:
 
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v2.x.x`
 
+### Action inputs
+
+With the exception of `token`, all inputs are **optional**. If not set, sensible default values will be used.
+
 **Note**: If you want pull requests created by this action to trigger an `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`.
 See [this issue](https://github.com/peter-evans/create-pull-request/issues/48) for further details.
 
-### Action inputs
-
-These inputs are *all optional*. If not set, sensible default values will be used.
-
 | Name | Description | Default |
 | --- | --- | --- |
+| `token` | `GITHUB_TOKEN` or a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | |
+| `path` | Relative path under `$GITHUB_WORKSPACE` to the repository. | `$GITHUB_WORKSPACE` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |

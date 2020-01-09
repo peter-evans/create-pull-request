@@ -96,6 +96,7 @@ def set_committer_author(repo, committer, author):
 github_token = os.environ["GITHUB_TOKEN"]
 github_repository = os.environ["GITHUB_REPOSITORY"]
 # Get environment variables with defaults
+path = os.getenv("CPR_PATH", os.getcwd())
 branch = os.getenv("CPR_BRANCH", DEFAULT_BRANCH)
 commit_message = os.getenv("CPR_COMMIT_MESSAGE", DEFAULT_COMMIT_MESSAGE)
 # Get environment variables with a default of 'None'
@@ -103,8 +104,8 @@ committer = os.environ.get("CPR_COMMITTER")
 author = os.environ.get("CPR_AUTHOR")
 base = os.environ.get("CPR_BASE")
 
-# Set the repo to the working directory
-repo = Repo(os.getcwd())
+# Set the repo path
+repo = Repo(path)
 
 # Determine if the checked out ref is a valid base for a pull request
 # The action needs the checked out HEAD ref to be a branch
