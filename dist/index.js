@@ -1024,6 +1024,7 @@ async function run() {
     // Fetch action inputs
     const inputs = {
       token: core.getInput("token"),
+      path: core.getInput("path"),
       commitMessage: core.getInput("commit-message"),
       committer: core.getInput("committer"),
       author: core.getInput("author"),
@@ -1044,6 +1045,7 @@ async function run() {
 
     // Set environment variables from inputs.
     if (inputs.token) process.env.GITHUB_TOKEN = inputs.token;
+    if (inputs.path) process.env.CPR_PATH = inputs.path;
     if (inputs.commitMessage) process.env.CPR_COMMIT_MESSAGE = inputs.commitMessage;
     if (inputs.committer) process.env.CPR_COMMITTER = inputs.committer;
     if (inputs.author) process.env.CPR_AUTHOR = inputs.author;
