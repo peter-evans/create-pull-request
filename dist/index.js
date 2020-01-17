@@ -1012,7 +1012,7 @@ async function run() {
     core.debug(`src: ${src}`);
 
     // Setup Python from the tool cache
-    setupPython("3.8.0", "x64");
+    setupPython("3.8.1", "x64");
 
     // Install requirements
     await exec.exec("pip", [
