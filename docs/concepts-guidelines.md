@@ -9,6 +9,7 @@ This document covers terminology, how the action works, and general usage guidel
   - [Providing a consistent base](#providing-a-consistent-base)
   - [Pull request events](#pull-request-events)
   - [Restrictions on forked repositories](#restrictions-on-forked-repositories)
+  - [Tag push events](#tag-push-events)
 
 ## Terminology
 
@@ -104,4 +105,44 @@ jobs:
     runs-on: ubuntu-latest
     # Check if the event is not triggered by a fork
     if: github.event.pull_request.head.repo.full_name == github.repository
+```
+
+### Tag push events
+
+An `on: push` workflow will also trigger when tags are pushed.
+During these events, the `actions/checkout` action will check out the `ref/tags/<tag>` git ref by default.
+This means the repository will *not* be checked out on an active branch.
+
+If you would like to run `create-pull-request` action on the tagged commit you can achieve this by creating a temporary branch as follows.
+
+```yml
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create a temporary tag branch
+        run: |
+          git config --global user.name 'GitHub'
+          git config --global user.email 'noreply@github.com'
+          git checkout -b temp-${GITHUB_REF:10}
+          git push --set-upstream origin temp-${GITHUB_REF:10}
+
+      - name: Create changes to pull request
+        run: <create changes here>
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: master
+
+      - name: Delete tag branch
+        run: |
+          git push --delete origin temp-${GITHUB_REF:10}
 ```

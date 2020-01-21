@@ -258,7 +258,7 @@ jobs:
           ref: ${{ github.head_ref }}
       - name: autopep8
         id: autopep8
-        uses: peter-evans/autopep8@v1.1.0
+        uses: peter-evans/autopep8@v1
         with:
           args: --exit-code --recursive --in-place --aggressive --aggressive .
       - name: Set autopep8 branch name
