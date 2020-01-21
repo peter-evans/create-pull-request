@@ -146,3 +146,28 @@ jobs:
         run: |
           git push --delete origin temp-${GITHUB_REF:10}
 ```
+
+This is an alternative, simpler workflow to the one above. However, this is not guaranteed to checkout the tagged commit.
+There is a chance that in between the tag being pushed and checking out the `master` branch in the workflow, another commit is made to `master`. If that possibility is not a concern, this workflow will work fine.
+
+```yml
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master
+
+      - name: Create changes to pull request
+        run: <create changes here>
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
