@@ -72,6 +72,8 @@ def create_or_update_pull_request(
             pull_request = github_repo.get_pulls(
                 state="open", base=base, head=head_branch
             )[0]
+            # Update title and body
+            pull_request.as_issue().edit(title=title, body=body)
             print(f"Updated pull request #{pull_request.number} ({branch} => {base})")
         else:
             print(str(e))
