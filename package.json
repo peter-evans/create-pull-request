@@ -4,7 +4,10 @@
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "index.js",
   "scripts": {
-    "package": "ncc build index.js -o dist"
+    "clean": "rm -rf dist",
+    "build": "ncc build index.js -o dist",
+    "vendor-deps": "pip download -r src/requirements.txt --no-binary=:all: -d dist/vendor",
+    "package": "npm run build && npm run vendor-deps"
   },
   "repository": {
     "type": "git",
