@@ -16,7 +16,9 @@ async function run() {
     await exec.exec("pip", [
       "install",
       "--requirement",
-      `${src}/requirements.txt`
+      `${src}/requirements.txt`,
+      "--no-index",
+      `--find-links=${__dirname}/vendor`
     ]);
 
     // Fetch action inputs
