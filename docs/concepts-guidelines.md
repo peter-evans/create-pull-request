@@ -10,6 +10,7 @@ This document covers terminology, how the action works, and general usage guidel
   - [Pull request events](#pull-request-events)
   - [Restrictions on forked repositories](#restrictions-on-forked-repositories)
   - [Tag push events](#tag-push-events)
+  - [Security](#security)
 
 ## Terminology
 
@@ -171,3 +172,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+### Security
+
+From a security perspective it's good practice to fork third-party actions, review the code, and use your fork of the action in workflows.
+By using third-party actions directly the risk exists that it could be modified to do something malicious, such as capturing secrets.
+
+This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single file.
+Python dependencies are vendored and committed to the repository [here](https://github.com/peter-evans/create-pull-request/tree/master/dist/vendor).
+No dependencies are downloaded during the action execution.
+
+Vendored Python dependencies can be reviewed by rebuilding the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory and redownloading dependencies.
+The following commands require Node and Python 3.
+
+```
+npm install
+npm run clean
+npm run package
+```
+
+The `dist` directory should be rebuilt leaving no git diff.
