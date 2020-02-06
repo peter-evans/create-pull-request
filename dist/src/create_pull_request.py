@@ -22,6 +22,7 @@ DEFAULT_BODY = (
     + "[create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action"
 )
 DEFAULT_BRANCH = "create-pull-request/patch"
+DEFAULT_REPOSITORY = os.environ["GITHUB_REPOSITORY"]
 
 
 def get_git_config_value(repo, name):
@@ -94,7 +95,7 @@ def set_committer_author(repo, committer, author):
 
 # Get required environment variables
 github_token = os.environ["GITHUB_TOKEN"]
-github_repository = os.environ["GITHUB_REPOSITORY"]
+github_repository = os.getenv("CPR_REPOSITORY", DEFAULT_REPOSITORY)
 # Get environment variables with defaults
 path = os.getenv("CPR_PATH", os.getcwd())
 branch = os.getenv("CPR_BRANCH", DEFAULT_BRANCH)

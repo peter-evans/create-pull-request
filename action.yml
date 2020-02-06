@@ -6,6 +6,8 @@ inputs:
     required: true
   path:
     description: 'Relative path under $GITHUB_WORKSPACE to the repository.'
+  repository:
+    description: 'The repository where the pull request will be created'
   commit-message:
     description: 'The message to use when committing changes.'
   committer:
