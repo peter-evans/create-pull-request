@@ -31,6 +31,13 @@ def get_git_config_value(repo, name):
         return None
 
 
+def get_github_repository():
+    remote_origin_url = get_git_config_value(repo, "remote.origin.url")
+    if remote_origin_url is None:
+        raise ValueError("Failed to fetch 'remote.origin.url' from git config")
+    return cmn.parse_github_repository(remote_origin_url)
+
+
 def git_user_config_is_set(repo):
     name = get_git_config_value(repo, "user.name")
     email = get_git_config_value(repo, "user.email")
@@ -94,7 +101,6 @@ def set_committer_author(repo, committer, author):
 
 # Get required environment variables
 github_token = os.environ["GITHUB_TOKEN"]
-github_repository = os.environ["GITHUB_REPOSITORY"]
 # Get environment variables with defaults
 path = os.getenv("CPR_PATH", os.getcwd())
 branch = os.getenv("CPR_BRANCH", DEFAULT_BRANCH)
@@ -106,6 +112,11 @@ base = os.environ.get("CPR_BASE")
 
 # Set the repo path
 repo = Repo(path)
+
+# Determine the GitHub repository from git config
+# This will be the target repository for the pull request
+github_repository = get_github_repository()
+print(f"Target repository set to {github_repository}")
 
 # Determine if the checked out ref is a valid base for a pull request
 # The action needs the checked out HEAD ref to be a branch

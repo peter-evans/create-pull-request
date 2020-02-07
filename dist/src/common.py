@@ -8,6 +8,19 @@ def get_random_string(length=7, chars=string.ascii_lowercase + string.digits):
     return "".join(random.choice(chars) for _ in range(length))
 
 
+def parse_github_repository(url):
+    # Parse the github repository from a URL
+    # e.g. peter-evans/create-pull-request
+    pattern = re.compile(r"^https://github.com/(.+/.+)$")
+
+    # Check we have a match
+    match = pattern.match(url)
+    if match is None:
+        raise ValueError(f"The format of '{url}' is not a valid GitHub repository URL")
+
+    return match.group(1)
+
+
 def parse_display_name_email(display_name_email):
     # Parse the name and email address from a string in the following format
     # Display Name <email@address.com>
