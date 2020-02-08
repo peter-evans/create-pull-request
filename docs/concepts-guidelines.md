@@ -7,7 +7,6 @@ This document covers terminology, how the action works, and general usage guidel
 - [How the action works](#how-the-action-works)
 - [Guidelines](#guidelines)
   - [Providing a consistent base](#providing-a-consistent-base)
-  - [The pull request target repository](#the-pull-request-target-repository)
   - [Pull request events](#pull-request-events)
   - [Restrictions on forked repositories](#restrictions-on-forked-repositories)
   - [Tag push events](#tag-push-events)
@@ -72,26 +71,6 @@ jobs:
 ```
 
 Although rare, there may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.
-
-### The pull request target repository
-
-The action determines what repository it should create the pull request in based on the checked out repository.
-
-Checking out a branch from a different repository from where the workflow is executing will make *that repository* the target for the created pull request. In this case, a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) is required.
-
-```yml
-      - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.PAT }}
-          repository: owner/repo
-
-      - name: Create changes to pull request
-        run: <create changes here>
-
-      - uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.PAT }}
-```
 
 ### Pull request events
 
