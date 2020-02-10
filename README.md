@@ -18,7 +18,7 @@ Create Pull Request action will:
 
 ## Documentation
 
-- [Concepts and guidelines](docs/concepts-guidelines.md)
+- [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
 - [Updating from v1](docs/updating.md)
 
@@ -86,21 +86,6 @@ If there is some reason you need to use `actions/checkout@v1` the following step
 ```yml
       - uses: actions/checkout@v1
       - run: git checkout "${GITHUB_REF:11}"
-```
-
-Checking out a branch from a different repository from where the workflow is executing will make *that repository* the target for the created pull request. In this case, a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) is required.
-
-```yml
-      - uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.PAT }}
-          repository: owner/repo
-
-      # Create changes to pull request here
-
-      - uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.PAT }}
 ```
 
 ### Branch naming

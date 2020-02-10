@@ -2,6 +2,7 @@
 
 - [Use case: Create a pull request to update X on push](#use-case-create-a-pull-request-to-update-x-on-push)
   - [Update project authors](#update-project-authors)
+  - [Keep a branch up-to-date with another](#keep-a-branch-up-to-date-with-another)
 - [Use case: Create a pull request to update X periodically](#use-case-create-a-pull-request-to-update-x-periodically)
   - [Update NPM dependencies](#update-npm-dependencies)
   - [Update SwaggerUI for GitHub Pages](#update-swaggerui-for-github-pages)
@@ -49,6 +50,36 @@ jobs:
           title: Update AUTHORS
           body: Credit new contributors by updating AUTHORS
           branch: update-authors
+```
+
+### Keep a branch up-to-date with another
+
+This is a use case where a branch should be kept up to date with another by opening a pull request to update it. The pull request should then be updated with new changes until it is merged or closed.
+
+In this example scenario, a branch called `production` should be updated via pull request to keep it in sync with `master`. Merging the pull request is effectively promoting those changes to production.
+
+```yml
+name: Create production promotion pull request
+on:
+  push:
+    branches:
+      - master
+jobs:
+  productionPromotion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: production
+      - name: Reset promotion branch
+        run: |
+          git fetch origin master:master
+          git reset --hard master
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: production-promotion
 ```
 
 ## Use case: Create a pull request to update X periodically

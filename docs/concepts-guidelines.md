@@ -1,4 +1,4 @@
-# Concepts and guidelines
+# Concepts, guidelines and advanced usage
 
 This document covers terminology, how the action works, and general usage guidelines.
 
@@ -9,8 +9,12 @@ This document covers terminology, how the action works, and general usage guidel
   - [Providing a consistent base](#providing-a-consistent-base)
   - [Pull request events](#pull-request-events)
   - [Restrictions on forked repositories](#restrictions-on-forked-repositories)
-  - [Tag push events](#tag-push-events)
   - [Security](#security)
+- [Advanced usage](#advanced-usage)
+  - [Creating pull requests in a remote repository](#creating-pull-requests-in-a-remote-repository)
+  - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
+  - [Using in an alpine linux container](#using-in-an-alpine-linux-container)
+  - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
 ## Terminology
 
@@ -108,7 +112,104 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
 ```
 
-### Tag push events
+### Security
+
+From a security perspective it's good practice to fork third-party actions, review the code, and use your fork of the action in workflows.
+By using third-party actions directly the risk exists that it could be modified to do something malicious, such as capturing secrets.
+
+This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single file.
+Python dependencies are vendored and committed to the repository [here](https://github.com/peter-evans/create-pull-request/tree/master/dist/vendor).
+No dependencies are downloaded during the action execution.
+
+Vendored Python dependencies can be reviewed by rebuilding the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory and redownloading dependencies.
+The following commands require Node and Python 3.
+
+```
+npm install
+npm run clean
+npm run package
+```
+
+The `dist` directory should be rebuilt leaving no git diff.
+
+## Advanced usage
+
+### Creating pull requests in a remote repository
+
+Checking out a branch from a different repository from where the workflow is executing will make *that repository* the target for the created pull request. In this case, a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) is required.
+
+```yml
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PAT }}
+          repository: owner/repo
+
+      # Make changes to pull request here
+
+      - uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.PAT }}
+```
+
+### Push using SSH (deploy keys)
+
+[Deploy keys](https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys) can be set per repository and so are arguably more secure than using a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
+Allowing the action to push with a configured deploy key will trigger `on: push` workflows. This makes it an alternative to using a PAT to trigger checks for pull requests.
+
+How to use SSH (deploy keys) with create-pull-request action:
+
+1. [Create an new SSH key pair](https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) for your repository. Do not set a passphrase.
+2. Copy the contents of the public key (.pub file) to a new repository [deploy key](https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys) and check the box to "Allow write access."
+3. Add a secret to the repository containing the entire contents of the private key.
+4. As shown in the example steps below, use the [`webfactory/ssh-agent`](https://github.com/webfactory/ssh-agent) action to install the private key and clone your repository. Remember to checkout the `base` of your pull request if it's not the default branch, e.g. `git checkout my-branch`.
+
+```yml
+    steps:
+      - uses: webfactory/ssh-agent@v0.2.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Checkout via SSH
+        run: git clone git@github.com:peter-evans/create-pull-request.git .
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Using in an alpine linux container
+
+This action can be run inside an Alpine Linux container by pre-installing the correct binaries for the action's dependencies.
+
+The following example workflow installs git and Python dependencies at the start of the job. You can also bake these dependencies into your own Alpine Docker image if you prefer. Note that git must be installed *before* running `actions/checkout`, otherwise it will just download the source of the repository instead of cloning it.
+
+```yml
+jobs:
+  createPullRequestAlpine:
+    runs-on: ubuntu-latest
+    container:
+      image: alpine
+    steps:
+      - name: Install dependencies
+        run: |
+          apk --no-cache add git python3
+          ln -sf python3 /usr/bin/python
+          ln -sf pip3 /usr/bin/pip
+
+      - uses: actions/checkout@v2
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Creating pull requests on tag push
 
 An `on: push` workflow will also trigger when tags are pushed.
 During these events, the `actions/checkout` action will check out the `ref/tags/<tag>` git ref by default.
@@ -134,8 +235,7 @@ jobs:
           git checkout -b temp-${GITHUB_REF:10}
           git push --set-upstream origin temp-${GITHUB_REF:10}
 
-      - name: Create changes to pull request
-        run: <create changes here>
+      # Make changes to pull request here
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
@@ -164,31 +264,10 @@ jobs:
         with:
           ref: master
 
-      - name: Create changes to pull request
-        run: <create changes here>
+      # Make changes to pull request here
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
-
-### Security
-
-From a security perspective it's good practice to fork third-party actions, review the code, and use your fork of the action in workflows.
-By using third-party actions directly the risk exists that it could be modified to do something malicious, such as capturing secrets.
-
-This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single file.
-Python dependencies are vendored and committed to the repository [here](https://github.com/peter-evans/create-pull-request/tree/master/dist/vendor).
-No dependencies are downloaded during the action execution.
-
-Vendored Python dependencies can be reviewed by rebuilding the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory and redownloading dependencies.
-The following commands require Node and Python 3.
-
-```
-npm install
-npm run clean
-npm run package
-```
-
-The `dist` directory should be rebuilt leaving no git diff.
