@@ -1,6 +1,6 @@
 # Concepts, guidelines and advanced usage
 
-This document covers terminology, how the action works, and general usage guidelines.
+This document covers terminology, how the action works, general usage guidelines, and advanced usage.
 
 - [Terminology](#terminology)
 - [Events and checkout](#events-and-checkout)
