@@ -10,9 +10,16 @@ def test_get_random_string():
 
 
 def test_parse_github_repository_success():
-    repository = cmn.parse_github_repository(
+    protocol, repository = cmn.parse_github_repository(
         "https://github.com/peter-evans/create-pull-request"
     )
+    assert protocol == "HTTPS"
+    assert repository == "peter-evans/create-pull-request"
+
+    protocol, repository = cmn.parse_github_repository(
+        "git@github.com:peter-evans/create-pull-request.git"
+    )
+    assert protocol == "SSH"
     assert repository == "peter-evans/create-pull-request"
 
 

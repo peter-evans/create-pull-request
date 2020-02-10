@@ -31,11 +31,12 @@ def get_git_config_value(repo, name):
         return None
 
 
-def get_github_repository():
+def get_repository_detail():
     remote_origin_url = get_git_config_value(repo, "remote.origin.url")
     if remote_origin_url is None:
         raise ValueError("Failed to fetch 'remote.origin.url' from git config")
-    return cmn.parse_github_repository(remote_origin_url)
+    protocol, github_repository = cmn.parse_github_repository(remote_origin_url)
+    return remote_origin_url, protocol, github_repository
 
 
 def git_user_config_is_set(repo):
@@ -115,7 +116,7 @@ repo = Repo(path)
 
 # Determine the GitHub repository from git config
 # This will be the target repository for the pull request
-github_repository = get_github_repository()
+repo_url, protocol, github_repository = get_repository_detail()
 print(f"Target repository set to {github_repository}")
 
 # Determine if the checked out ref is a valid base for a pull request
@@ -173,8 +174,10 @@ except ValueError as e:
     print(f"::error::{e} " + "Unable to continue. Exiting.")
     sys.exit(1)
 
-# Set the repository URL
-repo_url = f"https://x-access-token:{github_token}@github.com/{github_repository}"
+# Set the auth token in the repo URL
+# This supports checkout@v1. From v2 the auth token is saved for further use.
+if protocol == "HTTPS":
+    repo_url = f"https://x-access-token:{github_token}@github.com/{github_repository}"
 
 # Create or update the pull request branch
 result = coub.create_or_update_branch(repo, repo_url, commit_message, base, branch)

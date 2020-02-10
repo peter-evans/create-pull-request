@@ -9,16 +9,20 @@ def get_random_string(length=7, chars=string.ascii_lowercase + string.digits):
 
 
 def parse_github_repository(url):
-    # Parse the github repository from a URL
-    # e.g. peter-evans/create-pull-request
-    pattern = re.compile(r"^https://github.com/(.+/.+)$")
+    # Parse the protocol and github repository from a URL
+    # e.g. HTTPS, peter-evans/create-pull-request
+    https_pattern = re.compile(r"^https://github.com/(.+/.+)$")
+    ssh_pattern = re.compile(r"^git@github.com:(.+/.+).git$")
 
-    # Check we have a match
-    match = pattern.match(url)
-    if match is None:
-        raise ValueError(f"The format of '{url}' is not a valid GitHub repository URL")
+    match = https_pattern.match(url)
+    if match is not None:
+        return "HTTPS", match.group(1)
 
-    return match.group(1)
+    match = ssh_pattern.match(url)
+    if match is not None:
+        return "SSH", match.group(1)
+
+    raise ValueError(f"The format of '{url}' is not a valid GitHub repository URL")
 
 
 def parse_display_name_email(display_name_email):
