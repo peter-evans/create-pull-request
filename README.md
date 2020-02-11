@@ -37,7 +37,7 @@ You can also pin to a [specific release](https://github.com/peter-evans/create-p
 
 With the exception of `token`, all inputs are **optional**. If not set, sensible default values will be used.
 
-**Note**: If you want pull requests created by this action to trigger an `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`.
+**Note**: If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`.
 See [this issue](https://github.com/peter-evans/create-pull-request/issues/48) for further details.
 
 | Name | Description | Default |
