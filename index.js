@@ -1,17 +1,9 @@
 const { inspect } = require("util");
+const isDocker = require('is-docker');
 const fs = require("fs");
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const setupPython = require("./src/setup-python");
-
-function fileExists(path) {
-  try {
-    return fs.statSync(path).isFile();
-  } catch (e) {
-    core.debug(`e: ${inspect(e)}`);
-    return false;
-  }
-}
 
 async function run() {
   try {
@@ -19,14 +11,12 @@ async function run() {
     const src = __dirname + "/src";
     core.debug(`src: ${src}`);
 
-    // Check if the platfrom is Alpine Linux
-    const alpineLinux = fileExists("/etc/alpine-release");
-    core.debug(`alpineLinux: ${alpineLinux}`);
-
-    // Skip Python setup if the platform is Alpine Linux
-    if (!alpineLinux)
+    if (isDocker()) {
+      core.info('Running inside a Docker container');
+    } else {
       // Setup Python from the tool cache
       setupPython("3.8.x", "x64");
+    }
 
     // Install requirements
     await exec.exec("pip", [

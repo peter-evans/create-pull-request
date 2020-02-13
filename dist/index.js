@@ -1001,19 +1001,11 @@ module.exports = require("os");
 /***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
 
 const { inspect } = __webpack_require__(669);
+const isDocker = __webpack_require__(160);
 const fs = __webpack_require__(747);
 const core = __webpack_require__(470);
 const exec = __webpack_require__(986);
 const setupPython = __webpack_require__(139);
-
-function fileExists(path) {
-  try {
-    return fs.statSync(path).isFile();
-  } catch (e) {
-    core.debug(`e: ${inspect(e)}`);
-    return false;
-  }
-}
 
 async function run() {
   try {
@@ -1021,14 +1013,12 @@ async function run() {
     const src = __webpack_require__.ab + "src";
     core.debug(`src: ${src}`);
 
-    // Check if the platfrom is Alpine Linux
-    const alpineLinux = fileExists("/etc/alpine-release");
-    core.debug(`alpineLinux: ${alpineLinux}`);
-
-    // Skip Python setup if the platform is Alpine Linux
-    if (!alpineLinux)
+    if (isDocker()) {
+      core.info('Running inside a Docker container');
+    } else {
       // Setup Python from the tool cache
       setupPython("3.8.x", "x64");
+    }
 
     // Install requirements
     await exec.exec("pip", [
@@ -1409,6 +1399,43 @@ if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
   debug = function() {};
 }
 exports.debug = debug; // for test
+
+
+/***/ }),
+
+/***/ 160:
+/***/ (function(module, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+const fs = __webpack_require__(747);
+
+let isDocker;
+
+function hasDockerEnv() {
+	try {
+		fs.statSync('/.dockerenv');
+		return true;
+	} catch (_) {
+		return false;
+	}
+}
+
+function hasDockerCGroup() {
+	try {
+		return fs.readFileSync('/proc/self/cgroup', 'utf8').includes('docker');
+	} catch (_) {
+		return false;
+	}
+}
+
+module.exports = () => {
+	if (isDocker === undefined) {
+		isDocker = hasDockerEnv() || hasDockerCGroup();
+	}
+
+	return isDocker;
+};
 
 
 /***/ }),
