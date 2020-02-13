@@ -1,6 +1,5 @@
 const { inspect } = require("util");
-const isDocker = require('is-docker');
-const fs = require("fs");
+const isDocker = require("is-docker");
 const core = require("@actions/core");
 const exec = require("@actions/exec");
 const setupPython = require("./src/setup-python");
@@ -11,15 +10,27 @@ async function run() {
     const src = __dirname + "/src";
     core.debug(`src: ${src}`);
 
-    if (isDocker()) {
-      core.info('Running inside a Docker container');
-    } else {
-      // Setup Python from the tool cache
-      setupPython("3.8.x", "x64");
-    }
+    // Determine how to access python and pip
+    const { pip, python } = (function() {
+      if (isDocker()) {
+        core.info("Running inside a Docker container");
+        // Python 3 assumed to be installed and on the PATH
+        return {
+          pip: "pip3",
+          python: "python3"
+        };
+      } else {
+        // Setup Python from the tool cache
+        setupPython("3.x", "x64");
+        return {
+          pip: "pip",
+          python: "python"
+        };
+      }
+    })();
 
     // Install requirements
-    await exec.exec("pip", [
+    await exec.exec(pip, [
       "install",
       "--requirement",
       `${src}/requirements.txt`,
@@ -45,7 +56,7 @@ async function run() {
       projectColumn: core.getInput("project-column"),
       branch: core.getInput("branch"),
       base: core.getInput("base"),
-      branchSuffix: core.getInput("branch-suffix"),
+      branchSuffix: core.getInput("branch-suffix")
     };
     core.debug(`Inputs: ${inspect(inputs)}`);
 
@@ -69,7 +80,7 @@ async function run() {
     if (inputs.branchSuffix) process.env.CPR_BRANCH_SUFFIX = inputs.branchSuffix;
 
     // Execute python script
-    await exec.exec("python", [`${src}/create_pull_request.py`]);
+    await exec.exec(python, [`${src}/create_pull_request.py`]);
   } catch (error) {
     core.setFailed(error.message);
   }
