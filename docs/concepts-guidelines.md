@@ -13,7 +13,7 @@ This document covers terminology, how the action works, general usage guidelines
 - [Advanced usage](#advanced-usage)
   - [Creating pull requests in a remote repository](#creating-pull-requests-in-a-remote-repository)
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
-  - [Using in an alpine linux container](#using-in-an-alpine-linux-container)
+  - [Running in a container](#running-in-a-container)
   - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
 ## Terminology
@@ -180,12 +180,15 @@ How to use SSH (deploy keys) with create-pull-request action:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
-### Using in an alpine linux container
+### Running in a container
 
-This action can be run inside an Alpine Linux container by pre-installing the correct binaries for the action's dependencies.
+This action can be run inside a container by installing the action's dependencies either in the Docker image itself, or during the workflow.
 
-The following example workflow installs git and Python dependencies at the start of the job. You can also bake these dependencies into your own Alpine Docker image if you prefer. Note that git must be installed *before* running `actions/checkout`, otherwise it will just download the source of the repository instead of cloning it.
+The action requires `python3`, `pip3` and `git` to be installed and on the `PATH`.
 
+Note that `actions/checkout` requires Git 2.18 or higher to be installed, otherwise it will just download the source of the repository instead of cloning it.
+
+**Alpine container example:**
 ```yml
 jobs:
   createPullRequestAlpine:
@@ -194,10 +197,32 @@ jobs:
       image: alpine
     steps:
       - name: Install dependencies
+        run: apk --no-cache add git python3
+
+      - uses: actions/checkout@v2
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+**Ubuntu container example:**
+```yml
+jobs:
+  createPullRequestAlpine:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu
+    steps:
+      - name: Install dependencies
         run: |
-          apk --no-cache add git python3
-          ln -sf python3 /usr/bin/python
-          ln -sf pip3 /usr/bin/pip
+          apt-get update
+          apt-get install -y software-properties-common
+          add-apt-repository -y ppa:git-core/ppa
+          apt-get install -y python3 python3-pip git
 
       - uses: actions/checkout@v2
 
