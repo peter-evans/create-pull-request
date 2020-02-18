@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """ Create Pull Request """
+import base64
 import common as cmn
 import create_or_update_branch as coub
 import create_or_update_pull_request as coupr
@@ -31,7 +32,7 @@ def get_git_config_value(repo, name):
         return None
 
 
-def get_repository_detail():
+def get_repository_detail(repo):
     remote_origin_url = get_git_config_value(repo, "remote.origin.url")
     if remote_origin_url is None:
         raise ValueError("Failed to fetch 'remote.origin.url' from git config")
@@ -116,8 +117,20 @@ repo = Repo(path)
 
 # Determine the GitHub repository from git config
 # This will be the target repository for the pull request
-repo_url, protocol, github_repository = get_repository_detail()
+repo_url, protocol, github_repository = get_repository_detail(repo)
 print(f"Target repository set to {github_repository}")
+
+if protocol == "HTTPS":
+    print(f"::debug::Using HTTPS protocol")
+    # Encode and configure the basic credential for HTTPS access
+    basic_credential = base64.b64encode(
+        f"x-access-token:{github_token}".encode("utf-8")
+    ).decode("utf-8")
+    # Mask the basic credential in logs and debug output
+    print(f"::add-mask::{basic_credential}")
+    repo.git.set_persistent_git_options(
+        c=f"http.https://github.com/.extraheader=AUTHORIZATION: basic {basic_credential}"
+    )
 
 # Determine if the checked out ref is a valid base for a pull request
 # The action needs the checked out HEAD ref to be a branch
@@ -173,11 +186,6 @@ try:
 except ValueError as e:
     print(f"::error::{e} " + "Unable to continue. Exiting.")
     sys.exit(1)
-
-# Set the auth token in the repo URL
-# This supports checkout@v1. From v2 the auth token is saved for further use.
-if protocol == "HTTPS":
-    repo_url = f"https://x-access-token:{github_token}@github.com/{github_repository}"
 
 # Create or update the pull request branch
 result = coub.create_or_update_branch(repo, repo_url, commit_message, base, branch)
