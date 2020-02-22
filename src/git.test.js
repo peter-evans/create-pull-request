@@ -29,9 +29,17 @@ test("execGit", async () => {
 
 test("add and unset config option", async () => {
   const repoPath = getRepoPath();
-  const add = await addConfigOption(repoPath, "test.add.and.unset.config.option", "true");
+  const add = await addConfigOption(repoPath, "test.add.and.unset.config.option", "foo");
   expect(add).toBeTruthy();
   const unset = await unsetConfigOption(repoPath, "test.add.and.unset.config.option");
+  expect(unset).toBeTruthy();
+});
+
+test("add and unset config option with value regex", async () => {
+  const repoPath = getRepoPath();
+  const add = await addConfigOption(repoPath, "test.add.and.unset.config.option", "foo bar");
+  expect(add).toBeTruthy();
+  const unset = await unsetConfigOption(repoPath, "test.add.and.unset.config.option", "^foo");
   expect(unset).toBeTruthy();
 });
 
@@ -51,9 +59,19 @@ test("get config option", async () => {
   const repoPath = getRepoPath();
   const add = await addConfigOption(repoPath, "test.get.config.option", "foo");
   expect(add).toBeTruthy();
-  const get = await getConfigOption(repoPath, "test.get.config.option");
-  expect(get).toEqual("foo");
+  const option = await getConfigOption(repoPath, "test.get.config.option");
+  expect(option.value).toEqual("foo");
   const unset = await unsetConfigOption(repoPath, "test.get.config.option");
+  expect(unset).toBeTruthy();
+});
+
+test("get config option with value regex", async () => {
+  const repoPath = getRepoPath();
+  const add = await addConfigOption(repoPath, "test.get.config.option", "foo bar");
+  expect(add).toBeTruthy();
+  const option = await getConfigOption(repoPath, "test.get.config.option", "^foo");
+  expect(option.value).toEqual("foo bar");
+  const unset = await unsetConfigOption(repoPath, "test.get.config.option", "^foo");
   expect(unset).toBeTruthy();
 });
 
@@ -62,7 +80,15 @@ test("get and unset config option is successful", async () => {
   const add = await addConfigOption(repoPath, "test.get.and.unset.config.option", "foo");
   expect(add).toBeTruthy();
   const getAndUnset = await getAndUnsetConfigOption(repoPath, "test.get.and.unset.config.option");
-  expect(getAndUnset).toEqual("foo");
+  expect(getAndUnset.value).toEqual("foo");
+});
+
+test("get and unset config option is successful with value regex", async () => {
+  const repoPath = getRepoPath();
+  const add = await addConfigOption(repoPath, "test.get.and.unset.config.option", "foo bar");
+  expect(add).toBeTruthy();
+  const getAndUnset = await getAndUnsetConfigOption(repoPath, "test.get.and.unset.config.option", "^foo");
+  expect(getAndUnset.value).toEqual("foo bar");
 });
 
 test("get and unset config option is unsuccessful", async () => {
