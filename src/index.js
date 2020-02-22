@@ -2,13 +2,20 @@ const { inspect } = require("util");
 const isDocker = require("is-docker");
 const core = require("@actions/core");
 const exec = require("@actions/exec");
-const setupPython = require("./src/setup-python");
+const setupPython = require("./setup-python");
+const {
+  getRepoPath,
+  getAndUnsetConfigOption,
+  addConfigOption
+} = require("./git");
+
+const EXTRAHEADER_OPTION = "http.https://github.com/.extraheader";
 
 async function run() {
   try {
     // Allows ncc to find assets to be included in the distribution
-    const src = __dirname + "/src";
-    core.debug(`src: ${src}`);
+    const cpr = __dirname + "/cpr";
+    core.debug(`cpr: ${cpr}`);
 
     // Determine how to access python and pip
     const { pip, python } = (function() {
@@ -33,7 +40,7 @@ async function run() {
     await exec.exec(pip, [
       "install",
       "--requirement",
-      `${src}/requirements.txt`,
+      `${cpr}/requirements.txt`,
       "--no-index",
       `--find-links=${__dirname}/vendor`
     ]);
@@ -79,10 +86,30 @@ async function run() {
     if (inputs.base) process.env.CPR_BASE = inputs.base;
     if (inputs.branchSuffix) process.env.CPR_BRANCH_SUFFIX = inputs.branchSuffix;
 
-    // Execute python script
-    await exec.exec(python, [`${src}/create_pull_request.py`]);
+    // Get the repository path
+    var repoPath = getRepoPath(inputs.path);
+    // Get the extraheader config option if it exists
+    var extraHeaderOptionValue = await getAndUnsetConfigOption(
+      repoPath,
+      EXTRAHEADER_OPTION
+    );
+
+    // Execute create pull request
+    await exec.exec(python, [`${cpr}/create_pull_request.py`]);
   } catch (error) {
     core.setFailed(error.message);
+  } finally {
+    // Restore the extraheader config option
+    if (extraHeaderOptionValue) {
+      if (
+        await addConfigOption(
+          repoPath,
+          EXTRAHEADER_OPTION,
+          extraHeaderOptionValue
+        )
+      )
+        core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);
+    }
   }
 }
 

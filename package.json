@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "ncc build index.js -o dist",
-    "vendor-deps": "pip download -r src/requirements.txt --no-binary=:all: -d dist/vendor",
+    "lint": "eslint src/index.js",
+    "test": "eslint src/index.js && jest",
+    "build": "ncc build src/index.js -o dist",
+    "vendor-deps": "pip download -r src/cpr/requirements.txt --no-binary=:all: -d dist/vendor",
     "package": "npm run build && npm run vendor-deps"
   },
   "repository": {
@@ -27,6 +29,8 @@
     "is-docker": "^2.0.0"
   },
   "devDependencies": {
-    "@zeit/ncc": "0.21.1"
+    "@zeit/ncc": "0.21.1",
+    "eslint": "6.8.0",
+    "jest": "25.1.0"
   }
 }
