@@ -10,6 +10,7 @@ const {
 } = require("./git");
 
 const EXTRAHEADER_OPTION = "http.https://github.com/.extraheader";
+const EXTRAHEADER_VALUE_REGEX = "^AUTHORIZATION:";
 
 async function run() {
   try {
@@ -89,9 +90,10 @@ async function run() {
     // Get the repository path
     var repoPath = getRepoPath(inputs.path);
     // Get the extraheader config option if it exists
-    var extraHeaderOptionValue = await getAndUnsetConfigOption(
+    var extraHeaderOption = await getAndUnsetConfigOption(
       repoPath,
-      EXTRAHEADER_OPTION
+      EXTRAHEADER_OPTION,
+      EXTRAHEADER_VALUE_REGEX
     );
 
     // Execute create pull request
@@ -100,12 +102,12 @@ async function run() {
     core.setFailed(error.message);
   } finally {
     // Restore the extraheader config option
-    if (extraHeaderOptionValue) {
+    if (extraHeaderOption) {
       if (
         await addConfigOption(
           repoPath,
           EXTRAHEADER_OPTION,
-          extraHeaderOptionValue
+          extraHeaderOption.value
         )
       )
         core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);

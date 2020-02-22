@@ -44,39 +44,43 @@ async function addConfigOption(repoPath, name, value) {
   return result.exitCode === 0;
 }
 
-async function unsetConfigOption(repoPath, name) {
+async function unsetConfigOption(repoPath, name, valueRegex=".") {
   const result = await execGit(
     repoPath,
-    ["config", "--local", "--unset", name],
+    ["config", "--local", "--unset", name, valueRegex],
     true
   );
   return result.exitCode === 0;
 }
 
-async function configOptionExists(repoPath, name) {
+async function configOptionExists(repoPath, name, valueRegex=".") {
   const result = await execGit(
     repoPath,
-    ["config", "--local", "--name-only", "--get-regexp", name],
+    ["config", "--local", "--name-only", "--get-regexp", name, valueRegex],
     true
   );
   return result.exitCode === 0;
 }
 
-async function getConfigOption(repoPath, name) {
+async function getConfigOption(repoPath, name, valueRegex=".") {
   const result = await execGit(
     repoPath,
-    ["config", "--local", name],
+    ["config", "--local", "--get-regexp", name, valueRegex],
     true
   );
-  return result.stdout.trim();
+  const option = result.stdout.trim().split(`${name} `);
+  return {
+    name: name,
+    value: option[1]
+  }
 }
 
-async function getAndUnsetConfigOption(repoPath, name) {
-  if (await configOptionExists(repoPath, name)) {
-    const extraHeaderOptionValue = await getConfigOption(repoPath, name);
-    if (await unsetConfigOption(repoPath, name)) {
+async function getAndUnsetConfigOption(repoPath, name, valueRegex=".") {
+  if (await configOptionExists(repoPath, name, valueRegex)) {
+    const option = await getConfigOption(repoPath, name, valueRegex);
+    if (await unsetConfigOption(repoPath, name, valueRegex)) {
       core.debug(`Unset config option '${name}'`);
-      return extraHeaderOptionValue;
+      return option;
     }
   }
   return null;
