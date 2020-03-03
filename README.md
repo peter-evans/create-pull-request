@@ -181,6 +181,7 @@ jobs:
           labels: report, automated pr
           assignees: peter-evans
           reviewers: peter-evans
+          team-reviewers: owners, maintainers
           milestone: 1
           project: Example Project
           project-column: To do
