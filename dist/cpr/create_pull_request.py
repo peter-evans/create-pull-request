@@ -224,4 +224,5 @@ if result["action"] in ["created", "updated"]:
         os.environ.get("CPR_TEAM_REVIEWERS"),
         os.environ.get("CPR_PROJECT_NAME"),
         os.environ.get("CPR_PROJECT_COLUMN_NAME"),
+        os.environ.get("CPR_REQUEST_TO_PARENT"),
     )
