@@ -190,7 +190,7 @@ This user has no access to the main repository, it will use their own fork to pu
 3. create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
 4. logout and go back to your main user.
 5. Add a secret to the repository containing the above PAT.
-6. As show in the example bellow, switch the git remote to the fork's url after checkout and set the option `request-on-parent`
+6. As show in the example below, switch the git remote to the fork's url after checkout and set the option `request-on-parent`
 
 ```yaml
       - uses: actions/checkout@v2
