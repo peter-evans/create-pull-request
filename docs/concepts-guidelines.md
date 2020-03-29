@@ -13,6 +13,7 @@ This document covers terminology, how the action works, general usage guidelines
 - [Advanced usage](#advanced-usage)
   - [Creating pull requests in a remote repository](#creating-pull-requests-in-a-remote-repository)
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
+  - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Running in a container](#running-in-a-container)
   - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
