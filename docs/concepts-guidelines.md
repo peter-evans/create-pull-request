@@ -79,12 +79,12 @@ Although rare, there may be use cases where it makes sense to execute the workfl
 
 ### Pull request events
 
-Workflows triggered by `pull_request` events will by default check out a [merge commit](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#pull-request-event-pull_request). To prevent the merge commit being included in created pull requests it is necessary to checkout the `head_ref`.
+Workflows triggered by `pull_request` events will by default check out a [merge commit](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/events-that-trigger-workflows#pull-request-event-pull_request). To prevent the merge commit being included in created pull requests it is necessary to checkout the pull request `head.sha`.
 
 ```yml
       - uses: actions/checkout@v2
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
 ```
 
 ### Restrictions on forked repositories
