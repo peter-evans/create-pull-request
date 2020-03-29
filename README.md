@@ -56,7 +56,7 @@ With the exception of `token`, all inputs are **optional**. If not set, sensible
 | `project` | The name of the project for which a card should be created. Requires `project-column`. | |
 | `project-column` | The name of the project column under which a card should be created. Requires `project`. | |
 | `branch` | The branch name. See [Branch naming](#branch-naming) for details. | `create-pull-request/patch` |
-| `request-to-parent` | Create the pull request in the parent repository of the checked out fork. | `false` |
+| `request-to-parent` | Create the pull request in the parent repository of the checked out fork. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | `false` |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `branch-suffix` | The branch suffix type. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Branch naming](#branch-naming) for details. | |
 

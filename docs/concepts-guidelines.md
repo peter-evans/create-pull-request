@@ -183,15 +183,17 @@ How to use SSH (deploy keys) with create-pull-request action:
 
 ### Push pull request branches to a fork
 
-To enforce security, you can use a dedicated user using [machine account](https://help.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements).
-This user has no access to the main repository, it will use their own fork to push code and create the pull request.
+Instead of pushing pull request branches to the repository you want to update, you can push them to a fork of that repository.
+This allows you to employ the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) by using a dedicated user acting as a [machine account](https://help.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements).
+This user has no access to the main repository.
+It will use their own fork to push code and create the pull request.
 
-1. Create a new github user, then login with this user.
-2. fork the repository.
-3. create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
-4. logout and go back to your main user.
-5. Add a secret to the repository containing the above PAT.
-6. As shown in the example below, switch the git remote to the fork's url after checkout and set the action input `request-on-parent` to `true`.
+1. Create a new GitHub user and login.
+2. Fork the repository that you will be creating pull requests in.
+3. Create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
+4. Logout and log back in to your main user account.
+5. Add a secret to your repository containing the above PAT.
+6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and set the action input `request-on-parent` to `true`.
 
 ```yaml
       - uses: actions/checkout@v2
