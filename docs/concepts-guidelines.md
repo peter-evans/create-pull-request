@@ -13,6 +13,7 @@ This document covers terminology, how the action works, general usage guidelines
 - [Advanced usage](#advanced-usage)
   - [Creating pull requests in a remote repository](#creating-pull-requests-in-a-remote-repository)
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
+  - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Running in a container](#running-in-a-container)
   - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
@@ -178,6 +179,34 @@ How to use SSH (deploy keys) with create-pull-request action:
         uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### Push pull request branches to a fork
+
+To enforce security, you can use a dedicated user using [machine account](https://help.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements).
+This user has no access to the main repository, it will use their own fork to push code and create the pull request.
+
+1. Create a new github user, then login with this user.
+2. fork the repository.
+3. create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
+4. logout and go back to your main user.
+5. Add a secret to the repository containing the above PAT.
+6. As shown in the example below, switch the git remote to the fork's url after checkout and set the action input `request-on-parent` to `true`.
+
+```yaml
+      - uses: actions/checkout@v2
+
+      - run: |
+          git config user.password ${{ secrets.PAT }}
+          git remote set-url origin https://github.com/bot-user/fork-project
+          git fetch --unshallow -p origin
+
+      # Make changes to pull request here
+
+      - uses: peter-evans/create-pull-request@v2
+        with:
+          token: ${{ secrets.PAT }}
+          request-on-parent: true
 ```
 
 ### Running in a container

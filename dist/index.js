@@ -4275,6 +4275,7 @@ async function run() {
       project: core.getInput("project"),
       projectColumn: core.getInput("project-column"),
       branch: core.getInput("branch"),
+      request_to_parent: core.getInput("request-to-parent"),
       base: core.getInput("base"),
       branchSuffix: core.getInput("branch-suffix")
     };
@@ -4296,6 +4297,7 @@ async function run() {
     if (inputs.project) process.env.CPR_PROJECT_NAME = inputs.project;
     if (inputs.projectColumn) process.env.CPR_PROJECT_COLUMN_NAME = inputs.projectColumn;
     if (inputs.branch) process.env.CPR_BRANCH = inputs.branch;
+    if (inputs.request_to_parent) process.env.CPR_REQUEST_TO_PARENT = inputs.request_to_parent;
     if (inputs.base) process.env.CPR_BASE = inputs.base;
     if (inputs.branchSuffix) process.env.CPR_BRANCH_SUFFIX = inputs.branchSuffix;
 
