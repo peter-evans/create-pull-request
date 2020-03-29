@@ -67,7 +67,7 @@ def create_or_update_pull_request(
     if request_to_parent:
         github_repo = github_repo.parent
         if github_repo is None:
-            raise ValueError("The repository is not a fork. The parameter request-to-parent should be set to false.")
+            raise ValueError("The checked out repository is not a fork. Input 'request-to-parent' should be set to false.")
 
     head_branch = f"{head_repo.owner.login}:{branch}"
 
