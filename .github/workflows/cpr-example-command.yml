@@ -30,6 +30,7 @@ jobs:
           project: Example Project
           project-column: To do
           branch: example-patches
+          request-to-parent: false
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
