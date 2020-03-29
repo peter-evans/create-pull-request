@@ -33,7 +33,7 @@ inputs:
   branch:
     description: 'The pull request branch name.'
   request-to-parent:
-    description: 'Whether or not the pull request should be create on the parent repository.'
+    description: 'Create the pull request in the parent repository of the checked out fork.'
     default: false
   base:
     description: 'The pull request base branch.'
