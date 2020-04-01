@@ -27,22 +27,20 @@ Create Pull Request action will:
 ```yml
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v2.x.x`
 
 ### Action inputs
 
-With the exception of `token`, all inputs are **optional**. If not set, sensible default values will be used.
+All inputs are **optional**. If not set, sensible default values will be used.
 
 **Note**: If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you must use a [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line) instead of the default `GITHUB_TOKEN`. Alternatively, allow the action to [push using SSH](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-using-ssh-deploy-keys) by configuring a deploy key.
 
 | Name | Description | Default |
 | --- | --- | --- |
-| `token` | `GITHUB_TOKEN` or a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | |
-| `path` | Relative path under `$GITHUB_WORKSPACE` to the repository. | `$GITHUB_WORKSPACE` |
+| `token` | `GITHUB_TOKEN` or a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | `GITHUB_TOKEN` |
+| `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |
@@ -69,8 +67,6 @@ Note that in order to read the step output the action step must have an id.
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
@@ -120,7 +116,6 @@ In most cases, where the committer and author are the same, just the committer c
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           committer: Peter Evans <peter-evans@users.noreply.github.com>
 ```
 
@@ -144,8 +139,6 @@ As well as relying on the action to handle uncommitted changes, you can addition
         run: date +%s > report.txt
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Reference Example

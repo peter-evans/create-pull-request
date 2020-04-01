@@ -13,7 +13,6 @@ jobs:
         id: cpr
         uses: ./
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
           committer: Peter Evans <peter-evans@users.noreply.github.com>
           title: '[Example] Add report file'

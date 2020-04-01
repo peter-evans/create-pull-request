@@ -3,7 +3,7 @@ description: 'Creates a pull request for changes to your repository in the actio
 inputs:
   token:
     description: 'GITHUB_TOKEN or a repo scoped PAT'
-    required: true
+    default: ${{ github.token }}
   path:
     description: 'Relative path under $GITHUB_WORKSPACE to the repository.'
   commit-message:
