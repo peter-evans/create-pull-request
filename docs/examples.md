@@ -45,7 +45,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update authors
           title: Update AUTHORS
           body: Credit new contributors by updating AUTHORS
@@ -78,7 +77,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           branch: production-promotion
 ```
 
@@ -110,7 +108,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update dependencies
           title: Automated Dependency Updates
           body: This is an auto-generated PR with dependency updates.
@@ -161,7 +158,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
           title: Update SwaggerUI to ${{ steps.swagger-ui.outputs.release_tag }}
           body: |
@@ -204,7 +200,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: update local website copy
           title: Automated Updates to Local Website Copy
           body: This is an auto-generated PR with website updates.
@@ -299,7 +294,6 @@ jobs:
         if: steps.autopep8.outputs.exit-code == 2
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: autopep8 action fixes
           title: Fixes by autopep8 action
           body: This is an auto-generated PR with fixes by autopep8.
@@ -358,7 +352,6 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ steps.vars.outputs.pr_title }}
           body: ${{ steps.vars.outputs.pr_body }}
 ```
@@ -374,7 +367,6 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           title: ${{ env.PULL_REQUEST_TITLE }}
           body: ${{ env.PULL_REQUEST_BODY }}
 ```

@@ -177,8 +177,6 @@ How to use SSH (deploy keys) with create-pull-request action:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Push pull request branches to a fork
@@ -236,8 +234,6 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 **Ubuntu container example:**
@@ -261,8 +257,6 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Creating pull requests on tag push
@@ -296,7 +290,6 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           base: master
 
       - name: Delete tag branch
@@ -324,6 +317,4 @@ jobs:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 ```
