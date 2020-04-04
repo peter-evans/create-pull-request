@@ -28,6 +28,7 @@ jobs:
           milestone: 1
           project: Example Project
           project-column: To do
+          draft: false
           branch: example-patches
           request-to-parent: false
       - name: Check outputs
