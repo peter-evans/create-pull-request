@@ -53,6 +53,7 @@ All inputs are **optional**. If not set, sensible default values will be used.
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `project` | The name of the project for which a card should be created. Requires `project-column`. | |
 | `project-column` | The name of the project column under which a card should be created. Requires `project`. | |
+| `draft` | Create a [draft pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
 | `branch` | The branch name. See [Branch naming](#branch-naming) for details. | `create-pull-request/patch` |
 | `request-to-parent` | Create the pull request in the parent repository of the checked out fork. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | `false` |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
@@ -179,6 +180,7 @@ jobs:
           milestone: 1
           project: Example Project
           project-column: To do
+          draft: false
           branch: example-patches
           request-to-parent: false
       - name: Check outputs

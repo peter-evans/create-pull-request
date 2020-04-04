@@ -4,6 +4,20 @@ from github import Github, GithubException
 import os
 
 
+def string_to_bool(str):
+    if str is None:
+        return False
+    else:
+        return str.lower() in [
+            "true",
+            "1",
+            "t",
+            "y",
+            "yes",
+            "on",
+        ]
+
+
 def cs_string_to_list(str):
     # Split the comma separated string into a list
     l = [i.strip() for i in str.split(",")]
@@ -56,27 +70,31 @@ def create_or_update_pull_request(
     team_reviewers,
     project_name,
     project_column_name,
+    draft,
     request_to_parent,
 ):
-    if request_to_parent is None:
-        request_to_parent = False
-    else:
-        request_to_parent = request_to_parent.lower() in ['true', '1', 't', 'y', 'yes', 'on']
-
     github_repo = head_repo = Github(github_token).get_repo(github_repository)
-    if request_to_parent:
+    if string_to_bool(request_to_parent):
         github_repo = github_repo.parent
         if github_repo is None:
-            raise ValueError("The checked out repository is not a fork. Input 'request-to-parent' should be set to false.")
+            raise ValueError(
+                "The checked out repository is not a fork. Input 'request-to-parent' should be set to false."
+            )
 
     head_branch = f"{head_repo.owner.login}:{branch}"
 
     # Create the pull request
     try:
         pull_request = github_repo.create_pull(
-            title=title, body=body, base=base, head=head_branch
+            title=title,
+            body=body,
+            base=base,
+            head=head_branch,
+            draft=string_to_bool(draft),
         )
-        print(f"Created pull request #{pull_request.number} ({head_branch} => {github_repo.owner.login}:{base})")
+        print(
+            f"Created pull request #{pull_request.number} ({head_branch} => {github_repo.owner.login}:{base})"
+        )
     except GithubException as e:
         if e.status == 422:
             # A pull request exists for this branch and base
@@ -86,7 +104,9 @@ def create_or_update_pull_request(
             )[0]
             # Update title and body
             pull_request.as_issue().edit(title=title, body=body)
-            print(f"Updated pull request #{pull_request.number} ({head_branch} => {github_repo.owner.login}:{base})")
+            print(
+                f"Updated pull request #{pull_request.number} ({head_branch} => {github_repo.owner.login}:{base})"
+            )
         else:
             print(str(e))
             raise
