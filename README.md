@@ -112,12 +112,13 @@ If there are files or directories you want to ignore you can simply add them to 
 
 If neither `committer` or `author` inputs are supplied the action will default to making commits that appear to be made by the GitHub Actions bot user.
 
-In most cases, where the committer and author are the same, just the committer can be set.
+The following configuration can be used to have commits authored by the user who triggered the workflow event.
 ```yml
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
         with:
-          committer: Peter Evans <peter-evans@users.noreply.github.com>
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
 ```
 
 ### Controlling commits
@@ -164,8 +165,8 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Add report file
-          committer: Peter Evans <peter-evans@users.noreply.github.com>
-          author: Peter Evans <peter-evans@users.noreply.github.com>
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           title: '[Example] Add report file'
           body: |
             New report
