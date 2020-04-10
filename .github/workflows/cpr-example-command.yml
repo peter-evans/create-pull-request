@@ -14,7 +14,8 @@ jobs:
         uses: ./
         with:
           commit-message: Add report file
-          committer: Peter Evans <peter-evans@users.noreply.github.com>
+          committer: GitHub <noreply@github.com>
+          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
           title: '[Example] Add report file'
           body: |
             New report
