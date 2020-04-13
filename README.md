@@ -49,7 +49,7 @@ All inputs are **optional**. If not set, sensible default values will be used.
 | `labels` | A comma separated list of labels. | |
 | `assignees` | A comma separated list of assignees (GitHub usernames). | |
 | `reviewers` | A comma separated list of reviewers (GitHub usernames) to request a review from. | |
-| `team-reviewers` | A comma separated list of GitHub teams to request a review from. | |
+| `team-reviewers` | A comma separated list of GitHub teams to request a review from. A `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `project` | The name of the project for which a card should be created. Requires `project-column`. | |
 | `project-column` | The name of the project column under which a card should be created. Requires `project`. | |
