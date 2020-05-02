@@ -79,6 +79,7 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.number }}
+          comment-author: 'github-actions[bot]'
           body-includes: Full test suite slash command
 
       - if: steps.fc.outputs.comment-id == ''
