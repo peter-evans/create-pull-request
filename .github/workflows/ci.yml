@@ -69,6 +69,30 @@ jobs:
           comment: '[CI] test ${{ matrix.target }}'
           delete-branch: true
 
+  testSuiteHelp:
+    if: github.event_name == 'pull_request'
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find Comment
+        uses: peter-evans/find-comment@v1
+        id: fc
+        with:
+          issue-number: ${{ github.event.number }}
+          comment-author: github-actions
+          body-includes: Full test suite slash command
+
+      - if: steps.fc.outputs.comment-id == ''
+        name: Create comment
+        uses: peter-evans/create-or-update-comment@v1
+        with:
+          issue-number: ${{ github.event.number }}
+          body: |
+            Full test suite slash command (repository admin only)
+            ```
+            /test repository=${{ github.event.pull_request.head.repo.full_name }} branch=${{ github.event.pull_request.head.ref }}
+            ```
+
   package:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: [test]
