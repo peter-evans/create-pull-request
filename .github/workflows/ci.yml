@@ -90,7 +90,7 @@ jobs:
           body: |
             Full test suite slash command (repository admin only)
             ```
-            /test repository=${{ github.event.pull_request.head.repo.full_name }} branch=${{ github.event.pull_request.head.ref }}
+            /test repository=${{ github.event.pull_request.head.repo.full_name }} branch=${{ github.event.pull_request.head.ref }} build=true
             ```
 
   package:
