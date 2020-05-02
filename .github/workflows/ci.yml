@@ -12,6 +12,9 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: 12.x
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
       - run: npm ci
       - run: npm run clean
       - run: npm run test
