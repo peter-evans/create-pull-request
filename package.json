@@ -23,10 +23,10 @@
   },
   "homepage": "https://github.com/peter-evans/create-pull-request",
   "dependencies": {
-    "@actions/core": "^1.1.1",
-    "@actions/exec": "^1.0.1",
-    "@actions/tool-cache": "^1.1.2",
-    "is-docker": "^2.0.0"
+    "@actions/core": "1.2.0",
+    "@actions/exec": "1.0.2",
+    "@actions/tool-cache": "1.1.2",
+    "is-docker": "2.0.0"
   },
   "devDependencies": {
     "@zeit/ncc": "0.22.1",
