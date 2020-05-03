@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.head_ref }}
-      - if: matrix.target == 'built'
+      - if: matrix.target == 'built' || github.event_name == 'pull_request'
         uses: actions/download-artifact@v2
         with:
           name: dist
