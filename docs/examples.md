@@ -273,7 +273,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 ```yml
 - name: Repository Dispatch
-  uses: peter-evans/repository-dispatch@v1.0.0
+  uses: peter-evans/repository-dispatch@v1
   with:
     token: ${{ secrets.REPO_ACCESS_TOKEN }}
     repository: username/my-repo
