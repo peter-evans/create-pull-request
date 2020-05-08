@@ -206,7 +206,7 @@ It will use their own fork to push code and create the pull request.
 3. Create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
 4. Logout and log back in to your main user account.
 5. Add a secret to your repository containing the above PAT.
-6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and set the action input `request-on-parent` to `true`.
+6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and set the action input `request-to-parent` to `true`.
 
 ```yaml
       - uses: actions/checkout@v2
@@ -221,7 +221,7 @@ It will use their own fork to push code and create the pull request.
       - uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.MACHINE_USER_PAT }}
-          request-on-parent: true
+          request-to-parent: true
 ```
 
 ### Running in a container
