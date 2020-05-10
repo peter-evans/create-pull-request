@@ -7,8 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - name: Create report file
         run: date +%s > report.txt
+
       - name: Create Pull Request
         id: cpr
         uses: ./
@@ -27,15 +29,15 @@ jobs:
           assignees: peter-evans
           reviewers: peter-evans
           milestone: 1
-          project: Example Project
-          project-column: To do
           draft: false
           branch: example-patches
           request-to-parent: false
+
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v1
         with:

@@ -52,15 +52,15 @@ All inputs are **optional**. If not set, sensible default values will be used.
 | `reviewers` | A comma separated list of reviewers (GitHub usernames) to request a review from. | |
 | `team-reviewers` | A comma separated list of GitHub teams to request a review from. A `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
-| `project` | The name of the project for which a card should be created. Requires `project-column`. | |
-| `project-column` | The name of the project column under which a card should be created. Requires `project`. | |
+| `project` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
+| `project-column` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
 | `draft` | Create a [draft pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
 | `branch` | The branch name. See [Branch naming](#branch-naming) for details. | `create-pull-request/patch` |
 | `request-to-parent` | Create the pull request in the parent repository of the checked out fork. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | `false` |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `branch-suffix` | The branch suffix type. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Branch naming](#branch-naming) for details. | |
 
-**Outputs**
+### Action outputs
 
 The pull request number is output as both an environment variable and a step output.
 Note that in order to read the step output the action step must have an id.
@@ -144,6 +144,23 @@ As well as relying on the action to handle uncommitted changes, you can addition
         uses: peter-evans/create-pull-request@v2
 ```
 
+### Create a project card
+
+To create a project card for the pull request, pass the `pull-request-number` step output to [create-or-update-project-card](https://github.com/peter-evans/create-or-update-project-card) action.
+
+```yml
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v2
+
+      - name: Create or Update Project Card
+        uses: peter-evans/create-or-update-project-card@v1
+        with:
+          project-name: My project
+          column-name: My column
+          issue-number: ${{ steps.cpr.outputs.pull-request-number }}
+```
+
 ## Reference Example
 
 The following workflow is a reference example that sets all the main inputs.
@@ -180,8 +197,6 @@ jobs:
           reviewers: peter-evans
           team-reviewers: owners, maintainers
           milestone: 1
-          project: Example Project
-          project-column: To do
           draft: false
           branch: example-patches
           request-to-parent: false
