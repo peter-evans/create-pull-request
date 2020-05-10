@@ -72,7 +72,7 @@ Note that in order to read the step output the action step must have an id.
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
-          echo "Pull Request Number - ${{ steps.cpr.outputs.pr_number }}"
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 
 ### Checkout
@@ -188,7 +188,7 @@ jobs:
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
-          echo "Pull Request Number - ${{ steps.cpr.outputs.pr_number }}"
+          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 
 This reference configuration will create pull requests that look like this:
