@@ -206,7 +206,7 @@ jobs:
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 
-This reference configuration will create pull requests that look like this:
+An example based on the above reference configuration creates pull requests that look like this:
 
 ![Pull Request Example](docs/assets/pull-request-example.png)
 
