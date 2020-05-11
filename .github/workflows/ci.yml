@@ -71,7 +71,7 @@ jobs:
       - name: Close Pull
         uses: peter-evans/close-pull@v1
         with:
-          pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
+          pull-request-number: ${{ steps.cpr.outputs.pr_number }}
           comment: '[CI] test ${{ matrix.target }}'
           delete-branch: true
 
