@@ -113,6 +113,8 @@ def create_or_update_pull_request(
 
     # Set the output variables
     os.system(f"echo ::set-env name=PULL_REQUEST_NUMBER::{pull_request.number}")
+    os.system(f"echo ::set-output name=pull-request-number::{pull_request.number}")
+    # 'pr_number' is deprecated
     os.system(f"echo ::set-output name=pr_number::{pull_request.number}")
 
     # Set labels, assignees and milestone
