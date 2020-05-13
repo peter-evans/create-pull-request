@@ -31,18 +31,16 @@ jobs:
           path: dist
 
   test:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     needs: [build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
         target: [built, committed]
     steps:
-      - if: github.event_name == 'push'
-        uses: actions/checkout@v2
-      - if: github.event_name == 'pull_request'
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
-          ref: ${{ github.head_ref }}
+          ref: master
       - if: matrix.target == 'built' || github.event_name == 'pull_request'
         uses: actions/download-artifact@v2
         with:
