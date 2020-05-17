@@ -30,6 +30,8 @@ inputs:
     description: 'Deprecated. See README for details.'
   project-column:
     description: 'Deprecated. See README for details.'
+  draft:
+    description: 'Create a draft pull request'
   branch:
     description: 'The pull request branch name.'
   request-to-parent:
