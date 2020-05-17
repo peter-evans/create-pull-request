@@ -23,6 +23,9 @@ jobs:
           python-version: '3.x'
       - run: npm ci
       - run: npm run clean
+      - run: npm run build
+      - run: npm run format-check
+      - run: npm run lint
       - run: npm run test
       - run: npm run package
       - uses: actions/upload-artifact@v2
@@ -103,6 +106,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: rm -rf dist
       - uses: actions/download-artifact@v2
         with:
           name: dist

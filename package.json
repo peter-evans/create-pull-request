@@ -1,21 +1,29 @@
 {
   "name": "create-pull-request",
   "version": "2.0.0",
+  "private": true,
   "description": "Creates a pull request for changes to your repository in the actions workspace",
-  "main": "index.js",
+  "main": "lib/main.js",
   "scripts": {
     "clean": "rm -rf dist",
-    "lint": "eslint src/index.js",
-    "test": "eslint src/index.js && jest",
-    "build": "ncc build src/index.js -o dist",
+    "build": "tsc && ncc build",
+    "format": "prettier --write '**/*.ts'",
+    "format-check": "prettier --check '**/*.ts'",
+    "lint": "eslint src/**/*.ts",
+    "test": "jest --passWithNoTests",
+    "pack-assets": "mkdir -p dist/cpr && cp -rv src/cpr/* dist/cpr",
     "vendor-deps": "pip download -r src/cpr/requirements.txt --no-binary=:all: -d dist/vendor",
-    "package": "npm run build && npm run vendor-deps"
+    "package": "npm run build && npm run pack-assets && npm run vendor-deps"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/peter-evans/create-pull-request.git"
   },
-  "keywords": [],
+  "keywords": [
+    "actions",
+    "pull",
+    "request"
+  ],
   "author": "Peter Evans",
   "license": "MIT",
   "bugs": {
@@ -29,8 +37,18 @@
     "is-docker": "2.0.0"
   },
   "devDependencies": {
+    "@types/jest": "25.2.2",
+    "@types/node": "14.0.1",
+    "@typescript-eslint/parser": "2.33.0",
     "@zeit/ncc": "0.22.1",
-    "eslint": "6.8.0",
-    "jest": "26.0.1"
+    "eslint": "7.0.0",
+    "eslint-plugin-github": "3.4.1",
+    "eslint-plugin-jest": "23.11.0",
+    "jest": "26.0.1",
+    "jest-circus": "26.0.1",
+    "js-yaml": "3.13.1",
+    "prettier": "2.0.5",
+    "ts-jest": "25.5.1",
+    "typescript": "3.9.2"
   }
 }
