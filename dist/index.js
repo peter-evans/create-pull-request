@@ -34,7 +34,7 @@ module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(676);
+/******/ 		return __webpack_require__(198);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -954,69 +954,62 @@ module.exports = require("tls");
 
 /***/ }),
 
+/***/ 57:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isDocker = void 0;
+const fs = __importStar(__webpack_require__(747));
+function hasDockerEnv() {
+    try {
+        fs.statSync('/.dockerenv');
+        return true;
+    }
+    catch (_) {
+        return false;
+    }
+}
+function hasDockerCGroup() {
+    try {
+        return fs.readFileSync('/proc/self/cgroup', 'utf8').includes('docker');
+    }
+    catch (_) {
+        return false;
+    }
+}
+function isDocker() {
+    return hasDockerEnv() || hasDockerCGroup();
+}
+exports.isDocker = isDocker;
+
+
+/***/ }),
+
 /***/ 87:
 /***/ (function(module) {
 
 module.exports = require("os");
-
-/***/ }),
-
-/***/ 104:
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(470);
-const tc = __webpack_require__(533);
-const path = __webpack_require__(622);
-const semver = __webpack_require__(280);
-
-/**
- * Setup for Python from the GitHub Actions tool cache
- * Converted from https://github.com/actions/setup-python
- *
- * @param {string} versionSpec version of Python
- * @param {string} arch architecture (x64|x32)
- */
-let setupPython = function(versionSpec, arch) {
-  return new Promise((resolve, reject) => {
-    const IS_WINDOWS = process.platform === "win32";
-
-    // Find the version of Python we want in the tool cache
-    const installDir = tc.find("Python", versionSpec, arch);
-    core.debug(`installDir: ${installDir}`);
-
-    // Set paths
-    core.exportVariable("pythonLocation", installDir);
-    core.addPath(installDir);
-    if (IS_WINDOWS) {
-      core.addPath(path.join(installDir, "Scripts"));
-    } else {
-      core.addPath(path.join(installDir, "bin"));
-    }
-
-    if (IS_WINDOWS) {
-      // Add --user directory
-      // `installDir` from tool cache should look like $AGENT_TOOLSDIRECTORY/Python/<semantic version>/x64/
-      // So if `findLocalTool` succeeded above, we must have a conformant `installDir`
-      const version = path.basename(path.dirname(installDir));
-      const major = semver.major(version);
-      const minor = semver.minor(version);
-
-      const userScriptsDir = path.join(
-        process.env["APPDATA"] || "",
-        "Python",
-        `Python${major}${minor}`,
-        "Scripts"
-      );
-      core.addPath(userScriptsDir);
-    }
-    // On Linux and macOS, pip will create the --user directory and add it to PATH as needed.
-
-    resolve();
-  });
-};
-
-module.exports = setupPython;
-
 
 /***/ }),
 
@@ -1314,39 +1307,165 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 160:
-/***/ (function(module, __unusedexports, __webpack_require__) {
+/***/ 198:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
 
 "use strict";
 
-const fs = __webpack_require__(747);
-
-let isDocker;
-
-function hasDockerEnv() {
-	try {
-		fs.statSync('/.dockerenv');
-		return true;
-	} catch (_) {
-		return false;
-	}
-}
-
-function hasDockerCGroup() {
-	try {
-		return fs.readFileSync('/proc/self/cgroup', 'utf8').includes('docker');
-	} catch (_) {
-		return false;
-	}
-}
-
-module.exports = () => {
-	if (isDocker === undefined) {
-		isDocker = hasDockerEnv() || hasDockerCGroup();
-	}
-
-	return isDocker;
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
 };
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const core = __importStar(__webpack_require__(470));
+const exec = __importStar(__webpack_require__(986));
+const isDocker_1 = __webpack_require__(57);
+const setupPython_1 = __webpack_require__(953);
+const git_1 = __webpack_require__(453);
+const util_1 = __webpack_require__(669);
+const EXTRAHEADER_OPTION = 'http.https://github.com/.extraheader';
+const EXTRAHEADER_VALUE_REGEX = '^AUTHORIZATION:';
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let repoPath;
+        let extraHeaderOption = new git_1.ConfigOption();
+        try {
+            // Python assets
+            const cpr = `${__dirname}/cpr`;
+            core.debug(`cpr: ${cpr}`);
+            // Determine how to access python and pip
+            const { pip, python } = (function () {
+                if (isDocker_1.isDocker()) {
+                    core.info('Running inside a Docker container');
+                    // Python 3 assumed to be installed and on the PATH
+                    return {
+                        pip: 'pip3',
+                        python: 'python3'
+                    };
+                }
+                else {
+                    // Setup Python from the tool cache
+                    setupPython_1.setupPython('3.x', 'x64');
+                    return {
+                        pip: 'pip',
+                        python: 'python'
+                    };
+                }
+            })();
+            // Install requirements
+            yield exec.exec(pip, [
+                'install',
+                '--requirement',
+                `${cpr}/requirements.txt`,
+                '--no-index',
+                `--find-links=${__dirname}/vendor`
+            ]);
+            // Fetch action inputs
+            const inputs = {
+                token: core.getInput('token'),
+                path: core.getInput('path'),
+                commitMessage: core.getInput('commit-message'),
+                committer: core.getInput('committer'),
+                author: core.getInput('author'),
+                title: core.getInput('title'),
+                body: core.getInput('body'),
+                labels: core.getInput('labels'),
+                assignees: core.getInput('assignees'),
+                reviewers: core.getInput('reviewers'),
+                teamReviewers: core.getInput('team-reviewers'),
+                milestone: core.getInput('milestone'),
+                project: core.getInput('project'),
+                projectColumn: core.getInput('project-column'),
+                draft: core.getInput('draft'),
+                branch: core.getInput('branch'),
+                requestToParent: core.getInput('request-to-parent'),
+                base: core.getInput('base'),
+                branchSuffix: core.getInput('branch-suffix')
+            };
+            core.debug(`Inputs: ${util_1.inspect(inputs)}`);
+            // Set environment variables from inputs.
+            if (inputs.token)
+                process.env.GITHUB_TOKEN = inputs.token;
+            if (inputs.path)
+                process.env.CPR_PATH = inputs.path;
+            if (inputs.commitMessage)
+                process.env.CPR_COMMIT_MESSAGE = inputs.commitMessage;
+            if (inputs.committer)
+                process.env.CPR_COMMITTER = inputs.committer;
+            if (inputs.author)
+                process.env.CPR_AUTHOR = inputs.author;
+            if (inputs.title)
+                process.env.CPR_TITLE = inputs.title;
+            if (inputs.body)
+                process.env.CPR_BODY = inputs.body;
+            if (inputs.labels)
+                process.env.CPR_LABELS = inputs.labels;
+            if (inputs.assignees)
+                process.env.CPR_ASSIGNEES = inputs.assignees;
+            if (inputs.reviewers)
+                process.env.CPR_REVIEWERS = inputs.reviewers;
+            if (inputs.teamReviewers)
+                process.env.CPR_TEAM_REVIEWERS = inputs.teamReviewers;
+            if (inputs.milestone)
+                process.env.CPR_MILESTONE = inputs.milestone;
+            if (inputs.project)
+                process.env.CPR_PROJECT_NAME = inputs.project;
+            if (inputs.projectColumn)
+                process.env.CPR_PROJECT_COLUMN_NAME = inputs.projectColumn;
+            if (inputs.draft)
+                process.env.CPR_DRAFT = inputs.draft;
+            if (inputs.branch)
+                process.env.CPR_BRANCH = inputs.branch;
+            if (inputs.requestToParent)
+                process.env.CPR_REQUEST_TO_PARENT = inputs.requestToParent;
+            if (inputs.base)
+                process.env.CPR_BASE = inputs.base;
+            if (inputs.branchSuffix)
+                process.env.CPR_BRANCH_SUFFIX = inputs.branchSuffix;
+            // Get the repository path
+            repoPath = git_1.getRepoPath(inputs.path);
+            // Get the extraheader config option if it exists
+            extraHeaderOption = yield git_1.getAndUnsetConfigOption(repoPath, EXTRAHEADER_OPTION, EXTRAHEADER_VALUE_REGEX);
+            // Execute create pull request
+            yield exec.exec(python, [`${cpr}/create_pull_request.py`]);
+        }
+        catch (error) {
+            core.setFailed(error.message);
+        }
+        finally {
+            // Restore the extraheader config option
+            if (extraHeaderOption.value != '') {
+                if (yield git_1.addConfigOption(repoPath, EXTRAHEADER_OPTION, extraHeaderOption.value))
+                    core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);
+            }
+        }
+    });
+}
+run();
 
 
 /***/ }),
@@ -3082,6 +3201,138 @@ function escapeProperty(s) {
 
 /***/ }),
 
+/***/ 453:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getAndUnsetConfigOption = exports.getConfigOption = exports.configOptionExists = exports.unsetConfigOption = exports.addConfigOption = exports.execGit = exports.getRepoPath = exports.ConfigOption = void 0;
+const core = __importStar(__webpack_require__(470));
+const exec = __importStar(__webpack_require__(986));
+const path = __importStar(__webpack_require__(622));
+class GitOutput {
+    constructor() {
+        this.stdout = '';
+        this.exitCode = 0;
+    }
+}
+class ConfigOption {
+    constructor() {
+        this.name = '';
+        this.value = '';
+    }
+}
+exports.ConfigOption = ConfigOption;
+function getRepoPath(relativePath) {
+    let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
+    if (!githubWorkspacePath) {
+        throw new Error('GITHUB_WORKSPACE not defined');
+    }
+    githubWorkspacePath = path.resolve(githubWorkspacePath);
+    core.debug(`githubWorkspacePath: ${githubWorkspacePath}`);
+    let repoPath = githubWorkspacePath;
+    if (relativePath)
+        repoPath = path.resolve(repoPath, relativePath);
+    core.debug(`repoPath: ${repoPath}`);
+    return repoPath;
+}
+exports.getRepoPath = getRepoPath;
+function execGit(repoPath, args, ignoreReturnCode = false) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = new GitOutput();
+        const stdout = [];
+        const options = {
+            cwd: repoPath,
+            ignoreReturnCode: ignoreReturnCode,
+            listeners: {
+                stdout: (data) => {
+                    stdout.push(data.toString());
+                }
+            }
+        };
+        result.exitCode = yield exec.exec('git', args, options);
+        result.stdout = stdout.join('');
+        return result;
+    });
+}
+exports.execGit = execGit;
+function addConfigOption(repoPath, name, value) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield execGit(repoPath, ['config', '--local', '--add', name, value], true);
+        return result.exitCode === 0;
+    });
+}
+exports.addConfigOption = addConfigOption;
+function unsetConfigOption(repoPath, name, valueRegex = '.') {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield execGit(repoPath, ['config', '--local', '--unset', name, valueRegex], true);
+        return result.exitCode === 0;
+    });
+}
+exports.unsetConfigOption = unsetConfigOption;
+function configOptionExists(repoPath, name, valueRegex = '.') {
+    return __awaiter(this, void 0, void 0, function* () {
+        const result = yield execGit(repoPath, ['config', '--local', '--name-only', '--get-regexp', name, valueRegex], true);
+        return result.exitCode === 0;
+    });
+}
+exports.configOptionExists = configOptionExists;
+function getConfigOption(repoPath, name, valueRegex = '.') {
+    return __awaiter(this, void 0, void 0, function* () {
+        const option = new ConfigOption();
+        const result = yield execGit(repoPath, ['config', '--local', '--get-regexp', name, valueRegex], true);
+        option.name = name;
+        option.value = result.stdout.trim().split(`${name} `)[1];
+        return option;
+    });
+}
+exports.getConfigOption = getConfigOption;
+function getAndUnsetConfigOption(repoPath, name, valueRegex = '.') {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (yield configOptionExists(repoPath, name, valueRegex)) {
+            const option = yield getConfigOption(repoPath, name, valueRegex);
+            if (yield unsetConfigOption(repoPath, name, valueRegex)) {
+                core.debug(`Unset config option '${name}'`);
+                return option;
+            }
+        }
+        return new ConfigOption();
+    });
+}
+exports.getAndUnsetConfigOption = getAndUnsetConfigOption;
+
+
+/***/ }),
+
 /***/ 470:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -4594,239 +4845,6 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 676:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-const { inspect } = __webpack_require__(669);
-const isDocker = __webpack_require__(160);
-const core = __webpack_require__(470);
-const exec = __webpack_require__(986);
-const setupPython = __webpack_require__(104);
-const {
-  getRepoPath,
-  getAndUnsetConfigOption,
-  addConfigOption
-} = __webpack_require__(718);
-
-const EXTRAHEADER_OPTION = "http.https://github.com/.extraheader";
-const EXTRAHEADER_VALUE_REGEX = "^AUTHORIZATION:";
-
-async function run() {
-  try {
-    // Allows ncc to find assets to be included in the distribution
-    const cpr = __webpack_require__.ab + "cpr";
-    core.debug(`cpr: ${cpr}`);
-
-    // Determine how to access python and pip
-    const { pip, python } = (function() {
-      if (isDocker()) {
-        core.info("Running inside a Docker container");
-        // Python 3 assumed to be installed and on the PATH
-        return {
-          pip: "pip3",
-          python: "python3"
-        };
-      } else {
-        // Setup Python from the tool cache
-        setupPython("3.x", "x64");
-        return {
-          pip: "pip",
-          python: "python"
-        };
-      }
-    })();
-
-    // Install requirements
-    await exec.exec(pip, [
-      "install",
-      "--requirement",
-      `${cpr}/requirements.txt`,
-      "--no-index",
-      `--find-links=${__dirname}/vendor`
-    ]);
-
-    // Fetch action inputs
-    const inputs = {
-      token: core.getInput("token"),
-      path: core.getInput("path"),
-      commitMessage: core.getInput("commit-message"),
-      committer: core.getInput("committer"),
-      author: core.getInput("author"),
-      title: core.getInput("title"),
-      body: core.getInput("body"),
-      labels: core.getInput("labels"),
-      assignees: core.getInput("assignees"),
-      reviewers: core.getInput("reviewers"),
-      teamReviewers: core.getInput("team-reviewers"),
-      milestone: core.getInput("milestone"),
-      project: core.getInput("project"),
-      projectColumn: core.getInput("project-column"),
-      draft: core.getInput("draft"),
-      branch: core.getInput("branch"),
-      requestToParent: core.getInput("request-to-parent"),
-      base: core.getInput("base"),
-      branchSuffix: core.getInput("branch-suffix")
-    };
-    core.debug(`Inputs: ${inspect(inputs)}`);
-
-    // Set environment variables from inputs.
-    if (inputs.token) process.env.GITHUB_TOKEN = inputs.token;
-    if (inputs.path) process.env.CPR_PATH = inputs.path;
-    if (inputs.commitMessage) process.env.CPR_COMMIT_MESSAGE = inputs.commitMessage;
-    if (inputs.committer) process.env.CPR_COMMITTER = inputs.committer;
-    if (inputs.author) process.env.CPR_AUTHOR = inputs.author;
-    if (inputs.title) process.env.CPR_TITLE = inputs.title;
-    if (inputs.body) process.env.CPR_BODY = inputs.body;
-    if (inputs.labels) process.env.CPR_LABELS = inputs.labels;
-    if (inputs.assignees) process.env.CPR_ASSIGNEES = inputs.assignees;
-    if (inputs.reviewers) process.env.CPR_REVIEWERS = inputs.reviewers;
-    if (inputs.teamReviewers) process.env.CPR_TEAM_REVIEWERS = inputs.teamReviewers;
-    if (inputs.milestone) process.env.CPR_MILESTONE = inputs.milestone;
-    if (inputs.project) process.env.CPR_PROJECT_NAME = inputs.project;
-    if (inputs.projectColumn) process.env.CPR_PROJECT_COLUMN_NAME = inputs.projectColumn;
-    if (inputs.draft) process.env.CPR_DRAFT = inputs.draft;
-    if (inputs.branch) process.env.CPR_BRANCH = inputs.branch;
-    if (inputs.requestToParent) process.env.CPR_REQUEST_TO_PARENT = inputs.requestToParent;
-    if (inputs.base) process.env.CPR_BASE = inputs.base;
-    if (inputs.branchSuffix) process.env.CPR_BRANCH_SUFFIX = inputs.branchSuffix;
-
-    // Get the repository path
-    var repoPath = getRepoPath(inputs.path);
-    // Get the extraheader config option if it exists
-    var extraHeaderOption = await getAndUnsetConfigOption(
-      repoPath,
-      EXTRAHEADER_OPTION,
-      EXTRAHEADER_VALUE_REGEX
-    );
-
-    // Execute create pull request
-    await exec.exec(python, [`${cpr}/create_pull_request.py`]);
-  } catch (error) {
-    core.setFailed(error.message);
-  } finally {
-    // Restore the extraheader config option
-    if (extraHeaderOption) {
-      if (
-        await addConfigOption(
-          repoPath,
-          EXTRAHEADER_OPTION,
-          extraHeaderOption.value
-        )
-      )
-        core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);
-    }
-  }
-}
-
-run();
-
-
-/***/ }),
-
-/***/ 718:
-/***/ (function(module, __unusedexports, __webpack_require__) {
-
-const core = __webpack_require__(470);
-const exec = __webpack_require__(986);
-const path = __webpack_require__(622);
-
-function getRepoPath(relativePath) {
-  let githubWorkspacePath = process.env["GITHUB_WORKSPACE"];
-  if (!githubWorkspacePath) {
-    throw new Error("GITHUB_WORKSPACE not defined");
-  }
-  githubWorkspacePath = path.resolve(githubWorkspacePath);
-  core.debug(`githubWorkspacePath: ${githubWorkspacePath}`);
-
-  repoPath = githubWorkspacePath;
-  if (relativePath) repoPath = path.resolve(repoPath, relativePath);
-
-  core.debug(`repoPath: ${repoPath}`);
-  return repoPath;
-}
-
-async function execGit(repoPath, args, ignoreReturnCode = false) {
-  const stdout = [];
-  const options = {
-    cwd: repoPath,
-    ignoreReturnCode: ignoreReturnCode,
-    listeners: {
-      stdout: data => {
-        stdout.push(data.toString());
-      }
-    }
-  };
-
-  var result = {};
-  result.exitCode = await exec.exec("git", args, options);
-  result.stdout = stdout.join("");
-  return result;
-}
-
-async function addConfigOption(repoPath, name, value) {
-  const result = await execGit(
-    repoPath,
-    ["config", "--local", "--add", name, value],
-    true
-  );
-  return result.exitCode === 0;
-}
-
-async function unsetConfigOption(repoPath, name, valueRegex=".") {
-  const result = await execGit(
-    repoPath,
-    ["config", "--local", "--unset", name, valueRegex],
-    true
-  );
-  return result.exitCode === 0;
-}
-
-async function configOptionExists(repoPath, name, valueRegex=".") {
-  const result = await execGit(
-    repoPath,
-    ["config", "--local", "--name-only", "--get-regexp", name, valueRegex],
-    true
-  );
-  return result.exitCode === 0;
-}
-
-async function getConfigOption(repoPath, name, valueRegex=".") {
-  const result = await execGit(
-    repoPath,
-    ["config", "--local", "--get-regexp", name, valueRegex],
-    true
-  );
-  const option = result.stdout.trim().split(`${name} `);
-  return {
-    name: name,
-    value: option[1]
-  }
-}
-
-async function getAndUnsetConfigOption(repoPath, name, valueRegex=".") {
-  if (await configOptionExists(repoPath, name, valueRegex)) {
-    const option = await getConfigOption(repoPath, name, valueRegex);
-    if (await unsetConfigOption(repoPath, name, valueRegex)) {
-      core.debug(`Unset config option '${name}'`);
-      return option;
-    }
-  }
-  return null;
-}
-
-module.exports = {
-  getRepoPath,
-  execGit,
-  addConfigOption,
-  unsetConfigOption,
-  configOptionExists,
-  getConfigOption,
-  getAndUnsetConfigOption
-};
-
-
-/***/ }),
-
 /***/ 722:
 /***/ (function(module) {
 
@@ -4977,6 +4995,77 @@ function checkBypass(reqUrl) {
     return false;
 }
 exports.checkBypass = checkBypass;
+
+
+/***/ }),
+
+/***/ 953:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.setupPython = void 0;
+const core = __importStar(__webpack_require__(470));
+const tc = __importStar(__webpack_require__(533));
+const path = __importStar(__webpack_require__(622));
+const semver = __importStar(__webpack_require__(280));
+/**
+ * Setup for Python from the GitHub Actions tool cache
+ * Converted from https://github.com/actions/setup-python
+ *
+ * @param {string} versionSpec version of Python
+ * @param {string} arch architecture (x64|x32)
+ */
+function setupPython(versionSpec, arch) {
+    return new Promise(resolve => {
+        const IS_WINDOWS = process.platform === 'win32';
+        // Find the version of Python we want in the tool cache
+        const installDir = tc.find('Python', versionSpec, arch);
+        core.debug(`installDir: ${installDir}`);
+        // Set paths
+        core.exportVariable('pythonLocation', installDir);
+        core.addPath(installDir);
+        if (IS_WINDOWS) {
+            core.addPath(path.join(installDir, 'Scripts'));
+        }
+        else {
+            core.addPath(path.join(installDir, 'bin'));
+        }
+        if (IS_WINDOWS) {
+            // Add --user directory
+            // `installDir` from tool cache should look like $AGENT_TOOLSDIRECTORY/Python/<semantic version>/x64/
+            // So if `findLocalTool` succeeded above, we must have a conformant `installDir`
+            const version = path.basename(path.dirname(installDir));
+            const major = semver.major(version);
+            const minor = semver.minor(version);
+            const userScriptsDir = path.join(process.env['APPDATA'] || '', 'Python', `Python${major}${minor}`, 'Scripts');
+            core.addPath(userScriptsDir);
+        }
+        // On Linux and macOS, pip will create the --user directory and add it to PATH as needed.
+        resolve();
+    });
+}
+exports.setupPython = setupPython;
 
 
 /***/ }),
