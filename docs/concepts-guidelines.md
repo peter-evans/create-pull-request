@@ -90,7 +90,7 @@ Workflows triggered by `pull_request` events will by default check out a [merge 
 
 ### Restrictions on forked repositories
 
-GitHub Actions have imposed restrictions on events triggered by a forked repository. For example, the `pull_request` event triggered by a fork opening a pull request in the upstream repository.
+GitHub Actions have imposed restrictions on events triggered by a forked repository. Specifically, the `pull_request` event triggered by a fork opening a pull request in the upstream repository.
 
 - Events from forks cannot access secrets, except for for the default `GITHUB_TOKEN`.
     > With the exception of GITHUB_TOKEN, secrets are not passed to the runner when a workflow is triggered from a forked repository.
@@ -101,7 +101,7 @@ GitHub Actions have imposed restrictions on events triggered by a forked reposit
 
    [GitHub Actions: Permissions for the GITHUB_TOKEN](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token)
 
-These restrictions mean that during a `pull_request` event triggered by a forked repository the action will be unable to commit changes to a branch.
+These restrictions mean that during a `pull_request` event triggered by a forked repository, actions have no write access to GitHub resources and will fail on attempt.
 
 A job condition can be added to prevent workflows from executing when triggered by a repository fork.
 
