@@ -1,6 +1,4 @@
-import * as path from 'path'
 import {
-  ConfigOption,
   getRepoPath,
   execGit,
   addConfigOption,
@@ -15,7 +13,7 @@ const originalGitHubWorkspace = process.env['GITHUB_WORKSPACE']
 describe('git tests', () => {
   beforeAll(() => {
     // GitHub workspace
-    process.env['GITHUB_WORKSPACE'] = __dirname
+    process.env['GITHUB_WORKSPACE'] = '/git/test-repo'
   })
 
   afterAll(() => {
@@ -26,14 +24,7 @@ describe('git tests', () => {
     }
   })
 
-  test('getRepoPath', async () => {
-    expect(getRepoPath()).toEqual(process.env['GITHUB_WORKSPACE'])
-    expect(getRepoPath('foo')).toEqual(
-      path.resolve(process.env['GITHUB_WORKSPACE'] || '', 'foo')
-    )
-  })
-
-  test('execGit', async () => {
+  it('successfully executes a git command', async () => {
     const repoPath = getRepoPath()
     const result = await execGit(
       repoPath,
@@ -75,13 +66,13 @@ describe('git tests', () => {
     expect(unset).toBeTruthy()
   })
 
-  test('configOptionExists returns true', async () => {
+  it('determines that a config option exists', async () => {
     const repoPath = getRepoPath()
     const result = await configOptionExists(repoPath, 'remote.origin.url')
     expect(result).toBeTruthy()
   })
 
-  test('configOptionExists returns false', async () => {
+  it('determines that a config option does not exist', async () => {
     const repoPath = getRepoPath()
     const result = await configOptionExists(repoPath, 'this.key.does.not.exist')
     expect(result).toBeFalsy()

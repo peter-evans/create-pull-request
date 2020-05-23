@@ -10,7 +10,9 @@
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "test": "jest --passWithNoTests",
+    "test:unit": "jest unit",
+    "test:int": "__test__/integration-tests.sh",
+    "test": "npm run test:unit && npm run test:int",
     "pack-assets": "mkdir -p dist/cpr && cp -rv src/cpr/* dist/cpr",
     "vendor-deps": "pip download -r src/cpr/requirements.txt --no-binary=:all: -d dist/vendor",
     "package": "npm run build && npm run pack-assets && npm run vendor-deps"
