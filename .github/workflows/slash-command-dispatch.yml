@@ -34,5 +34,11 @@ jobs:
                 "command": "cpr-example",
                 "permission": "admin",
                 "issue_type": "issue"
+              },
+              {
+                "command": "rebase",
+                "permission": "admin",
+                "repository": "peter-evans/slash-command-dispatch-processor",
+                "issue_type": "pull-request"
               }
             ]
