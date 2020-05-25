@@ -9,7 +9,7 @@ jobs:
       - name: Slash Command Dispatch
         uses: peter-evans/slash-command-dispatch@v1
         with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.ACTIONS_BOT_TOKEN }}
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
           config: >
             [
