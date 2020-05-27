@@ -55,10 +55,10 @@ All inputs are **optional**. If not set, sensible default values will be used.
 | `project` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
 | `project-column` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
 | `draft` | Create a [draft pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
-| `branch` | The branch name. See [Branch naming](#branch-naming) for details. | `create-pull-request/patch` |
+| `branch` | The branch name. See [Action behaviour](#action-behaviour) for details. | `create-pull-request/patch` |
 | `request-to-parent` | Create the pull request in the parent repository of the checked out fork. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | `false` |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
-| `branch-suffix` | The branch suffix type. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Branch naming](#branch-naming) for details. | |
+| `branch-suffix` | The branch suffix type. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Action behaviour](#action-behaviour) for details. | |
 
 ### Action outputs
 
@@ -86,20 +86,29 @@ If there is some reason you need to use `actions/checkout@v1` the following step
       - run: git checkout "${GITHUB_REF:11}"
 ```
 
-### Branch naming
+### Action behaviour
 
-For branch naming there are two strategies. Create a fixed-name pull request branch that will be updated with new changes until it is merged or closed, OR, always create a new unique branch each time there are changes to be committed.
+The default behaviour of the action is to create a pull request that will be continually updated with new changes until it is merged or closed.
+Changes are committed and pushed to a fixed-name branch, the name of which can be configured with the `branch` input.
+Any subsequent changes will be committed to the *same* branch and reflected in the open pull request.
 
-#### Strategy A - Create and update a pull request branch (default)
+How the action behaves:
 
-This strategy is the default behaviour of the action. The input `branch` defaults to `create-pull-request/patch`. Changes will be committed to this branch and a pull request created. Any subsequent changes will be committed to the *same* branch and reflected in the open pull request. If the pull request is merged or closed a new one will be created. If subsequent changes cause the branch to no longer differ from the base the pull request will be automatically closed and the branch deleted.
+- If there are changes (i.e. a diff exists with the checked out base branch), the changes will be pushed to a new `branch` and a pull request created.
+- If there are no changes (i.e. no diff exists with the checked out base branch), no pull request will be created and the action exits silently.
+- If a pull request already exists and there are no further changes (i.e. no diff with the current pull request branch) then the action exits silently.
+- If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the base and pull request branch), the pull request is automatically closed and the branch deleted.
 
-#### Strategy B - Always create a new pull request branch
+For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
 
-For this strategy there are three options to suffix the branch name.
-The branch name is defined by the input `branch` and defaults to `create-pull-request/patch`. The following options are values for `branch-suffix`.
+#### Alternative strategy - Always create a new pull request branch
 
-- `random` - Commits will be made to a branch suffixed with a random alpha-numeric string. This option should be used if multiple pull requests will be created during the execution of a workflow. e.g. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
+For some use cases it *may* be desirable to always create a new unique branch each time there are changes to be committed.
+This strategy is not recommended and mainly kept for backwards compatibility.
+
+To use this strategy, set input `branch-suffix` with one of the following options.
+
+- `random` - Commits will be made to a branch suffixed with a random alpha-numeric string. e.g. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
 
 - `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
 
