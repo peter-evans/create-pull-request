@@ -241,7 +241,9 @@ jobs:
       image: alpine
     steps:
       - name: Install dependencies
-        run: apk --no-cache add git python3
+        run: |
+          apk --no-cache add git python3
+          python3 -m ensurepip
 
       - uses: actions/checkout@v2
 
