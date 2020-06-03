@@ -10,7 +10,7 @@ import * as semver from 'semver'
  * @param {string} versionSpec version of Python
  * @param {string} arch architecture (x64|x32)
  */
-export function setupPython(versionSpec, arch): Promise<void> {
+export function setupPython(versionSpec: string, arch: string): Promise<void> {
   return new Promise(resolve => {
     const IS_WINDOWS = process.platform === 'win32'
 

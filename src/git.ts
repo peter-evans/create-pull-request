@@ -50,7 +50,11 @@ export async function execGit(
   return result
 }
 
-export async function addConfigOption(repoPath, name, value): Promise<boolean> {
+export async function addConfigOption(
+  repoPath: string,
+  name: string,
+  value: string
+): Promise<boolean> {
   const result = await execGit(
     repoPath,
     ['config', '--local', '--add', name, value],
@@ -60,8 +64,8 @@ export async function addConfigOption(repoPath, name, value): Promise<boolean> {
 }
 
 export async function unsetConfigOption(
-  repoPath,
-  name,
+  repoPath: string,
+  name: string,
   valueRegex = '.'
 ): Promise<boolean> {
   const result = await execGit(
@@ -73,8 +77,8 @@ export async function unsetConfigOption(
 }
 
 export async function configOptionExists(
-  repoPath,
-  name,
+  repoPath: string,
+  name: string,
   valueRegex = '.'
 ): Promise<boolean> {
   const result = await execGit(
@@ -86,8 +90,8 @@ export async function configOptionExists(
 }
 
 export async function getConfigOption(
-  repoPath,
-  name,
+  repoPath: string,
+  name: string,
   valueRegex = '.'
 ): Promise<ConfigOption> {
   const option = new ConfigOption()
@@ -102,8 +106,8 @@ export async function getConfigOption(
 }
 
 export async function getAndUnsetConfigOption(
-  repoPath,
-  name,
+  repoPath: string,
+  name: string,
   valueRegex = '.'
 ): Promise<ConfigOption> {
   if (await configOptionExists(repoPath, name, valueRegex)) {
