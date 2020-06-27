@@ -17,6 +17,12 @@ def test_parse_github_repository_success():
     assert repository == "peter-evans/create-pull-request"
 
     protocol, repository = cmn.parse_github_repository(
+        "https://xxx:x-oauth-basic@github.com/peter-evans/create-pull-request"
+    )
+    assert protocol == "HTTPS"
+    assert repository == "peter-evans/create-pull-request"
+
+    protocol, repository = cmn.parse_github_repository(
         "git@github.com:peter-evans/create-pull-request.git"
     )
     assert protocol == "SSH"

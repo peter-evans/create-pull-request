@@ -11,7 +11,7 @@ def get_random_string(length=7, chars=string.ascii_lowercase + string.digits):
 def parse_github_repository(url):
     # Parse the protocol and github repository from a URL
     # e.g. HTTPS, peter-evans/create-pull-request
-    https_pattern = re.compile(r"^https://github.com/(.+/.+)$")
+    https_pattern = re.compile(r"^https://.*@?github.com/(.+/.+)$")
     ssh_pattern = re.compile(r"^git@github.com:(.+/.+).git$")
 
     match = https_pattern.match(url)
