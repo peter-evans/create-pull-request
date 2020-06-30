@@ -131,7 +131,7 @@ There are a number of workarounds with different pros and cons.
 - Use a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) created on an account that has write access to the repository that pull requests are being created in. This is the standard workaround and [recommended by GitHub](https://help.github.com/en/actions/reference/events-that-trigger-workflows#triggering-new-workflows-using-a-personal-access-token). However, the PAT cannot be scoped to a specific repository so the token becomes a very sensitive secret. If this is a concern, the PAT can instead be created for a dedicated [machine account](https://help.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements) that has collaborator access to the repository. Also note that because the account that owns the PAT will be the creator of pull requests, that user account will be unable to perform actions such as request changes or approve the pull request.
 - Use [SSH (deploy keys)](#push-using-ssh-deploy-keys) to push the pull request branch. This is arguably more secure than using a PAT because deploy keys can be set per repository. However, this method will only trigger `on: push` workflows.
 - Use a [machine account that creates pull requests from its own fork](#push-pull-request-branches-to-a-fork). This is the most secure because the PAT created only grants access to the machine account's fork, not the main repository. This method will trigger `on: pull_request` workflows to run. Workflows triggered `on: push` will not run because the push event is in the fork.
-- Use a [GitHub App to generate a token](#authenticating-with-github-app-generated-tokens) that can be used with this action. GitHub App generated tokens are slightly more secure than using a PAT because GitHub App access permissions can be set with finer granularity. This method will trigger both `on: push` and `on: pull_request` workflows.
+- Use a [GitHub App to generate a token](#authenticating-with-github-app-generated-tokens) that can be used with this action. GitHub App generated tokens are more secure than using a PAT because GitHub App access permissions can be set with finer granularity and are scoped to only repositories where the App is installed. This method will trigger both `on: push` and `on: pull_request` workflows.
 
 ### Security
 
@@ -228,7 +228,9 @@ It will use their own fork to push code and create the pull request.
 
 ### Authenticating with GitHub App generated tokens
 
-A GitHub App can be created for the sole purpose of generating tokens for use with GitHub actions. These tokens can be used in place of `GITHUB_TOKEN` or a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
+A GitHub App can be created for the sole purpose of generating tokens for use with GitHub actions.
+These tokens can be used in place of `GITHUB_TOKEN` or a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
+GitHub App generated tokens are more secure than using a PAT because GitHub App access permissions can be set with finer granularity and are scoped to only repositories where the App is installed.
 
 1. Create a minimal [GitHub App](https://developer.github.com/apps/building-github-apps/creating-a-github-app/), setting the following fields:
 
