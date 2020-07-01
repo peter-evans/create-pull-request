@@ -208,15 +208,17 @@ It will use their own fork to push code and create the pull request.
 3. Create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
 4. Logout and log back in to your main user account.
 5. Add a secret to your repository containing the above PAT.
-6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and set the action input `request-to-parent` to `true`.
+6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and update the fork to match the checked out branch. Then set the action input `request-to-parent` to `true`.
 
 ```yaml
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
 
       - run: |
-          git config user.password ${{ secrets.MACHINE_USER_PAT }}
-          git remote set-url origin https://github.com/machine-user/fork-of-repository
+          git remote set-url origin https://${{ secrets.MACHINE_USER_PAT }}:x-oauth-basic@github.com/machine-user/fork-of-repository
           git fetch --unshallow -p origin
+          git push --force
 
       # Make changes to pull request here
 
