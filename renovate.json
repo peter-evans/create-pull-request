@@ -1,9 +1,0 @@
-{
-  "extends": [
-    "config:base"
-  ],
-  "enabledManagers": ["pip_requirements"],
-  "ignorePaths": [
-    "**/dist/**"
-  ]
-}

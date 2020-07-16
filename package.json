@@ -1,11 +1,11 @@
 {
   "name": "create-pull-request",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "private": true,
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "lib/main.js",
   "scripts": {
-    "clean": "rm -rf dist",
+    "clean": "echo Temporarily kept for backwards compatibility",
     "build": "tsc && ncc build",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
@@ -13,9 +13,9 @@
     "test:unit": "jest unit",
     "test:int": "__test__/integration-tests.sh",
     "test": "npm run test:unit && npm run test:int",
-    "pack-assets": "mkdir -p dist/cpr && cp -rv src/cpr/* dist/cpr",
-    "vendor-deps": "pip download -r src/cpr/requirements.txt --no-binary=:all: -d dist/vendor",
-    "package": "npm run build && npm run pack-assets && npm run vendor-deps"
+    "pack-assets": "echo Temporarily kept for backwards compatibility",
+    "vendor-deps": "echo Temporarily kept for backwards compatibility",
+    "package": "echo Temporarily kept for backwards compatibility"
   },
   "repository": {
     "type": "git",
@@ -39,7 +39,6 @@
     "@octokit/core": "3.1.0",
     "@octokit/plugin-paginate-rest": "2.2.3",
     "@octokit/plugin-rest-endpoint-methods": "4.0.0",
-    "is-docker": "2.0.0",
     "uuid": "8.2.0"
   },
   "devDependencies": {
