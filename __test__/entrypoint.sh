@@ -21,9 +21,14 @@ echo "#test-repo" > README.md
 git add .
 git commit -m "initial commit"
 git push -u
+git config --global --unset user.email
+git config --global --unset user.name
+
+# Display config
+git config -l
 
 # Restore the working directory
 cd $WORKINGDIR
 
 # Execute integration tests
-jest int
+jest int --runInBand
