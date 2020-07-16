@@ -62,7 +62,7 @@ All inputs are **optional**. If not set, sensible default values will be used.
 
 ### Action outputs
 
-The pull request number is output as both an environment variable and a step output.
+The pull request number is output as a step output.
 Note that in order to read the step output the action step must have an id.
 
 ```yml
@@ -71,7 +71,6 @@ Note that in order to read the step output the action step must have an id.
         uses: peter-evans/create-pull-request@v2
       - name: Check outputs
         run: |
-          echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 
@@ -184,8 +183,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Create report file
+
+      - name: Make changes to pull request
         run: date +%s > report.txt
+
       - name: Create Pull Request
         id: cpr
         uses: peter-evans/create-pull-request@v2
@@ -209,9 +210,9 @@ jobs:
           draft: false
           branch: example-patches
           request-to-parent: false
-      - name: Check outputs
+
+      - name: Check output
         run: |
-          echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 

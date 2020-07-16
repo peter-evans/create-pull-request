@@ -8084,8 +8084,11 @@ class GitHubHelper {
             const headBranch = `${headRepo.owner.login}:${inputs.branch}`;
             // Create or update the pull request
             const pullNumber = yield this.createOrUpdate(inputs, baseRepository, headBranch);
-            // Set output
+            // Set outputs
+            core.startGroup('Setting outputs');
             core.setOutput('pull-request-number', pullNumber);
+            core.exportVariable('PULL_REQUEST_NUMBER', pullNumber);
+            core.endGroup();
             // Set milestone, labels and assignees
             const updateIssueParams = {};
             if (inputs.milestone) {

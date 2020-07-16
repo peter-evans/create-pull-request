@@ -103,8 +103,11 @@ export class GitHubHelper {
       headBranch
     )
 
-    // Set output
+    // Set outputs
+    core.startGroup('Setting outputs')
     core.setOutput('pull-request-number', pullNumber)
+    core.exportVariable('PULL_REQUEST_NUMBER', pullNumber)
+    core.endGroup()
 
     // Set milestone, labels and assignees
     const updateIssueParams = {}

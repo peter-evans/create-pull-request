@@ -33,9 +33,8 @@ jobs:
           branch: example-patches
           request-to-parent: false
 
-      - name: Check outputs
+      - name: Check output
         run: |
-          echo "Pull Request Number - ${{ env.PULL_REQUEST_NUMBER }}"
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 
       - name: Add reaction
