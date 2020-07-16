@@ -43,15 +43,15 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     const repoPath = utils.getRepoPath(inputs.path)
     // Create a git command manager
     const git = await GitCommandManager.create(repoPath)
+
     // Unset and save the extraheader config option if it exists
+    core.startGroup('Save persisted git credentials')
     gitConfigHelper = new GitConfigHelper(git)
     extraHeaderOption = await gitConfigHelper.getAndUnsetConfigOption(
       EXTRAHEADER_OPTION,
       EXTRAHEADER_VALUE_REGEX
     )
-
-    //github_token = inputs.token
-    //path = repoPath
+    core.endGroup()
 
     // Set defaults
     inputs.commitMessage = inputs.commitMessage
@@ -63,16 +63,18 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     // Determine the GitHub repository from git config
     // This will be the target repository for the pull request branch
+    core.startGroup('Determining the checked out repository')
     const remoteOriginUrlConfig = await gitConfigHelper.getConfigOption(
       'remote.origin.url'
     )
-    const remote = await utils.getRemoteDetail(remoteOriginUrlConfig.value)
+    const remote = utils.getRemoteDetail(remoteOriginUrlConfig.value)
+    core.endGroup()
     core.info(
       `Pull request branch target repository set to ${remote.repository}`
     )
 
     if (remote.protocol == 'HTTPS') {
-      core.debug('Using HTTPS protocol')
+      core.startGroup('Configuring credential for HTTPS authentication')
       // Encode and configure the basic credential for HTTPS access
       const basicCredential = Buffer.from(
         `x-access-token:${inputs.token}`,
@@ -83,6 +85,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         '-c',
         `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicCredential}`
       ])
+      core.endGroup()
     }
 
     // Determine if the checked out ref is a valid base for a pull request
@@ -91,6 +94,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // - HEAD is detached
     // - HEAD is a merge commit (pull_request events)
     // - HEAD is a tag
+    core.startGroup('Checking the checked out ref')
     const symbolicRefResult = await git.exec(
       ['symbolic-ref', 'HEAD', '--short'],
       true
@@ -102,7 +106,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       )
     }
     const workingBase = symbolicRefResult.stdout.trim()
-
     // Exit if the working base is a PR branch created by this action.
     // This may occur when using a PAT instead of GITHUB_TOKEN because
     // a PAT allows workflow actions to trigger further events.
@@ -111,6 +114,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         `Working base branch '${workingBase}' was created by this action. Unable to continue.`
       )
     }
+    core.endGroup()
 
     // Apply the branch suffix if set
     if (inputs.branchSuffix) {
@@ -142,6 +146,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     )
 
     // Determine the committer and author
+    core.startGroup('Configuring the committer and author')
     const gitIdentityHelper = new GitIdentityHelper(git)
     const identity = await gitIdentityHelper.getIdentity(
       inputs.author,
@@ -163,19 +168,25 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.info(
       `Configured git author as '${identity.authorName} <${identity.authorEmail}>'`
     )
+    core.endGroup()
 
     // Create or update the pull request branch
+    core.startGroup('Create or update the pull request branch')
     const result = await createOrUpdateBranch(
       git,
       inputs.commitMessage,
       inputs.base,
       inputs.branch
     )
+    core.endGroup()
 
     if (['created', 'updated'].includes(result.action)) {
       // The branch was created or updated
-      core.info(`Pushing pull request branch to 'origin/${inputs.branch}'`)
+      core.startGroup(
+        `Pushing pull request branch to 'origin/${inputs.branch}'`
+      )
       await git.push(['--force', 'origin', `HEAD:refs/heads/${inputs.branch}`])
+      core.endGroup()
 
       // Set the base. It would have been '' if not specified as an input
       inputs.base = result.base
@@ -184,23 +195,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         // Create or update the pull request
         const githubHelper = new GitHubHelper(inputs.token)
         await githubHelper.createOrUpdatePullRequest(inputs, remote.repository)
-        // coupr.create_or_update_pull_request(
-        //     github_token,
-        //     github_repository,
-        //     branch,
-        //     base,
-        //     title,
-        //     body,
-        //     os.environ.get("CPR_LABELS"),
-        //     os.environ.get("CPR_ASSIGNEES"),
-        //     os.environ.get("CPR_MILESTONE"),
-        //     os.environ.get("CPR_REVIEWERS"),
-        //     os.environ.get("CPR_TEAM_REVIEWERS"),
-        //     os.environ.get("CPR_PROJECT_NAME"),
-        //     os.environ.get("CPR_PROJECT_COLUMN_NAME"),
-        //     os.environ.get("CPR_DRAFT"),
-        //     os.environ.get("CPR_REQUEST_TO_PARENT"),
-        // )
       } else {
         // If there is no longer a diff with the base delete the branch
         core.info(
@@ -219,6 +213,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.setFailed(error.message)
   } finally {
     // Restore the extraheader config option
+    core.startGroup('Restore persisted git credentials')
     if (extraHeaderOption.value != '') {
       if (
         await gitConfigHelper.addConfigOption(
@@ -228,5 +223,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       )
         core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`)
     }
+    core.endGroup()
   }
 }

@@ -10505,10 +10505,10 @@ function createPullRequest(inputs) {
             // Create a git command manager
             const git = yield git_command_manager_1.GitCommandManager.create(repoPath);
             // Unset and save the extraheader config option if it exists
+            core.startGroup('Save persisted git credentials');
             gitConfigHelper = new git_config_helper_1.GitConfigHelper(git);
             extraHeaderOption = yield gitConfigHelper.getAndUnsetConfigOption(EXTRAHEADER_OPTION, EXTRAHEADER_VALUE_REGEX);
-            //github_token = inputs.token
-            //path = repoPath
+            core.endGroup();
             // Set defaults
             inputs.commitMessage = inputs.commitMessage
                 ? inputs.commitMessage
@@ -10518,11 +10518,13 @@ function createPullRequest(inputs) {
             inputs.branch = inputs.branch ? inputs.branch : DEFAULT_BRANCH;
             // Determine the GitHub repository from git config
             // This will be the target repository for the pull request branch
+            core.startGroup('Determining the checked out repository');
             const remoteOriginUrlConfig = yield gitConfigHelper.getConfigOption('remote.origin.url');
-            const remote = yield utils.getRemoteDetail(remoteOriginUrlConfig.value);
+            const remote = utils.getRemoteDetail(remoteOriginUrlConfig.value);
+            core.endGroup();
             core.info(`Pull request branch target repository set to ${remote.repository}`);
             if (remote.protocol == 'HTTPS') {
-                core.debug('Using HTTPS protocol');
+                core.startGroup('Configuring credential for HTTPS authentication');
                 // Encode and configure the basic credential for HTTPS access
                 const basicCredential = Buffer.from(`x-access-token:${inputs.token}`, 'utf8').toString('base64');
                 core.setSecret(basicCredential);
@@ -10530,6 +10532,7 @@ function createPullRequest(inputs) {
                     '-c',
                     `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicCredential}`
                 ]);
+                core.endGroup();
             }
             // Determine if the checked out ref is a valid base for a pull request
             // The action needs the checked out HEAD ref to be a branch
@@ -10537,6 +10540,7 @@ function createPullRequest(inputs) {
             // - HEAD is detached
             // - HEAD is a merge commit (pull_request events)
             // - HEAD is a tag
+            core.startGroup('Checking the checked out ref');
             const symbolicRefResult = yield git.exec(['symbolic-ref', 'HEAD', '--short'], true);
             if (symbolicRefResult.exitCode != 0) {
                 core.debug(`${symbolicRefResult.stderr}`);
@@ -10549,6 +10553,7 @@ function createPullRequest(inputs) {
             if (workingBase.startsWith(inputs.branch)) {
                 throw new Error(`Working base branch '${workingBase}' was created by this action. Unable to continue.`);
             }
+            core.endGroup();
             // Apply the branch suffix if set
             if (inputs.branchSuffix) {
                 switch (inputs.branchSuffix) {
@@ -10573,6 +10578,7 @@ function createPullRequest(inputs) {
             // Output head branch
             core.info(`Pull request branch to create or update set to '${inputs.branch}'`);
             // Determine the committer and author
+            core.startGroup('Configuring the committer and author');
             const gitIdentityHelper = new git_identity_helper_1.GitIdentityHelper(git);
             const identity = yield gitIdentityHelper.getIdentity(inputs.author, inputs.committer);
             git.setIdentityGitOptions([
@@ -10587,35 +10593,22 @@ function createPullRequest(inputs) {
             ]);
             core.info(`Configured git committer as '${identity.committerName} <${identity.committerEmail}>'`);
             core.info(`Configured git author as '${identity.authorName} <${identity.authorEmail}>'`);
+            core.endGroup();
             // Create or update the pull request branch
+            core.startGroup('Create or update the pull request branch');
             const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch);
+            core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
-                core.info(`Pushing pull request branch to 'origin/${inputs.branch}'`);
+                core.startGroup(`Pushing pull request branch to 'origin/${inputs.branch}'`);
                 yield git.push(['--force', 'origin', `HEAD:refs/heads/${inputs.branch}`]);
+                core.endGroup();
                 // Set the base. It would have been '' if not specified as an input
                 inputs.base = result.base;
                 if (result.hasDiffWithBase) {
                     // Create or update the pull request
                     const githubHelper = new github_helper_1.GitHubHelper(inputs.token);
                     yield githubHelper.createOrUpdatePullRequest(inputs, remote.repository);
-                    // coupr.create_or_update_pull_request(
-                    //     github_token,
-                    //     github_repository,
-                    //     branch,
-                    //     base,
-                    //     title,
-                    //     body,
-                    //     os.environ.get("CPR_LABELS"),
-                    //     os.environ.get("CPR_ASSIGNEES"),
-                    //     os.environ.get("CPR_MILESTONE"),
-                    //     os.environ.get("CPR_REVIEWERS"),
-                    //     os.environ.get("CPR_TEAM_REVIEWERS"),
-                    //     os.environ.get("CPR_PROJECT_NAME"),
-                    //     os.environ.get("CPR_PROJECT_COLUMN_NAME"),
-                    //     os.environ.get("CPR_DRAFT"),
-                    //     os.environ.get("CPR_REQUEST_TO_PARENT"),
-                    // )
                 }
                 else {
                     // If there is no longer a diff with the base delete the branch
@@ -10635,10 +10628,12 @@ function createPullRequest(inputs) {
         }
         finally {
             // Restore the extraheader config option
+            core.startGroup('Restore persisted git credentials');
             if (extraHeaderOption.value != '') {
                 if (yield gitConfigHelper.addConfigOption(EXTRAHEADER_OPTION, extraHeaderOption.value))
                     core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);
             }
+            core.endGroup();
         }
     });
 }
