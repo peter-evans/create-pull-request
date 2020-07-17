@@ -10604,7 +10604,11 @@ function createPullRequest(inputs) {
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to 'origin/${inputs.branch}'`);
-                yield git.push(['--force', 'origin', `HEAD:refs/heads/${inputs.branch}`]);
+                yield git.push([
+                    '--force-with-lease',
+                    'origin',
+                    `HEAD:refs/heads/${inputs.branch}`
+                ]);
                 core.endGroup();
                 // Set the base. It would have been '' if not specified as an input
                 inputs.base = result.base;

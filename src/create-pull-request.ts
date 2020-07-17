@@ -185,7 +185,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to 'origin/${inputs.branch}'`
       )
-      await git.push(['--force', 'origin', `HEAD:refs/heads/${inputs.branch}`])
+      await git.push([
+        '--force-with-lease',
+        'origin',
+        `HEAD:refs/heads/${inputs.branch}`
+      ])
       core.endGroup()
 
       // Set the base. It would have been '' if not specified as an input

@@ -194,7 +194,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -223,7 +227,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -255,7 +263,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -285,7 +297,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -329,7 +345,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -358,7 +378,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -398,7 +422,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -437,7 +465,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -480,7 +512,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -536,7 +572,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -576,7 +616,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -619,7 +663,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -660,7 +708,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -715,7 +767,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -757,7 +813,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -808,7 +868,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -858,7 +922,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
@@ -912,7 +980,11 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
 
     // Push pull request branch to remote
-    await git.push(['--force', 'origin', `HEAD:refs/heads/${BRANCH}`])
+    await git.push([
+      '--force-with-lease',
+      'origin',
+      `HEAD:refs/heads/${BRANCH}`
+    ])
 
     await afterTest(false)
     await beforeTest()
