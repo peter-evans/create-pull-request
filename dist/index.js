@@ -10590,7 +10590,7 @@ function createPullRequest(inputs) {
             core.info(`Pull request branch target repository set to ${remote.repository}`);
             if (remote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
-                yield gitAuthHelper.configureAuth(inputs.token);
+                yield gitAuthHelper.configureToken(inputs.token);
                 core.endGroup();
             }
             // Determine if the checked out ref is a valid base for a pull request

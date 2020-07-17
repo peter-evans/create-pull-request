@@ -66,7 +66,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     if (remote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
-      await gitAuthHelper.configureAuth(inputs.token)
+      await gitAuthHelper.configureToken(inputs.token)
       core.endGroup()
     }
 
