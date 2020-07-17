@@ -2,12 +2,9 @@ import * as core from '@actions/core'
 import {createOrUpdateBranch} from './create-or-update-branch'
 import {GitHubHelper} from './github-helper'
 import {GitCommandManager} from './git-command-manager'
-import {ConfigOption, GitConfigHelper} from './git-config-helper'
+import {GitAuthHelper} from './git-auth-helper'
 import {GitIdentityHelper} from './git-identity-helper'
 import * as utils from './utils'
-
-const EXTRAHEADER_OPTION = 'http.https://github.com/.extraheader'
-const EXTRAHEADER_VALUE_REGEX = '^AUTHORIZATION:'
 
 const DEFAULT_COMMIT_MESSAGE = '[create-pull-request] automated change'
 const DEFAULT_TITLE = 'Changes by create-pull-request action'
@@ -36,21 +33,17 @@ export interface Inputs {
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
-  let gitConfigHelper
-  let extraHeaderOption = new ConfigOption()
+  let gitAuthHelper
   try {
     // Get the repository path
     const repoPath = utils.getRepoPath(inputs.path)
     // Create a git command manager
     const git = await GitCommandManager.create(repoPath)
 
-    // Unset and save the extraheader config option if it exists
+    // Save and unset the extraheader auth config if it exists
     core.startGroup('Save persisted git credentials')
-    gitConfigHelper = new GitConfigHelper(git)
-    extraHeaderOption = await gitConfigHelper.getAndUnsetConfigOption(
-      EXTRAHEADER_OPTION,
-      EXTRAHEADER_VALUE_REGEX
-    )
+    gitAuthHelper = new GitAuthHelper(git)
+    await gitAuthHelper.savePersistedAuth()
     core.endGroup()
 
     // Set defaults
@@ -64,10 +57,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Determine the GitHub repository from git config
     // This will be the target repository for the pull request branch
     core.startGroup('Determining the checked out repository')
-    const remoteOriginUrlConfig = await gitConfigHelper.getConfigOption(
-      'remote.origin.url'
-    )
-    const remote = utils.getRemoteDetail(remoteOriginUrlConfig.value)
+    const remoteUrl = await git.tryGetRemoteUrl()
+    const remote = utils.getRemoteDetail(remoteUrl)
     core.endGroup()
     core.info(
       `Pull request branch target repository set to ${remote.repository}`
@@ -75,16 +66,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     if (remote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
-      // Encode and configure the basic credential for HTTPS access
-      const basicCredential = Buffer.from(
-        `x-access-token:${inputs.token}`,
-        'utf8'
-      ).toString('base64')
-      core.setSecret(basicCredential)
-      git.setAuthGitOptions([
-        '-c',
-        `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicCredential}`
-      ])
+      await gitAuthHelper.configureAuth(inputs.token)
       core.endGroup()
     }
 
@@ -216,17 +198,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
   } catch (error) {
     core.setFailed(error.message)
   } finally {
-    // Restore the extraheader config option
+    // Remove auth and restore persisted auth config if it existed
     core.startGroup('Restore persisted git credentials')
-    if (extraHeaderOption.value != '') {
-      if (
-        await gitConfigHelper.addConfigOption(
-          EXTRAHEADER_OPTION,
-          extraHeaderOption.value
-        )
-      )
-        core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`)
-    }
+    await gitAuthHelper.removeAuth()
+    await gitAuthHelper.restorePersistedAuth()
     core.endGroup()
   }
 }

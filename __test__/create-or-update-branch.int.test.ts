@@ -82,10 +82,6 @@ describe('create-or-update-branch tests', () => {
 
   beforeAll(async () => {
     git = await GitCommandManager.create(REPO_PATH)
-    git.setAuthGitOptions([
-      '-c',
-      'http.https://github.com/.extraheader=AUTHORIZATION: basic xxx'
-    ])
     git.setIdentityGitOptions([
       '-c',
       'author.name=Author Name',

@@ -1,6 +1,5 @@
 import * as core from '@actions/core'
 import {GitCommandManager} from './git-command-manager'
-import {GitConfigHelper} from './git-config-helper'
 import * as utils from './utils'
 
 // Default the committer and author to the GitHub Actions bot
@@ -23,41 +22,35 @@ export class GitIdentityHelper {
   }
 
   private async getGitIdentityFromConfig(): Promise<GitIdentity | undefined> {
-    const gitConfigHelper = new GitConfigHelper(this.git)
-
     if (
-      (await gitConfigHelper.configOptionExists('user.name')) &&
-      (await gitConfigHelper.configOptionExists('user.email'))
+      (await this.git.configExists('user.name')) &&
+      (await this.git.configExists('user.email'))
     ) {
-      const userName = await gitConfigHelper.getConfigOption('user.name')
-      const userEmail = await gitConfigHelper.getConfigOption('user.email')
+      const userName = await this.git.getConfigValue('user.name')
+      const userEmail = await this.git.getConfigValue('user.email')
       return {
-        authorName: userName.value,
-        authorEmail: userEmail.value,
-        committerName: userName.value,
-        committerEmail: userEmail.value
+        authorName: userName,
+        authorEmail: userEmail,
+        committerName: userName,
+        committerEmail: userEmail
       }
     }
 
     if (
-      (await gitConfigHelper.configOptionExists('committer.name')) &&
-      (await gitConfigHelper.configOptionExists('committer.email')) &&
-      (await gitConfigHelper.configOptionExists('author.name')) &&
-      (await gitConfigHelper.configOptionExists('author.email'))
+      (await this.git.configExists('committer.name')) &&
+      (await this.git.configExists('committer.email')) &&
+      (await this.git.configExists('author.name')) &&
+      (await this.git.configExists('author.email'))
     ) {
-      const committerName = await gitConfigHelper.getConfigOption(
-        'committer.name'
-      )
-      const committerEmail = await gitConfigHelper.getConfigOption(
-        'committer.email'
-      )
-      const authorName = await gitConfigHelper.getConfigOption('author.name')
-      const authorEmail = await gitConfigHelper.getConfigOption('author.email')
+      const committerName = await this.git.getConfigValue('committer.name')
+      const committerEmail = await this.git.getConfigValue('committer.email')
+      const authorName = await this.git.getConfigValue('author.name')
+      const authorEmail = await this.git.getConfigValue('author.email')
       return {
-        authorName: authorName.value,
-        authorEmail: authorEmail.value,
-        committerName: committerName.value,
-        committerEmail: committerEmail.value
+        authorName: authorName,
+        authorEmail: authorEmail,
+        committerName: committerName,
+        committerEmail: committerEmail
       }
     }
 

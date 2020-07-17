@@ -1647,6 +1647,139 @@ function register (state, name, method, options) {
 
 /***/ }),
 
+/***/ 287:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GitAuthHelper = void 0;
+const core = __importStar(__webpack_require__(470));
+const fs = __importStar(__webpack_require__(747));
+const path = __importStar(__webpack_require__(622));
+const url_1 = __webpack_require__(835);
+class GitAuthHelper {
+    constructor(git) {
+        this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
+        this.extraheaderConfigValueRegex = '^AUTHORIZATION:';
+        this.persistedExtraheaderConfigValue = '';
+        this.git = git;
+        this.gitConfigPath = path.join(this.git.getWorkingDirectory(), '.git', 'config');
+        const serverUrl = this.getServerUrl();
+        this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
+    }
+    savePersistedAuth() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Save and unset persisted extraheader credential in git config if it exists
+            this.persistedExtraheaderConfigValue = yield this.getAndUnset();
+        });
+    }
+    restorePersistedAuth() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.persistedExtraheaderConfigValue) {
+                try {
+                    yield this.setExtraheaderConfig(this.persistedExtraheaderConfigValue);
+                    core.info('Persisted git credentials restored');
+                }
+                catch (e) {
+                    core.warning(e);
+                }
+            }
+        });
+    }
+    configureToken(token) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Encode and configure the basic credential for HTTPS access
+            const basicCredential = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
+            core.setSecret(basicCredential);
+            const extraheaderConfigValue = `AUTHORIZATION: basic ${basicCredential}`;
+            yield this.setExtraheaderConfig(extraheaderConfigValue);
+        });
+    }
+    removeAuth() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.getAndUnset();
+        });
+    }
+    setExtraheaderConfig(extraheaderConfigValue) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Configure a placeholder value. This approach avoids the credential being captured
+            // by process creation audit events, which are commonly logged. For more information,
+            // refer to https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing
+            // See https://github.com/actions/checkout/blob/main/src/git-auth-helper.ts#L267-L274
+            yield this.git.config(this.extraheaderConfigKey, this.extraheaderConfigPlaceholderValue);
+            // Replace the placeholder
+            yield this.gitConfigStringReplace(this.extraheaderConfigPlaceholderValue, extraheaderConfigValue);
+        });
+    }
+    getAndUnset() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let configValue = '';
+            // Save and unset persisted extraheader credential in git config if it exists
+            if (yield this.git.configExists(this.extraheaderConfigKey, this.extraheaderConfigValueRegex)) {
+                configValue = yield this.git.getConfigValue(this.extraheaderConfigKey, this.extraheaderConfigValueRegex);
+                if (yield this.git.tryConfigUnset(this.extraheaderConfigKey, this.extraheaderConfigValueRegex)) {
+                    core.info(`Unset config key '${this.extraheaderConfigKey}'`);
+                }
+                else {
+                    core.warning(`Failed to unset config key '${this.extraheaderConfigKey}'`);
+                }
+            }
+            return configValue;
+        });
+    }
+    gitConfigStringReplace(find, replace) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let content = (yield fs.promises.readFile(this.gitConfigPath)).toString();
+            const index = content.indexOf(find);
+            if (index < 0 || index != content.lastIndexOf(find)) {
+                throw new Error(`Unable to replace '${find}' in ${this.gitConfigPath}`);
+            }
+            content = content.replace(find, replace);
+            yield fs.promises.writeFile(this.gitConfigPath, content);
+        });
+    }
+    getServerUrl() {
+        // todo: remove GITHUB_URL after support for GHES Alpha is no longer needed
+        // See https://github.com/actions/checkout/blob/main/src/url-helper.ts#L22-L29
+        return new url_1.URL(process.env['GITHUB_SERVER_URL'] ||
+            process.env['GITHUB_URL'] ||
+            'https://github.com');
+    }
+}
+exports.GitAuthHelper = GitAuthHelper;
+
+
+/***/ }),
+
 /***/ 289:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -1696,9 +1829,6 @@ class GitCommandManager {
             return new GitCommandManager(workingDirectory, gitPath);
         });
     }
-    setAuthGitOptions(authGitOptions) {
-        this.authGitOptions = authGitOptions;
-    }
     setIdentityGitOptions(identityGitOptions) {
         this.identityGitOptions = identityGitOptions;
     }
@@ -1738,6 +1868,29 @@ class GitCommandManager {
             yield this.exec(args);
         });
     }
+    config(configKey, configValue, globalConfig) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.exec([
+                'config',
+                globalConfig ? '--global' : '--local',
+                configKey,
+                configValue
+            ]);
+        });
+    }
+    configExists(configKey, configValue = '.', globalConfig) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const output = yield this.exec([
+                'config',
+                globalConfig ? '--global' : '--local',
+                '--name-only',
+                '--get-regexp',
+                configKey,
+                configValue
+            ], true);
+            return output.exitCode === 0;
+        });
+    }
     diff(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['-c', 'core.pager=cat', 'diff'];
@@ -1750,11 +1903,7 @@ class GitCommandManager {
     }
     fetch(refSpec, remoteName, options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const args = ['-c', 'protocol.version=2'];
-            if (this.authGitOptions) {
-                args.push(...this.authGitOptions);
-            }
-            args.push('fetch');
+            const args = ['-c', 'protocol.version=2', 'fetch'];
             if (!refSpec.some(x => x === tagsRefSpec)) {
                 args.push('--no-tags');
             }
@@ -1772,6 +1921,18 @@ class GitCommandManager {
                 args.push(arg);
             }
             yield this.exec(args);
+        });
+    }
+    getConfigValue(configKey, configValue = '.') {
+        return __awaiter(this, void 0, void 0, function* () {
+            const output = yield this.exec([
+                'config',
+                '--local',
+                '--get-regexp',
+                configKey,
+                configValue
+            ]);
+            return output.stdout.trim().split(`${configKey} `)[1];
         });
     }
     getWorkingDirectory() {
@@ -1798,9 +1959,6 @@ class GitCommandManager {
     push(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['push'];
-            if (this.authGitOptions) {
-                args.unshift(...this.authGitOptions);
-            }
             if (options) {
                 args.push(...options);
             }
@@ -1849,18 +2007,19 @@ class GitCommandManager {
             return output.stdout.trim();
         });
     }
-    tryConfigUnset(configKey, globalConfig) {
+    tryConfigUnset(configKey, configValue = '.', globalConfig) {
         return __awaiter(this, void 0, void 0, function* () {
             const output = yield this.exec([
                 'config',
                 globalConfig ? '--global' : '--local',
-                '--unset-all',
-                configKey
+                '--unset',
+                configKey,
+                configValue
             ], true);
             return output.exitCode === 0;
         });
     }
-    tryGetFetchUrl() {
+    tryGetRemoteUrl() {
         return __awaiter(this, void 0, void 0, function* () {
             const output = yield this.exec(['config', '--local', '--get', 'remote.origin.url'], true);
             if (output.exitCode !== 0) {
@@ -4713,98 +4872,6 @@ class RequestError extends Error {
 
 exports.RequestError = RequestError;
 //# sourceMappingURL=index.js.map
-
-
-/***/ }),
-
-/***/ 468:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GitConfigHelper = exports.ConfigOption = void 0;
-const core = __importStar(__webpack_require__(470));
-class ConfigOption {
-    constructor() {
-        this.name = '';
-        this.value = '';
-    }
-}
-exports.ConfigOption = ConfigOption;
-class GitConfigHelper {
-    constructor(git) {
-        this.git = git;
-    }
-    addConfigOption(name, value) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.git.exec(['config', '--local', '--add', name, value], true);
-            return result.exitCode === 0;
-        });
-    }
-    unsetConfigOption(name, valueRegex = '.') {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.git.exec(['config', '--local', '--unset', name, valueRegex], true);
-            return result.exitCode === 0;
-        });
-    }
-    configOptionExists(name, valueRegex = '.') {
-        return __awaiter(this, void 0, void 0, function* () {
-            const result = yield this.git.exec(['config', '--local', '--name-only', '--get-regexp', name, valueRegex], true);
-            return result.exitCode === 0;
-        });
-    }
-    getConfigOption(name, valueRegex = '.') {
-        return __awaiter(this, void 0, void 0, function* () {
-            const option = new ConfigOption();
-            const result = yield this.git.exec(['config', '--local', '--get-regexp', name, valueRegex], true);
-            option.name = name;
-            option.value = result.stdout.trim().split(`${name} `)[1];
-            return option;
-        });
-    }
-    getAndUnsetConfigOption(name, valueRegex = '.') {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (yield this.configOptionExists(name, valueRegex)) {
-                const option = yield this.getConfigOption(name, valueRegex);
-                if (yield this.unsetConfigOption(name, valueRegex)) {
-                    core.debug(`Unset config option '${name}'`);
-                    return option;
-                }
-            }
-            return new ConfigOption();
-        });
-    }
-}
-exports.GitConfigHelper = GitConfigHelper;
 
 
 /***/ }),
@@ -8173,7 +8240,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitIdentityHelper = void 0;
 const core = __importStar(__webpack_require__(470));
-const git_config_helper_1 = __webpack_require__(468);
 const utils = __importStar(__webpack_require__(611));
 // Default the committer and author to the GitHub Actions bot
 const DEFAULT_COMMITTER = 'GitHub <noreply@github.com>';
@@ -8184,31 +8250,30 @@ class GitIdentityHelper {
     }
     getGitIdentityFromConfig() {
         return __awaiter(this, void 0, void 0, function* () {
-            const gitConfigHelper = new git_config_helper_1.GitConfigHelper(this.git);
-            if ((yield gitConfigHelper.configOptionExists('user.name')) &&
-                (yield gitConfigHelper.configOptionExists('user.email'))) {
-                const userName = yield gitConfigHelper.getConfigOption('user.name');
-                const userEmail = yield gitConfigHelper.getConfigOption('user.email');
+            if ((yield this.git.configExists('user.name')) &&
+                (yield this.git.configExists('user.email'))) {
+                const userName = yield this.git.getConfigValue('user.name');
+                const userEmail = yield this.git.getConfigValue('user.email');
                 return {
-                    authorName: userName.value,
-                    authorEmail: userEmail.value,
-                    committerName: userName.value,
-                    committerEmail: userEmail.value
+                    authorName: userName,
+                    authorEmail: userEmail,
+                    committerName: userName,
+                    committerEmail: userEmail
                 };
             }
-            if ((yield gitConfigHelper.configOptionExists('committer.name')) &&
-                (yield gitConfigHelper.configOptionExists('committer.email')) &&
-                (yield gitConfigHelper.configOptionExists('author.name')) &&
-                (yield gitConfigHelper.configOptionExists('author.email'))) {
-                const committerName = yield gitConfigHelper.getConfigOption('committer.name');
-                const committerEmail = yield gitConfigHelper.getConfigOption('committer.email');
-                const authorName = yield gitConfigHelper.getConfigOption('author.name');
-                const authorEmail = yield gitConfigHelper.getConfigOption('author.email');
+            if ((yield this.git.configExists('committer.name')) &&
+                (yield this.git.configExists('committer.email')) &&
+                (yield this.git.configExists('author.name')) &&
+                (yield this.git.configExists('author.email'))) {
+                const committerName = yield this.git.getConfigValue('committer.name');
+                const committerEmail = yield this.git.getConfigValue('committer.email');
+                const authorName = yield this.git.getConfigValue('author.name');
+                const authorEmail = yield this.git.getConfigValue('author.email');
                 return {
-                    authorName: authorName.value,
-                    authorEmail: authorEmail.value,
-                    committerName: committerName.value,
-                    committerEmail: committerEmail.value
+                    authorName: authorName,
+                    authorEmail: authorEmail,
+                    committerName: committerName,
+                    committerEmail: committerEmail
                 };
             }
             return undefined;
@@ -10489,28 +10554,25 @@ const core = __importStar(__webpack_require__(470));
 const create_or_update_branch_1 = __webpack_require__(159);
 const github_helper_1 = __webpack_require__(718);
 const git_command_manager_1 = __webpack_require__(289);
-const git_config_helper_1 = __webpack_require__(468);
+const git_auth_helper_1 = __webpack_require__(287);
 const git_identity_helper_1 = __webpack_require__(723);
 const utils = __importStar(__webpack_require__(611));
-const EXTRAHEADER_OPTION = 'http.https://github.com/.extraheader';
-const EXTRAHEADER_VALUE_REGEX = '^AUTHORIZATION:';
 const DEFAULT_COMMIT_MESSAGE = '[create-pull-request] automated change';
 const DEFAULT_TITLE = 'Changes by create-pull-request action';
 const DEFAULT_BODY = 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action';
 const DEFAULT_BRANCH = 'create-pull-request/patch';
 function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
-        let gitConfigHelper;
-        let extraHeaderOption = new git_config_helper_1.ConfigOption();
+        let gitAuthHelper;
         try {
             // Get the repository path
             const repoPath = utils.getRepoPath(inputs.path);
             // Create a git command manager
             const git = yield git_command_manager_1.GitCommandManager.create(repoPath);
-            // Unset and save the extraheader config option if it exists
+            // Save and unset the extraheader auth config if it exists
             core.startGroup('Save persisted git credentials');
-            gitConfigHelper = new git_config_helper_1.GitConfigHelper(git);
-            extraHeaderOption = yield gitConfigHelper.getAndUnsetConfigOption(EXTRAHEADER_OPTION, EXTRAHEADER_VALUE_REGEX);
+            gitAuthHelper = new git_auth_helper_1.GitAuthHelper(git);
+            yield gitAuthHelper.savePersistedAuth();
             core.endGroup();
             // Set defaults
             inputs.commitMessage = inputs.commitMessage
@@ -10522,19 +10584,13 @@ function createPullRequest(inputs) {
             // Determine the GitHub repository from git config
             // This will be the target repository for the pull request branch
             core.startGroup('Determining the checked out repository');
-            const remoteOriginUrlConfig = yield gitConfigHelper.getConfigOption('remote.origin.url');
-            const remote = utils.getRemoteDetail(remoteOriginUrlConfig.value);
+            const remoteUrl = yield git.tryGetRemoteUrl();
+            const remote = utils.getRemoteDetail(remoteUrl);
             core.endGroup();
             core.info(`Pull request branch target repository set to ${remote.repository}`);
             if (remote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
-                // Encode and configure the basic credential for HTTPS access
-                const basicCredential = Buffer.from(`x-access-token:${inputs.token}`, 'utf8').toString('base64');
-                core.setSecret(basicCredential);
-                git.setAuthGitOptions([
-                    '-c',
-                    `http.https://github.com/.extraheader=AUTHORIZATION: basic ${basicCredential}`
-                ]);
+                yield gitAuthHelper.configureAuth(inputs.token);
                 core.endGroup();
             }
             // Determine if the checked out ref is a valid base for a pull request
@@ -10634,12 +10690,10 @@ function createPullRequest(inputs) {
             core.setFailed(error.message);
         }
         finally {
-            // Restore the extraheader config option
+            // Remove auth and restore persisted auth config if it existed
             core.startGroup('Restore persisted git credentials');
-            if (extraHeaderOption.value != '') {
-                if (yield gitConfigHelper.addConfigOption(EXTRAHEADER_OPTION, extraHeaderOption.value))
-                    core.debug(`Restored config option '${EXTRAHEADER_OPTION}'`);
-            }
+            yield gitAuthHelper.removeAuth();
+            yield gitAuthHelper.restorePersistedAuth();
             core.endGroup();
         }
     });

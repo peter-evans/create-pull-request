@@ -6,8 +6,6 @@ const tagsRefSpec = '+refs/tags/*:refs/tags/*'
 export class GitCommandManager {
   private gitPath: string
   private workingDirectory: string
-  // Git options used when commands require auth
-  private authGitOptions?: string[]
   // Git options used when commands require an identity
   private identityGitOptions?: string[]
 
@@ -19,10 +17,6 @@ export class GitCommandManager {
   static async create(workingDirectory: string): Promise<GitCommandManager> {
     const gitPath = await io.which('git', true)
     return new GitCommandManager(workingDirectory, gitPath)
-  }
-
-  setAuthGitOptions(authGitOptions: string[]): void {
-    this.authGitOptions = authGitOptions
   }
 
   setIdentityGitOptions(identityGitOptions: string[]): void {
@@ -68,6 +62,38 @@ export class GitCommandManager {
     await this.exec(args)
   }
 
+  async config(
+    configKey: string,
+    configValue: string,
+    globalConfig?: boolean
+  ): Promise<void> {
+    await this.exec([
+      'config',
+      globalConfig ? '--global' : '--local',
+      configKey,
+      configValue
+    ])
+  }
+
+  async configExists(
+    configKey: string,
+    configValue = '.',
+    globalConfig?: boolean
+  ): Promise<boolean> {
+    const output = await this.exec(
+      [
+        'config',
+        globalConfig ? '--global' : '--local',
+        '--name-only',
+        '--get-regexp',
+        configKey,
+        configValue
+      ],
+      true
+    )
+    return output.exitCode === 0
+  }
+
   async diff(options?: string[]): Promise<string> {
     const args = ['-c', 'core.pager=cat', 'diff']
     if (options) {
@@ -82,12 +108,7 @@ export class GitCommandManager {
     remoteName?: string,
     options?: string[]
   ): Promise<void> {
-    const args = ['-c', 'protocol.version=2']
-    if (this.authGitOptions) {
-      args.push(...this.authGitOptions)
-    }
-    args.push('fetch')
-
+    const args = ['-c', 'protocol.version=2', 'fetch']
     if (!refSpec.some(x => x === tagsRefSpec)) {
       args.push('--no-tags')
     }
@@ -108,6 +129,17 @@ export class GitCommandManager {
     }
 
     await this.exec(args)
+  }
+
+  async getConfigValue(configKey: string, configValue = '.'): Promise<string> {
+    const output = await this.exec([
+      'config',
+      '--local',
+      '--get-regexp',
+      configKey,
+      configValue
+    ])
+    return output.stdout.trim().split(`${configKey} `)[1]
   }
 
   getWorkingDirectory(): string {
@@ -133,14 +165,9 @@ export class GitCommandManager {
 
   async push(options?: string[]): Promise<void> {
     const args = ['push']
-    if (this.authGitOptions) {
-      args.unshift(...this.authGitOptions)
-    }
-
     if (options) {
       args.push(...options)
     }
-
     await this.exec(args)
   }
 
@@ -187,21 +214,23 @@ export class GitCommandManager {
 
   async tryConfigUnset(
     configKey: string,
+    configValue = '.',
     globalConfig?: boolean
   ): Promise<boolean> {
     const output = await this.exec(
       [
         'config',
         globalConfig ? '--global' : '--local',
-        '--unset-all',
-        configKey
+        '--unset',
+        configKey,
+        configValue
       ],
       true
     )
     return output.exitCode === 0
   }
 
-  async tryGetFetchUrl(): Promise<string> {
+  async tryGetRemoteUrl(): Promise<string> {
     const output = await this.exec(
       ['config', '--local', '--get', 'remote.origin.url'],
       true
