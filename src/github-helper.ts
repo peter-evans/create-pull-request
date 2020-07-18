@@ -77,24 +77,25 @@ export class GitHubHelper {
     return pull.number
   }
 
-  async createOrUpdatePullRequest(
-    inputs: Inputs,
-    headRepository: string
-  ): Promise<void> {
+  async getRepositoryParent(headRepository: string): Promise<string> {
     const {data: headRepo} = await this.octokit.repos.get({
       ...this.parseRepository(headRepository)
     })
-
-    if (inputs.requestToParent && !headRepo.parent) {
+    if (!headRepo.parent) {
       throw new Error(
-        `The checked out repository is not a fork. Input 'request-to-parent' should be set to 'false'.`
+        `Repository '${headRepository}' is not a fork. Unable to continue.`
       )
     }
-    const baseRepository = inputs.requestToParent
-      ? headRepo.parent.full_name
-      : headRepository
+    return headRepo.parent.full_name
+  }
 
-    const headBranch = `${headRepo.owner.login}:${inputs.branch}`
+  async createOrUpdatePullRequest(
+    inputs: Inputs,
+    baseRepository: string,
+    headRepository: string
+  ): Promise<void> {
+    const [headOwner] = headRepository.split('/')
+    const headBranch = `${headOwner}:${inputs.branch}`
 
     // Create or update the pull request
     const pullNumber = await this.createOrUpdate(

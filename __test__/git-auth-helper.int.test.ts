@@ -1,7 +1,7 @@
 import {GitCommandManager} from '../lib/git-command-manager'
 import {GitAuthHelper} from '../lib/git-auth-helper'
 
-const REPO_PATH = '/git/test-repo'
+const REPO_PATH = '/git/local/test-base'
 
 const extraheaderConfigKey = 'http.https://github.com/.extraheader'
 

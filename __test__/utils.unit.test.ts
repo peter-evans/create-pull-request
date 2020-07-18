@@ -65,6 +65,14 @@ describe('utils tests', () => {
     }
   })
 
+  test('getRemoteUrl successfully returns remote URLs', async () => {
+    const url1 = utils.getRemoteUrl('HTTPS', 'peter-evans/create-pull-request')
+    expect(url1).toEqual('https://github.com/peter-evans/create-pull-request')
+
+    const url2 = utils.getRemoteUrl('SSH', 'peter-evans/create-pull-request')
+    expect(url2).toEqual('git@github.com:peter-evans/create-pull-request.git')
+  })
+
   test('secondsSinceEpoch returns the number of seconds since the Epoch', async () => {
     const seconds = `${utils.secondsSinceEpoch()}`
     expect(seconds.length).toEqual(10)

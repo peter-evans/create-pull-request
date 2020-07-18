@@ -20,7 +20,7 @@ async function run(): Promise<void> {
       milestone: Number(core.getInput('milestone')),
       draft: core.getInput('draft') === 'true',
       branch: core.getInput('branch'),
-      requestToParent: core.getInput('request-to-parent') === 'true',
+      pushToFork: core.getInput('push-to-fork'),
       base: core.getInput('base'),
       branchSuffix: core.getInput('branch-suffix')
     }

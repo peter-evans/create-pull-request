@@ -1012,10 +1012,10 @@ exports.createOrUpdateBranch = exports.tryFetch = void 0;
 const core = __importStar(__webpack_require__(470));
 const uuid_1 = __webpack_require__(62);
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
-function tryFetch(git, branch) {
+function tryFetch(git, remote, branch) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield git.fetch([`${branch}:refs/remotes/origin/${branch}`]);
+            yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote);
             return true;
         }
         catch (_a) {
@@ -1057,12 +1057,13 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, baseInput, branch) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base. This may or may not be the actual base.
         const workingBase = yield git.symbolicRef('HEAD', ['--short']);
         // If the base is not specified it is assumed to be the working base.
-        const base = baseInput ? baseInput : workingBase;
+        base = base ? base : workingBase;
+        const baseRemote = 'origin';
         // Set the default return values
         const result = {
             action: 'none',
@@ -1080,12 +1081,12 @@ function createOrUpdateBranch(git, commitMessage, baseInput, branch) {
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
-        yield git.fetch([`${workingBase}:${workingBase}`], 'origin', ['--force']);
+        yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force']);
         // If the working base is not the base, rebase the temp branch commits
         if (workingBase != base) {
             core.info(`Rebasing commits made to branch '${workingBase}' on to base branch '${base}'`);
             // Checkout the actual base
-            yield git.fetch([`${base}:${base}`], 'origin', ['--force']);
+            yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
             yield git.checkout(base);
             // Cherrypick commits from the temporary branch starting from the working base
             const commits = yield git.revList([`${workingBase}..${tempBranch}`, '.'], ['--reverse']);
@@ -1098,10 +1099,10 @@ function createOrUpdateBranch(git, commitMessage, baseInput, branch) {
             // Reset the temp branch to the working index
             yield git.checkout(tempBranch, 'HEAD');
             // Reset the base
-            yield git.fetch([`${base}:${base}`], 'origin', ['--force']);
+            yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
         }
         // Try to fetch the pull request branch
-        if (!(yield tryFetch(git, branch))) {
+        if (!(yield tryFetch(git, branchRemoteName, branch))) {
             // The pull request branch does not exist
             core.info(`Pull request branch '${branch}' does not exist yet.`);
             // Create the pull request branch
@@ -1118,7 +1119,7 @@ function createOrUpdateBranch(git, commitMessage, baseInput, branch) {
         }
         else {
             // The pull request branch exists
-            core.info(`Pull request branch '${branch}' already exists as remote branch 'origin/${branch}'`);
+            core.info(`Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`);
             // Checkout the pull request branch
             yield git.checkout(branch);
             if (yield hasDiff(git, branch, tempBranch)) {
@@ -1131,7 +1132,7 @@ function createOrUpdateBranch(git, commitMessage, baseInput, branch) {
             // Check if the pull request branch has been updated
             // If the branch was reset or updated it will be ahead
             // It may be behind if a reset now results in no diff with the base
-            if (!(yield isEven(git, `origin/${branch}`, branch))) {
+            if (!(yield isEven(git, `${branchRemoteName}/${branch}`, branch))) {
                 result.action = 'updated';
                 core.info(`Updated branch '${branch}'`);
             }
@@ -1304,7 +1305,7 @@ function run() {
                 milestone: Number(core.getInput('milestone')),
                 draft: core.getInput('draft') === 'true',
                 branch: core.getInput('branch'),
-                requestToParent: core.getInput('request-to-parent') === 'true',
+                pushToFork: core.getInput('push-to-fork'),
                 base: core.getInput('base'),
                 branchSuffix: core.getInput('branch-suffix')
             };
@@ -6916,7 +6917,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
+exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
 const core = __importStar(__webpack_require__(470));
 const path = __importStar(__webpack_require__(622));
 function getInputAsArray(name, options) {
@@ -6966,6 +6967,12 @@ function getRemoteDetail(remoteUrl) {
     throw new Error(`The format of '${remoteUrl}' is not a valid GitHub repository URL`);
 }
 exports.getRemoteDetail = getRemoteDetail;
+function getRemoteUrl(protocol, repository) {
+    return protocol == 'HTTPS'
+        ? `https://github.com/${repository}`
+        : `git@github.com:${repository}.git`;
+}
+exports.getRemoteUrl = getRemoteUrl;
 function secondsSinceEpoch() {
     const now = new Date();
     return Math.round(now.getTime() / 1000);
@@ -8139,16 +8146,19 @@ class GitHubHelper {
             return pull.number;
         });
     }
-    createOrUpdatePullRequest(inputs, headRepository) {
+    getRepositoryParent(headRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const { data: headRepo } = yield this.octokit.repos.get(Object.assign({}, this.parseRepository(headRepository)));
-            if (inputs.requestToParent && !headRepo.parent) {
-                throw new Error(`The checked out repository is not a fork. Input 'request-to-parent' should be set to 'false'.`);
+            if (!headRepo.parent) {
+                throw new Error(`Repository '${headRepository}' is not a fork. Unable to continue.`);
             }
-            const baseRepository = inputs.requestToParent
-                ? headRepo.parent.full_name
-                : headRepository;
-            const headBranch = `${headRepo.owner.login}:${inputs.branch}`;
+            return headRepo.parent.full_name;
+        });
+    }
+    createOrUpdatePullRequest(inputs, baseRepository, headRepository) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const [headOwner] = headRepository.split('/');
+            const headBranch = `${headOwner}:${inputs.branch}`;
             // Create or update the pull request
             const pullNumber = yield this.createOrUpdate(inputs, baseRepository, headBranch);
             // Set outputs
@@ -10581,14 +10591,30 @@ function createPullRequest(inputs) {
             inputs.title = inputs.title ? inputs.title : DEFAULT_TITLE;
             inputs.body = inputs.body ? inputs.body : DEFAULT_BODY;
             inputs.branch = inputs.branch ? inputs.branch : DEFAULT_BRANCH;
-            // Determine the GitHub repository from git config
-            // This will be the target repository for the pull request branch
-            core.startGroup('Determining the checked out repository');
+            // Init the GitHub client
+            const githubHelper = new github_helper_1.GitHubHelper(inputs.token);
+            core.startGroup('Determining the base and head repositories');
+            // Determine the base repository from git config
             const remoteUrl = yield git.tryGetRemoteUrl();
-            const remote = utils.getRemoteDetail(remoteUrl);
+            const baseRemote = utils.getRemoteDetail(remoteUrl);
+            // Determine the head repository; the target for the pull request branch
+            const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin';
+            const branchRepository = inputs.pushToFork
+                ? inputs.pushToFork
+                : baseRemote.repository;
+            if (inputs.pushToFork) {
+                // Check if the supplied fork is really a fork of the base
+                const parentRepository = yield githubHelper.getRepositoryParent(branchRepository);
+                if (parentRepository != baseRemote.repository) {
+                    throw new Error(`Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`);
+                }
+                // Add a remote for the fork
+                const remoteUrl = utils.getRemoteUrl(baseRemote.protocol, branchRepository);
+                yield git.exec(['remote', 'add', 'fork', remoteUrl]);
+            }
             core.endGroup();
-            core.info(`Pull request branch target repository set to ${remote.repository}`);
-            if (remote.protocol == 'HTTPS') {
+            core.info(`Pull request branch target repository set to ${branchRepository}`);
+            if (baseRemote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
                 yield gitAuthHelper.configureToken(inputs.token);
                 core.endGroup();
@@ -10655,14 +10681,14 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch);
+            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
-                core.startGroup(`Pushing pull request branch to 'origin/${inputs.branch}'`);
+                core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
                 yield git.push([
                     '--force-with-lease',
-                    'origin',
+                    branchRemoteName,
                     `HEAD:refs/heads/${inputs.branch}`
                 ]);
                 core.endGroup();
@@ -10670,8 +10696,7 @@ function createPullRequest(inputs) {
                 inputs.base = result.base;
                 if (result.hasDiffWithBase) {
                     // Create or update the pull request
-                    const githubHelper = new github_helper_1.GitHubHelper(inputs.token);
-                    yield githubHelper.createOrUpdatePullRequest(inputs, remote.repository);
+                    yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
                 }
                 else {
                     // If there is no longer a diff with the base delete the branch
@@ -10680,7 +10705,7 @@ function createPullRequest(inputs) {
                     yield git.push([
                         '--delete',
                         '--force',
-                        'origin',
+                        branchRemoteName,
                         `refs/heads/${inputs.branch}`
                     ]);
                 }

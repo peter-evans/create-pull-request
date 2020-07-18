@@ -34,9 +34,8 @@ inputs:
     description: 'Create a draft pull request'
   branch:
     description: 'The pull request branch name.'
-  request-to-parent:
-    description: 'Create the pull request in the parent repository of the checked out fork.'
-    default: false
+  push-to-fork:
+    description: 'A fork of the checked out base repository to which the pull request branch will be pushed.'
   base:
     description: 'The pull request base branch.'
   branch-suffix:

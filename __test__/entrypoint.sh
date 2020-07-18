@@ -4,28 +4,34 @@ set -euo pipefail
 # Save the working directory
 WORKINGDIR=$PWD
 
-# Serve remote repo
-mkdir /git
-git init --bare /git/test-repo.git
-git daemon --verbose --enable=receive-pack --base-path=/git --export-all /git/test-repo.git &>/dev/null &
+# Create and serve a remote repo
+mkdir -p /git/remote
+git init --bare /git/remote/test-base.git
+git daemon --verbose --enable=receive-pack --base-path=/git/remote --export-all /git/remote &>/dev/null &
 
 # Give the daemon time to start
 sleep 2
 
-# Clone and make an initial commit
-git clone git://127.0.0.1/test-repo.git /git/test-repo
-cd /git/test-repo
+# Create a local clone and make an initial commit
+mkdir -p /git/local
+git clone git://127.0.0.1/test-base.git /git/local/test-base
+cd /git/local/test-base
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
-echo "#test-repo" > README.md
+echo "#test-base" > README.md
 git add .
 git commit -m "initial commit"
 git push -u
+git log -1 --pretty=oneline
 git config --global --unset user.email
 git config --global --unset user.name
-
-# Display config
 git config -l
+
+# Clone a server-side fork of the base repo
+cd $WORKINGDIR
+git clone --mirror git://127.0.0.1/test-base.git /git/remote/test-fork.git
+cd /git/remote/test-fork.git
+git log -1 --pretty=oneline
 
 # Restore the working directory
 cd $WORKINGDIR

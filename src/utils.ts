@@ -62,6 +62,12 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
   )
 }
 
+export function getRemoteUrl(protocol: string, repository: string): string {
+  return protocol == 'HTTPS'
+    ? `https://github.com/${repository}`
+    : `git@github.com:${repository}.git`
+}
+
 export function secondsSinceEpoch(): number {
   const now = new Date()
   return Math.round(now.getTime() / 1000)

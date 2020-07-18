@@ -7,10 +7,11 @@ const CHERRYPICK_EMPTY =
 
 export async function tryFetch(
   git: GitCommandManager,
+  remote: string,
   branch: string
 ): Promise<boolean> {
   try {
-    await git.fetch([`${branch}:refs/remotes/origin/${branch}`])
+    await git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote)
     return true
   } catch {
     return false
@@ -74,13 +75,15 @@ function splitLines(multilineString: string): string[] {
 export async function createOrUpdateBranch(
   git: GitCommandManager,
   commitMessage: string,
-  baseInput: string,
-  branch: string
+  base: string,
+  branch: string,
+  branchRemoteName: string
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base. This may or may not be the actual base.
   const workingBase = await git.symbolicRef('HEAD', ['--short'])
   // If the base is not specified it is assumed to be the working base.
-  const base = baseInput ? baseInput : workingBase
+  base = base ? base : workingBase
+  const baseRemote = 'origin'
 
   // Set the default return values
   const result: CreateOrUpdateBranchResult = {
@@ -101,7 +104,7 @@ export async function createOrUpdateBranch(
 
   // Perform fetch and reset the working base
   // Commits made during the workflow will be removed
-  await git.fetch([`${workingBase}:${workingBase}`], 'origin', ['--force'])
+  await git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force'])
 
   // If the working base is not the base, rebase the temp branch commits
   if (workingBase != base) {
@@ -109,7 +112,7 @@ export async function createOrUpdateBranch(
       `Rebasing commits made to branch '${workingBase}' on to base branch '${base}'`
     )
     // Checkout the actual base
-    await git.fetch([`${base}:${base}`], 'origin', ['--force'])
+    await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
     await git.checkout(base)
     // Cherrypick commits from the temporary branch starting from the working base
     const commits = await git.revList(
@@ -128,11 +131,11 @@ export async function createOrUpdateBranch(
     // Reset the temp branch to the working index
     await git.checkout(tempBranch, 'HEAD')
     // Reset the base
-    await git.fetch([`${base}:${base}`], 'origin', ['--force'])
+    await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
   }
 
   // Try to fetch the pull request branch
-  if (!(await tryFetch(git, branch))) {
+  if (!(await tryFetch(git, branchRemoteName, branch))) {
     // The pull request branch does not exist
     core.info(`Pull request branch '${branch}' does not exist yet.`)
     // Create the pull request branch
@@ -150,7 +153,7 @@ export async function createOrUpdateBranch(
   } else {
     // The pull request branch exists
     core.info(
-      `Pull request branch '${branch}' already exists as remote branch 'origin/${branch}'`
+      `Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`
     )
     // Checkout the pull request branch
     await git.checkout(branch)
@@ -166,7 +169,7 @@ export async function createOrUpdateBranch(
     // Check if the pull request branch has been updated
     // If the branch was reset or updated it will be ahead
     // It may be behind if a reset now results in no diff with the base
-    if (!(await isEven(git, `origin/${branch}`, branch))) {
+    if (!(await isEven(git, `${branchRemoteName}/${branch}`, branch))) {
       result.action = 'updated'
       core.info(`Updated branch '${branch}'`)
     } else {

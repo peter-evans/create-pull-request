@@ -27,7 +27,7 @@ export interface Inputs {
   milestone: number
   draft: boolean
   branch: string
-  requestToParent: boolean
+  pushToFork: string
   base: string
   branchSuffix: string
 }
@@ -54,17 +54,42 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     inputs.body = inputs.body ? inputs.body : DEFAULT_BODY
     inputs.branch = inputs.branch ? inputs.branch : DEFAULT_BRANCH
 
-    // Determine the GitHub repository from git config
-    // This will be the target repository for the pull request branch
-    core.startGroup('Determining the checked out repository')
+    // Init the GitHub client
+    const githubHelper = new GitHubHelper(inputs.token)
+
+    core.startGroup('Determining the base and head repositories')
+    // Determine the base repository from git config
     const remoteUrl = await git.tryGetRemoteUrl()
-    const remote = utils.getRemoteDetail(remoteUrl)
+    const baseRemote = utils.getRemoteDetail(remoteUrl)
+    // Determine the head repository; the target for the pull request branch
+    const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin'
+    const branchRepository = inputs.pushToFork
+      ? inputs.pushToFork
+      : baseRemote.repository
+    if (inputs.pushToFork) {
+      // Check if the supplied fork is really a fork of the base
+      const parentRepository = await githubHelper.getRepositoryParent(
+        branchRepository
+      )
+      if (parentRepository != baseRemote.repository) {
+        throw new Error(
+          `Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`
+        )
+      }
+      // Add a remote for the fork
+      const remoteUrl = utils.getRemoteUrl(
+        baseRemote.protocol,
+        branchRepository
+      )
+      await git.exec(['remote', 'add', 'fork', remoteUrl])
+    }
     core.endGroup()
     core.info(
-      `Pull request branch target repository set to ${remote.repository}`
+      `Pull request branch target repository set to ${branchRepository}`
     )
 
-    if (remote.protocol == 'HTTPS') {
+    // Configure auth
+    if (baseRemote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
       await gitAuthHelper.configureToken(inputs.token)
       core.endGroup()
@@ -158,18 +183,19 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       git,
       inputs.commitMessage,
       inputs.base,
-      inputs.branch
+      inputs.branch,
+      branchRemoteName
     )
     core.endGroup()
 
     if (['created', 'updated'].includes(result.action)) {
       // The branch was created or updated
       core.startGroup(
-        `Pushing pull request branch to 'origin/${inputs.branch}'`
+        `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
       await git.push([
         '--force-with-lease',
-        'origin',
+        branchRemoteName,
         `HEAD:refs/heads/${inputs.branch}`
       ])
       core.endGroup()
@@ -179,8 +205,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
       if (result.hasDiffWithBase) {
         // Create or update the pull request
-        const githubHelper = new GitHubHelper(inputs.token)
-        await githubHelper.createOrUpdatePullRequest(inputs, remote.repository)
+        await githubHelper.createOrUpdatePullRequest(
+          inputs,
+          baseRemote.repository,
+          branchRepository
+        )
       } else {
         // If there is no longer a diff with the base delete the branch
         core.info(
@@ -190,7 +219,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         await git.push([
           '--delete',
           '--force',
-          'origin',
+          branchRemoteName,
           `refs/heads/${inputs.branch}`
         ])
       }
