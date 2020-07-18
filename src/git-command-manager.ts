@@ -1,6 +1,6 @@
 import * as exec from '@actions/exec'
 import * as io from '@actions/io'
-import * as fshelper from './fs-helper'
+import * as utils from './utils'
 import * as path from 'path'
 
 const tagsRefSpec = '+refs/tags/*:refs/tags/*'
@@ -117,9 +117,7 @@ export class GitCommandManager {
 
     args.push('--progress', '--no-recurse-submodules')
     if (
-      fshelper.fileExistsSync(
-        path.join(this.workingDirectory, '.git', 'shallow')
-      )
+      utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))
     ) {
       args.push('--unshallow')
     }
