@@ -1818,6 +1818,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GitCommandManager = void 0;
 const exec = __importStar(__webpack_require__(986));
 const io = __importStar(__webpack_require__(1));
+const fshelper = __importStar(__webpack_require__(618));
+const path = __importStar(__webpack_require__(622));
 const tagsRefSpec = '+refs/tags/*:refs/tags/*';
 class GitCommandManager {
     constructor(workingDirectory, gitPath) {
@@ -1909,6 +1911,9 @@ class GitCommandManager {
                 args.push('--no-tags');
             }
             args.push('--progress', '--no-recurse-submodules');
+            if (fshelper.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
+                args.push('--unshallow');
+            }
             if (options) {
                 args.push(...options);
             }
@@ -7014,6 +7019,99 @@ module.exports = require("events");
 
 /***/ }),
 
+/***/ 618:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.fileExistsSync = exports.existsSync = exports.directoryExistsSync = void 0;
+const fs = __importStar(__webpack_require__(747));
+function directoryExistsSync(path, required) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    let stats;
+    try {
+        stats = fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            if (!required) {
+                return false;
+            }
+            throw new Error(`Directory '${path}' does not exist`);
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    if (stats.isDirectory()) {
+        return true;
+    }
+    else if (!required) {
+        return false;
+    }
+    throw new Error(`Directory '${path}' does not exist`);
+}
+exports.directoryExistsSync = directoryExistsSync;
+function existsSync(path) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    try {
+        fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    return true;
+}
+exports.existsSync = existsSync;
+function fileExistsSync(path) {
+    if (!path) {
+        throw new Error("Arg 'path' must not be empty");
+    }
+    let stats;
+    try {
+        stats = fs.statSync(path);
+    }
+    catch (error) {
+        if (error.code === 'ENOENT') {
+            return false;
+        }
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+    }
+    if (!stats.isDirectory()) {
+        return true;
+    }
+    return false;
+}
+exports.fileExistsSync = fileExistsSync;
+
+
+/***/ }),
+
 /***/ 621:
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -10614,6 +10712,7 @@ function createPullRequest(inputs) {
             }
             core.endGroup();
             core.info(`Pull request branch target repository set to ${branchRepository}`);
+            // Configure auth
             if (baseRemote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
                 yield gitAuthHelper.configureToken(inputs.token);
