@@ -29,7 +29,6 @@ export interface Inputs {
   branch: string
   pushToFork: string
   base: string
-  branchSuffix: string
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -122,30 +121,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       )
     }
     core.endGroup()
-
-    // Apply the branch suffix if set
-    if (inputs.branchSuffix) {
-      switch (inputs.branchSuffix) {
-        case 'short-commit-hash':
-          // Suffix with the short SHA1 hash
-          inputs.branch = `${inputs.branch}-${await git.revParse('HEAD', [
-            '--short'
-          ])}`
-          break
-        case 'timestamp':
-          // Suffix with the current timestamp
-          inputs.branch = `${inputs.branch}-${utils.secondsSinceEpoch()}`
-          break
-        case 'random':
-          // Suffix with a 7 character random string
-          inputs.branch = `${inputs.branch}-${utils.randomString()}`
-          break
-        default:
-          throw new Error(
-            `Branch suffix '${inputs.branchSuffix}' is not a valid value. Unable to continue.`
-          )
-      }
-    }
 
     // Output head branch
     core.info(

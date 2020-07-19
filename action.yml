@@ -38,8 +38,6 @@ inputs:
     description: 'A fork of the checked out base repository to which the pull request branch will be pushed.'
   base:
     description: 'The pull request base branch.'
-  branch-suffix:
-    description: 'The branch suffix type.'
 outputs:
   pull-request-number:
     description: 'The pull request number'

@@ -21,8 +21,7 @@ async function run(): Promise<void> {
       draft: core.getInput('draft') === 'true',
       branch: core.getInput('branch'),
       pushToFork: core.getInput('push-to-fork'),
-      base: core.getInput('base'),
-      branchSuffix: core.getInput('branch-suffix')
+      base: core.getInput('base')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 
