@@ -65,7 +65,7 @@ Note that in order to read the step output the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
@@ -104,7 +104,7 @@ If neither `committer` or `author` inputs are supplied the action will look for 
 The following configuration can be used to have commits authored by the user who triggered the workflow event.
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
         with:
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
@@ -129,7 +129,7 @@ As well as relying on the action to handle uncommitted changes, you can addition
       - name: Uncommitted change
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
 
 ### Ignoring files
@@ -143,7 +143,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 
       - name: Create or Update Project Card
         uses: peter-evans/create-or-update-project-card@v1

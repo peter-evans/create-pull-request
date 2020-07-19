@@ -159,7 +159,7 @@ Checking out a branch from a different repository from where the workflow is exe
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.PAT }}
 ```
@@ -185,7 +185,7 @@ How to use SSH (deploy keys) with create-pull-request action:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
 
 ### Push pull request branches to a fork
@@ -207,7 +207,7 @@ It will use their own fork to push code and create the pull request.
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.MACHINE_USER_PAT }}
           push-to-fork: machine-user/fork-of-repository
@@ -248,7 +248,7 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ steps.generate-token.outputs.token }}
 ```
@@ -277,7 +277,7 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
 
 **Ubuntu container example:**
@@ -300,7 +300,7 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
 
 ### Creating pull requests on tag push
@@ -332,7 +332,7 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
         with:
           base: master
 
@@ -360,5 +360,5 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
