@@ -43,8 +43,8 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `token` | `GITHUB_TOKEN` or a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | `GITHUB_TOKEN` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
-| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user if an identity is not found in git config. See [Committer and author](#committer-and-author) for details. |
-| `author` | The author name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user if an identity is not found in git config. See [Committer and author](#committer-and-author) for details. |
+| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
+| `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `push-to-fork` | A fork of the checked out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
@@ -96,19 +96,6 @@ How the action behaves:
 - If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the base and pull request branch), the pull request is automatically closed and the branch deleted.
 
 For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
-
-### Committer and author
-
-If neither `committer` or `author` inputs are supplied the action will look for an existing identity in git config. If found, that identity will be used. If not found, the action will default to making commits by the GitHub Actions bot user.
-
-The following configuration can be used to have commits authored by the user who triggered the workflow event.
-```yml
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          committer: GitHub <noreply@github.com>
-          author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-```
 
 ### Controlling commits
 

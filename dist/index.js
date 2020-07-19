@@ -8239,124 +8239,6 @@ exports.GitHubHelper = GitHubHelper;
 
 /***/ }),
 
-/***/ 723:
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.GitIdentityHelper = void 0;
-const core = __importStar(__webpack_require__(470));
-const utils = __importStar(__webpack_require__(611));
-// Default the committer and author to the GitHub Actions bot
-const DEFAULT_COMMITTER = 'GitHub <noreply@github.com>';
-const DEFAULT_AUTHOR = 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>';
-class GitIdentityHelper {
-    constructor(git) {
-        this.git = git;
-    }
-    getGitIdentityFromConfig() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if ((yield this.git.configExists('user.name')) &&
-                (yield this.git.configExists('user.email'))) {
-                const userName = yield this.git.getConfigValue('user.name');
-                const userEmail = yield this.git.getConfigValue('user.email');
-                return {
-                    authorName: userName,
-                    authorEmail: userEmail,
-                    committerName: userName,
-                    committerEmail: userEmail
-                };
-            }
-            if ((yield this.git.configExists('committer.name')) &&
-                (yield this.git.configExists('committer.email')) &&
-                (yield this.git.configExists('author.name')) &&
-                (yield this.git.configExists('author.email'))) {
-                const committerName = yield this.git.getConfigValue('committer.name');
-                const committerEmail = yield this.git.getConfigValue('committer.email');
-                const authorName = yield this.git.getConfigValue('author.name');
-                const authorEmail = yield this.git.getConfigValue('author.email');
-                return {
-                    authorName: authorName,
-                    authorEmail: authorEmail,
-                    committerName: committerName,
-                    committerEmail: committerEmail
-                };
-            }
-            return undefined;
-        });
-    }
-    getIdentity(author, committer) {
-        return __awaiter(this, void 0, void 0, function* () {
-            // If either committer or author is supplied they will be cross used
-            if (!committer && author) {
-                core.info('Supplied author will also be used as the committer.');
-                committer = author;
-            }
-            if (!author && committer) {
-                core.info('Supplied committer will also be used as the author.');
-                author = committer;
-            }
-            // If no committer/author has been supplied, try and fetch identity
-            // configuration already existing in git config.
-            if (!committer && !author) {
-                const identity = yield this.getGitIdentityFromConfig();
-                if (identity) {
-                    core.info('Retrieved a pre-configured git identity.');
-                    return identity;
-                }
-            }
-            // Set defaults if no committer/author has been supplied and no
-            // existing identity configuration was found.
-            if (!committer && !author) {
-                core.info('Action defaults set for the author and committer.');
-                committer = DEFAULT_COMMITTER;
-                author = DEFAULT_AUTHOR;
-            }
-            const parsedAuthor = utils.parseDisplayNameEmail(author);
-            const parsedCommitter = utils.parseDisplayNameEmail(committer);
-            return {
-                authorName: parsedAuthor.name,
-                authorEmail: parsedAuthor.email,
-                committerName: parsedCommitter.name,
-                committerEmail: parsedCommitter.email
-            };
-        });
-    }
-}
-exports.GitIdentityHelper = GitIdentityHelper;
-
-
-/***/ }),
-
 /***/ 733:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -10590,7 +10472,6 @@ const create_or_update_branch_1 = __webpack_require__(159);
 const github_helper_1 = __webpack_require__(718);
 const git_command_manager_1 = __webpack_require__(289);
 const git_auth_helper_1 = __webpack_require__(287);
-const git_identity_helper_1 = __webpack_require__(723);
 const utils = __importStar(__webpack_require__(611));
 function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -10656,22 +10537,22 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Output head branch
             core.info(`Pull request branch to create or update set to '${inputs.branch}'`);
-            // Determine the committer and author
+            // Configure the committer and author
             core.startGroup('Configuring the committer and author');
-            const gitIdentityHelper = new git_identity_helper_1.GitIdentityHelper(git);
-            const identity = yield gitIdentityHelper.getIdentity(inputs.author, inputs.committer);
+            const parsedAuthor = utils.parseDisplayNameEmail(inputs.author);
+            const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer);
             git.setIdentityGitOptions([
                 '-c',
-                `author.name=${identity.authorName}`,
+                `author.name=${parsedAuthor.name}`,
                 '-c',
-                `author.email=${identity.authorEmail}`,
+                `author.email=${parsedAuthor.email}`,
                 '-c',
-                `committer.name=${identity.committerName}`,
+                `committer.name=${parsedCommitter.name}`,
                 '-c',
-                `committer.email=${identity.committerEmail}`
+                `committer.email=${parsedCommitter.email}`
             ]);
-            core.info(`Configured git committer as '${identity.committerName} <${identity.committerEmail}>'`);
-            core.info(`Configured git author as '${identity.authorName} <${identity.authorEmail}>'`);
+            core.info(`Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`);
+            core.info(`Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`);
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');

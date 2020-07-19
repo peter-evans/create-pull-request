@@ -3,7 +3,6 @@ import {createOrUpdateBranch} from './create-or-update-branch'
 import {GitHubHelper} from './github-helper'
 import {GitCommandManager} from './git-command-manager'
 import {GitAuthHelper} from './git-auth-helper'
-import {GitIdentityHelper} from './git-identity-helper'
 import * as utils from './utils'
 
 export interface Inputs {
@@ -113,28 +112,25 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       `Pull request branch to create or update set to '${inputs.branch}'`
     )
 
-    // Determine the committer and author
+    // Configure the committer and author
     core.startGroup('Configuring the committer and author')
-    const gitIdentityHelper = new GitIdentityHelper(git)
-    const identity = await gitIdentityHelper.getIdentity(
-      inputs.author,
-      inputs.committer
-    )
+    const parsedAuthor = utils.parseDisplayNameEmail(inputs.author)
+    const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer)
     git.setIdentityGitOptions([
       '-c',
-      `author.name=${identity.authorName}`,
+      `author.name=${parsedAuthor.name}`,
       '-c',
-      `author.email=${identity.authorEmail}`,
+      `author.email=${parsedAuthor.email}`,
       '-c',
-      `committer.name=${identity.committerName}`,
+      `committer.name=${parsedCommitter.name}`,
       '-c',
-      `committer.email=${identity.committerEmail}`
+      `committer.email=${parsedCommitter.email}`
     ])
     core.info(
-      `Configured git committer as '${identity.committerName} <${identity.committerEmail}>'`
+      `Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`
     )
     core.info(
-      `Configured git author as '${identity.authorName} <${identity.authorEmail}>'`
+      `Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`
     )
     core.endGroup()
 

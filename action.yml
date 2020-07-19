@@ -14,11 +14,13 @@ inputs:
   committer:
     description: >
       The committer name and email address in the format `Display Name <email@address.com>`.
-      Defaults to the GitHub Actions bot user if an identity is not found in git config.
+      Defaults to the GitHub Actions bot user.
+    default: 'GitHub <noreply@github.com>'
   author:
     description: >
       The author name and email address in the format `Display Name <email@address.com>`.
-      Defaults to the GitHub Actions bot user if an identity is not found in git config.
+      Defaults to the user who triggered the workflow run.
+    default: '${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>'
   branch:
     description: 'The pull request branch name.'
     default: 'create-pull-request/patch'
