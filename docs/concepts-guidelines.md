@@ -138,20 +138,12 @@ There are a number of workarounds with different pros and cons.
 From a security perspective it's good practice to fork third-party actions, review the code, and use your fork of the action in workflows.
 By using third-party actions directly the risk exists that it could be modified to do something malicious, such as capturing secrets.
 
-This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single file.
-Python dependencies are vendored and committed to the repository [here](https://github.com/peter-evans/create-pull-request/tree/master/dist/vendor).
-No dependencies are downloaded during the action execution.
-
-Vendored Python dependencies can be reviewed by rebuilding the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory and redownloading dependencies.
-The following commands require Node and Python 3.
-
+Alternatively, use the action directly and reference the commit hash for the version you want to target.
 ```
-npm install
-npm run clean
-npm run package
+  - uses: thirdparty/foo-action@172ec762f2ac8e050062398456fccd30444f8f30
 ```
 
-The `dist` directory should be rebuilt leaving no git diff.
+This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single Javascript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory.
 
 ## Advanced usage
 
@@ -208,24 +200,17 @@ It will use their own fork to push code and create the pull request.
 3. Create a [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line).
 4. Logout and log back in to your main user account.
 5. Add a secret to your repository containing the above PAT.
-6. As shown in the following example workflow, switch the git remote to the fork's URL after checkout and update the fork to match the checked out branch. Then set the action input `request-to-parent` to `true`.
+6. As shown in the following example workflow, set the `push-to-fork` input to the full repository name of the fork.
 
 ```yaml
       - uses: actions/checkout@v2
-        with:
-          persist-credentials: false
-
-      - run: |
-          git remote set-url origin https://${{ secrets.MACHINE_USER_PAT }}:x-oauth-basic@github.com/machine-user/fork-of-repository
-          git fetch --unshallow -p origin
-          git push --force
 
       # Make changes to pull request here
 
       - uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.MACHINE_USER_PAT }}
-          request-to-parent: true
+          push-to-fork: machine-user/fork-of-repository
 ```
 
 ### Authenticating with GitHub App generated tokens
@@ -272,7 +257,7 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 
 This action can be run inside a container by installing the action's dependencies either in the Docker image itself, or during the workflow.
 
-The action requires `python3`, `pip3` and `git` to be installed and on the `PATH`.
+The action requires `git` to be installed and on the `PATH`.
 
 Note that `actions/checkout` requires Git 2.18 or higher to be installed, otherwise it will just download the source of the repository instead of cloning it.
 
@@ -285,9 +270,7 @@ jobs:
       image: alpine
     steps:
       - name: Install dependencies
-        run: |
-          apk --no-cache add git python3
-          python3 -m ensurepip
+        run: apk --no-cache add git
 
       - uses: actions/checkout@v2
 
@@ -310,7 +293,7 @@ jobs:
           apt-get update
           apt-get install -y software-properties-common
           add-apt-repository -y ppa:git-core/ppa
-          apt-get install -y python3 python3-pip git
+          apt-get install -y git
 
       - uses: actions/checkout@v2
 

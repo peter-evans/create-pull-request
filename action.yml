@@ -29,7 +29,7 @@ inputs:
   push-to-fork:
     description: >
       A fork of the checked out parent repository to which the pull request branch will be pushed.
-      e.g. 'owner/repo-fork'
+      e.g. `owner/repo-fork`.
       The pull request will be created to merge the fork's branch into the parent's base.
   title:
     description: 'The title of the pull request.'
@@ -44,7 +44,9 @@ inputs:
   reviewers:
     description: 'A comma or newline separated list of reviewers (GitHub usernames) to request a review from.'
   team-reviewers:
-    description: 'A comma or newline separated list of GitHub teams to request a review from.'
+    description: >
+      A comma or newline separated list of GitHub teams to request a review from.
+      Note that a `repo` scoped Personal Access Token (PAT) may be required.
   milestone:
     description: 'The number of the milestone to associate the pull request with.'
   draft:

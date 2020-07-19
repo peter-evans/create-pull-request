@@ -1,11 +1,64 @@
-# Updating from `v1` to `v2`
+## Updating from `v2` to `v3`
 
-## Breaking changes
+### Breaking changes
+
+- Deprecated inputs `project` and `project-column` have been removed in favour of an additional action step. See [Create a project card](https://github.com/peter-evans/create-pull-request#create-a-project-card) for details.
+
+- Deprecated output `pr_number` has been removed in favour of `pull-request-number`.
+
+- Input `request-to-parent` has been removed in favour of `push-to-fork`. This greatly simplifies pushing the pull request branch to a fork of the parent repository. See [Push pull request branches to a fork](concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details.
+
+  e.g.
+  ```yaml
+      - uses: actions/checkout@v2
+
+      # Make changes to pull request here
+
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.MACHINE_USER_PAT }}
+          push-to-fork: machine-user/fork-of-repository
+  ```
+
+- Input `branch-suffix` has been removed to simplify the action and make it easier to understand its behaviour. The same functionality can be achieved by modifying the `branch` name before the action runs. See the following example. If you were using `branch-suffix` and need help to update to `v3`, please create an issue.
+
+  e.g.
+  ```yaml
+      - name: Return a 7 character random string
+        uses: actions/github-script@v2
+        id: random-string
+        with:
+          result-encoding: string
+          script: return Math.random().toString(36).substr(2, 7)
+
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          branch: my-branch-${{ steps.random-string.outputs.result }}
+  ```
+
+### New features
+
+- The action has been converted to Typescript and is much faster than `v2`.
+
+- If you run this action in a container, `python` and `pip` are no longer required dependencies. See [Running in a container](concepts-guidelines.md#running-in-a-container) for details.
+
+- Inputs `labels`, `assignees`, `reviewers` and `team-reviewers` can now be newline separated, or comma separated.
+  e.g.
+  ```yml
+          labels: |
+            chore
+            dependencies
+            automated
+  ```
+
+## Updating from `v1` to `v2`
+
+### Breaking changes
 
 - `v2` now expects repositories to be checked out with `actions/checkout@v2`
 
   To use `actions/checkout@v1` the following step to checkout the branch is necessary.
-  ```
+  ```yml
       - uses: actions/checkout@v1
       - name: Checkout branch
         run: git checkout "${GITHUB_REF:11}"
@@ -18,7 +71,7 @@
 
   If neither `author` or `committer` are set the action will default to making commits as the GitHub Actions bot user.
 
-## New features
+### New features
 
 - Unpushed commits made during the workflow before the action runs will now be considered as changes to be raised in the pull request. See [Controlling commits](https://github.com/peter-evans/create-pull-request#controlling-commits) for details.
 - New commits made to the pull request base will now be taken into account when pull requests are updated.

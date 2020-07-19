@@ -21,44 +21,41 @@ Create Pull Request action will:
 
 - [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
-- [Updating from v1](docs/updating.md)
+- [Updating to v3](docs/updating.md)
 
 ## Usage
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
 ```
 
-You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v2.x.x`
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v3.x.x`
 
 ### Action inputs
 
-All inputs are **optional**. If not set, sensible default values will be used.
+All inputs are **optional**. If not set, sensible defaults will be used.
 
 **Note**: If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#triggering-further-workflow-runs) for workarounds.
 
 | Name | Description | Default |
 | --- | --- | --- |
-| `token` | `GITHUB_TOKEN` or a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | `GITHUB_TOKEN` |
+| `token` | `GITHUB_TOKEN` or a `repo` scoped [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line). | `GITHUB_TOKEN` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
-| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |
-| `author` | The author name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user. See [Committer and author](#committer-and-author) for details. |
+| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user if an identity is not found in git config. See [Committer and author](#committer-and-author) for details. |
+| `author` | The author name and email address in the format `Display Name <email@address.com>`. | Defaults to the GitHub Actions bot user if an identity is not found in git config. See [Committer and author](#committer-and-author) for details. |
+| `branch` | The pull request branch name. | `create-pull-request/patch` |
+| `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
+| `push-to-fork` | A fork of the checked out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
 | `body` | The body of the pull request. | `Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action` |
-| `labels` | A comma separated list of labels. | |
-| `assignees` | A comma separated list of assignees (GitHub usernames). | |
-| `reviewers` | A comma separated list of reviewers (GitHub usernames) to request a review from. | |
-| `team-reviewers` | A comma separated list of GitHub teams to request a review from. A `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
+| `labels` | A comma or newline separated list of labels. | |
+| `assignees` | A comma or newline separated list of assignees (GitHub usernames). | |
+| `reviewers` | A comma or newline separated list of reviewers (GitHub usernames) to request a review from. | |
+| `team-reviewers` | A comma or newline separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
-| `project` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
-| `project-column` | *Deprecated*. See [Create a project card](#create-a-project-card) for details. | |
 | `draft` | Create a [draft pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
-| `branch` | The branch name. See [Action behaviour](#action-behaviour) for details. | `create-pull-request/patch` |
-| `request-to-parent` | Create the pull request in the parent repository of the checked out fork. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | `false` |
-| `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
-| `branch-suffix` | The branch suffix type. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Action behaviour](#action-behaviour) for details. | |
 
 ### Action outputs
 
@@ -87,7 +84,7 @@ If there is some reason you need to use `actions/checkout@v1` the following step
 
 ### Action behaviour
 
-The default behaviour of the action is to create a pull request that will be continually updated with new changes until it is merged or closed.
+The action creates a pull request that will be continually updated with new changes until it is merged or closed.
 Changes are committed and pushed to a fixed-name branch, the name of which can be configured with the `branch` input.
 Any subsequent changes will be committed to the *same* branch and reflected in the open pull request.
 
@@ -100,26 +97,9 @@ How the action behaves:
 
 For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
 
-#### Alternative strategy - Always create a new pull request branch
-
-For some use cases it *may* be desirable to always create a new unique branch each time there are changes to be committed.
-This strategy is not recommended and mainly kept for backwards compatibility.
-
-To use this strategy, set input `branch-suffix` with one of the following options.
-
-- `random` - Commits will be made to a branch suffixed with a random alpha-numeric string. e.g. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
-
-- `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
-
-- `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
-
-### Ignoring files
-
-If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
-
 ### Committer and author
 
-If neither `committer` or `author` inputs are supplied the action will default to making commits that appear to be made by the GitHub Actions bot user.
+If neither `committer` or `author` inputs are supplied the action will look for an existing identity in git config. If found, that identity will be used. If not found, the action will default to making commits by the GitHub Actions bot user.
 
 The following configuration can be used to have commits authored by the user who triggered the workflow event.
 ```yml
@@ -151,6 +131,10 @@ As well as relying on the action to handle uncommitted changes, you can addition
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v2
 ```
+
+### Ignoring files
+
+If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
 
 ### Create a project card
 
@@ -189,27 +173,30 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v2
+        uses: peter-evans/create-pull-request@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Add report file
+          token: ${{ secrets.PAT }}
+          commit-message: Update report
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
-          title: '[Example] Add report file'
+          branch: example-patches
+          title: '[Example] Update report'
           body: |
-            New report
-            - Contains *today's* date
+            Update report
+            - Updated with *today's* date
             - Auto-generated by [create-pull-request][1]
 
             [1]: https://github.com/peter-evans/create-pull-request
-          labels: report, automated pr
+          labels: |
+            report
+            automated pr
           assignees: peter-evans
           reviewers: peter-evans
-          team-reviewers: owners, maintainers
+          team-reviewers: |
+            owners
+            maintainers
           milestone: 1
           draft: false
-          branch: example-patches
-          request-to-parent: false
 
       - name: Check output
         run: |
