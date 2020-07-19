@@ -6,18 +6,15 @@ import {GitAuthHelper} from './git-auth-helper'
 import {GitIdentityHelper} from './git-identity-helper'
 import * as utils from './utils'
 
-const DEFAULT_COMMIT_MESSAGE = '[create-pull-request] automated change'
-const DEFAULT_TITLE = 'Changes by create-pull-request action'
-const DEFAULT_BODY =
-  'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
-const DEFAULT_BRANCH = 'create-pull-request/patch'
-
 export interface Inputs {
   token: string
   path: string
   commitMessage: string
   committer: string
   author: string
+  branch: string
+  base: string
+  pushToFork: string
   title: string
   body: string
   labels: string[]
@@ -26,9 +23,6 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
-  branch: string
-  pushToFork: string
-  base: string
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -44,14 +38,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     gitAuthHelper = new GitAuthHelper(git)
     await gitAuthHelper.savePersistedAuth()
     core.endGroup()
-
-    // Set defaults
-    inputs.commitMessage = inputs.commitMessage
-      ? inputs.commitMessage
-      : DEFAULT_COMMIT_MESSAGE
-    inputs.title = inputs.title ? inputs.title : DEFAULT_TITLE
-    inputs.body = inputs.body ? inputs.body : DEFAULT_BODY
-    inputs.branch = inputs.branch ? inputs.branch : DEFAULT_BRANCH
 
     // Init the GitHub client
     const githubHelper = new GitHubHelper(inputs.token)

@@ -11,6 +11,9 @@ async function run(): Promise<void> {
       commitMessage: core.getInput('commit-message'),
       committer: core.getInput('committer'),
       author: core.getInput('author'),
+      branch: core.getInput('branch'),
+      base: core.getInput('base'),
+      pushToFork: core.getInput('push-to-fork'),
       title: core.getInput('title'),
       body: core.getInput('body'),
       labels: utils.getInputAsArray('labels'),
@@ -18,10 +21,7 @@ async function run(): Promise<void> {
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
-      draft: core.getInput('draft') === 'true',
-      branch: core.getInput('branch'),
-      pushToFork: core.getInput('push-to-fork'),
-      base: core.getInput('base')
+      draft: core.getInput('draft') === 'true'
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 

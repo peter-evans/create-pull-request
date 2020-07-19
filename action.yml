@@ -2,42 +2,54 @@ name: 'Create Pull Request'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
 inputs:
   token:
-    description: 'GITHUB_TOKEN or a repo scoped PAT'
+    description: 'GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)'
     default: ${{ github.token }}
   path:
-    description: 'Relative path under $GITHUB_WORKSPACE to the repository.'
+    description: >
+      Relative path under $GITHUB_WORKSPACE to the repository.
+      Defaults to $GITHUB_WORKSPACE.
   commit-message:
     description: 'The message to use when committing changes.'
+    default: '[create-pull-request] automated change'
   committer:
-    description: 'The committer name and email address.'
+    description: >
+      The committer name and email address in the format `Display Name <email@address.com>`.
+      Defaults to the GitHub Actions bot user if an identity is not found in git config.
   author:
-    description: 'The author name and email address.'
-  title:
-    description: 'The title of the pull request.'
-  body:
-    description: 'The body of the pull request.'
-  labels:
-    description: 'A comma separated list of labels.'
-  assignees:
-    description: 'A comma separated list of assignees (GitHub usernames).'
-  reviewers:
-    description: 'A comma separated list of reviewers (GitHub usernames) to request a review from.'
-  team-reviewers:
-    description: 'A comma separated list of GitHub teams to request a review from.'
-  milestone:
-    description: 'The number of the milestone to associate this pull request with.'
-  project:
-    description: 'Deprecated. See README for details.'
-  project-column:
-    description: 'Deprecated. See README for details.'
-  draft:
-    description: 'Create a draft pull request'
+    description: >
+      The author name and email address in the format `Display Name <email@address.com>`.
+      Defaults to the GitHub Actions bot user if an identity is not found in git config.
   branch:
     description: 'The pull request branch name.'
-  push-to-fork:
-    description: 'A fork of the checked out base repository to which the pull request branch will be pushed.'
+    default: 'create-pull-request/patch'
   base:
-    description: 'The pull request base branch.'
+    description: >
+      The pull request base branch.
+      Defaults to the branch checked out in the workflow.
+  push-to-fork:
+    description: >
+      A fork of the checked out parent repository to which the pull request branch will be pushed.
+      e.g. 'owner/repo-fork'
+      The pull request will be created to merge the fork's branch into the parent's base.
+  title:
+    description: 'The title of the pull request.'
+    default: 'Changes by create-pull-request action'
+  body:
+    description: 'The body of the pull request.'
+    default: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
+  labels:
+    description: 'A comma or newline separated list of labels.'
+  assignees:
+    description: 'A comma or newline separated list of assignees (GitHub usernames).'
+  reviewers:
+    description: 'A comma or newline separated list of reviewers (GitHub usernames) to request a review from.'
+  team-reviewers:
+    description: 'A comma or newline separated list of GitHub teams to request a review from.'
+  milestone:
+    description: 'The number of the milestone to associate the pull request with.'
+  draft:
+    description: 'Create a draft pull request'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

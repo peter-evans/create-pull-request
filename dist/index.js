@@ -1296,6 +1296,9 @@ function run() {
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
+                branch: core.getInput('branch'),
+                base: core.getInput('base'),
+                pushToFork: core.getInput('push-to-fork'),
                 title: core.getInput('title'),
                 body: core.getInput('body'),
                 labels: utils.getInputAsArray('labels'),
@@ -1303,10 +1306,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true',
-                branch: core.getInput('branch'),
-                pushToFork: core.getInput('push-to-fork'),
-                base: core.getInput('base')
+                draft: core.getInput('draft') === 'true'
             };
             core.debug(`Inputs: ${util_1.inspect(inputs)}`);
             yield create_pull_request_1.createPullRequest(inputs);
@@ -10592,10 +10592,6 @@ const git_command_manager_1 = __webpack_require__(289);
 const git_auth_helper_1 = __webpack_require__(287);
 const git_identity_helper_1 = __webpack_require__(723);
 const utils = __importStar(__webpack_require__(611));
-const DEFAULT_COMMIT_MESSAGE = '[create-pull-request] automated change';
-const DEFAULT_TITLE = 'Changes by create-pull-request action';
-const DEFAULT_BODY = 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action';
-const DEFAULT_BRANCH = 'create-pull-request/patch';
 function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
         let gitAuthHelper;
@@ -10609,13 +10605,6 @@ function createPullRequest(inputs) {
             gitAuthHelper = new git_auth_helper_1.GitAuthHelper(git);
             yield gitAuthHelper.savePersistedAuth();
             core.endGroup();
-            // Set defaults
-            inputs.commitMessage = inputs.commitMessage
-                ? inputs.commitMessage
-                : DEFAULT_COMMIT_MESSAGE;
-            inputs.title = inputs.title ? inputs.title : DEFAULT_TITLE;
-            inputs.body = inputs.body ? inputs.body : DEFAULT_BODY;
-            inputs.branch = inputs.branch ? inputs.branch : DEFAULT_BRANCH;
             // Init the GitHub client
             const githubHelper = new github_helper_1.GitHubHelper(inputs.token);
             core.startGroup('Determining the base and head repositories');
