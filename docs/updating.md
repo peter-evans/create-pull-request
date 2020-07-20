@@ -4,7 +4,7 @@
 
 - The `author` input now defaults to the user who triggered the workflow run. This default is set via [action.yml](../action.yml) as `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`, where `github.actor` is the GitHub user account associated with the run. For example, `peter-evans <peter-evans@users.noreply.github.com>`.
 
-  The behavior of `v2` can be kept by setting the `author` input as follows.
+  To continue to use the `v2` default, set the `author` input as follows.
   ```yaml
       - uses: peter-evans/create-pull-request@v3
         with:
