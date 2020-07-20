@@ -46,6 +46,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
+| `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `push-to-fork` | A fork of the checked out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
@@ -84,7 +85,7 @@ If there is some reason you need to use `actions/checkout@v1` the following step
 
 ### Action behaviour
 
-The action creates a pull request that will be continually updated with new changes until it is merged or closed.
+The default behaviour of the action is to create a pull request that will be continually updated with new changes until it is merged or closed.
 Changes are committed and pushed to a fixed-name branch, the name of which can be configured with the `branch` input.
 Any subsequent changes will be committed to the *same* branch and reflected in the open pull request.
 
@@ -96,6 +97,19 @@ How the action behaves:
 - If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the base and pull request branch), the pull request is automatically closed and the branch deleted.
 
 For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
+
+#### Alternative strategy - Always create a new pull request branch
+
+For some use cases it may be desirable to always create a new unique branch each time there are changes to be committed.
+This strategy is *not recommended* because if not used carefully it could result in multiple pull requests being created unnecessarily. If in doubt, use the [default strategy](#action-behaviour) of creating an updating a fixed-name branch.
+
+To use this strategy, set input `branch-suffix` with one of the following options.
+
+- `random` - Commits will be made to a branch suffixed with a random alpha-numeric string. e.g. `create-pull-request/patch-6qj97jr`, `create-pull-request/patch-5jrjhvd`
+
+- `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
+
+- `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
 
 ### Controlling commits
 

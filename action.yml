@@ -24,6 +24,8 @@ inputs:
   branch:
     description: 'The pull request branch name.'
     default: 'create-pull-request/patch'
+  branch-suffix:
+    description: 'The branch suffix type when using the alternative branching strategy.'
   base:
     description: >
       The pull request base branch.

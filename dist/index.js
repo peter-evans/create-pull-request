@@ -1297,6 +1297,7 @@ function run() {
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
                 branch: core.getInput('branch'),
+                branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
                 pushToFork: core.getInput('push-to-fork'),
                 title: core.getInput('title'),
@@ -10535,6 +10536,27 @@ function createPullRequest(inputs) {
                 throw new Error(`Working base branch '${workingBase}' was created by this action. Unable to continue.`);
             }
             core.endGroup();
+            // Apply the branch suffix if set
+            if (inputs.branchSuffix) {
+                switch (inputs.branchSuffix) {
+                    case 'short-commit-hash':
+                        // Suffix with the short SHA1 hash
+                        inputs.branch = `${inputs.branch}-${yield git.revParse('HEAD', [
+                            '--short'
+                        ])}`;
+                        break;
+                    case 'timestamp':
+                        // Suffix with the current timestamp
+                        inputs.branch = `${inputs.branch}-${utils.secondsSinceEpoch()}`;
+                        break;
+                    case 'random':
+                        // Suffix with a 7 character random string
+                        inputs.branch = `${inputs.branch}-${utils.randomString()}`;
+                        break;
+                    default:
+                        throw new Error(`Branch suffix '${inputs.branchSuffix}' is not a valid value. Unable to continue.`);
+                }
+            }
             // Output head branch
             core.info(`Pull request branch to create or update set to '${inputs.branch}'`);
             // Configure the committer and author

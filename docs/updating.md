@@ -31,22 +31,6 @@
           push-to-fork: machine-user/fork-of-repository
   ```
 
-- Input `branch-suffix` has been removed to simplify the action and make it easier to understand its behaviour. The same functionality can be achieved by modifying the `branch` name before the action runs. See the following example. If you were using `branch-suffix` and need help to update to `v3`, please create an issue.
-
-  e.g.
-  ```yaml
-      - name: Return a 7 character random string
-        uses: actions/github-script@v2
-        id: random-string
-        with:
-          result-encoding: string
-          script: return Math.random().toString(36).substr(2, 7)
-
-      - uses: peter-evans/create-pull-request@v3
-        with:
-          branch: my-branch-${{ steps.random-string.outputs.result }}
-  ```
-
 ### New features
 
 - The action has been converted to Typescript and is much faster than `v2`.

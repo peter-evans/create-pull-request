@@ -12,6 +12,7 @@ async function run(): Promise<void> {
       committer: core.getInput('committer'),
       author: core.getInput('author'),
       branch: core.getInput('branch'),
+      branchSuffix: core.getInput('branch-suffix'),
       base: core.getInput('base'),
       pushToFork: core.getInput('push-to-fork'),
       title: core.getInput('title'),
