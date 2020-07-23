@@ -5,17 +5,13 @@
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "lib/main.js",
   "scripts": {
-    "clean": "echo Temporarily kept for backwards compatibility",
     "build": "tsc && ncc build",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "test:unit": "jest unit",
     "test:int": "__test__/integration-tests.sh",
-    "test": "npm run test:unit && npm run test:int",
-    "pack-assets": "echo Temporarily kept for backwards compatibility",
-    "vendor-deps": "echo Temporarily kept for backwards compatibility",
-    "package": "echo Temporarily kept for backwards compatibility"
+    "test": "npm run test:unit && npm run test:int"
   },
   "repository": {
     "type": "git",
