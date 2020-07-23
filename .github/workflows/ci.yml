@@ -22,12 +22,10 @@ jobs:
         with:
           python-version: '3.x'
       - run: npm ci
-      - run: npm run clean
       - run: npm run build
       - run: npm run format-check
       - run: npm run lint
       - run: npm run test
-      - run: npm run package
       - uses: actions/upload-artifact@v2
         with:
           name: dist
@@ -106,7 +104,7 @@ jobs:
           body: |
             Full test suite slash command (repository admin only)
             ```
-            /test repository=${{ github.event.pull_request.head.repo.full_name }} branch=${{ github.event.pull_request.head.ref }} build=true
+            /test repository=${{ github.event.pull_request.head.repo.full_name }} ref=${{ github.event.pull_request.head.ref }} build=true
             ```
 
   package:
