@@ -33,9 +33,9 @@
 
 ### New features
 
-- The action has been converted to Typescript and is much faster than `v2`.
+- The action has been converted to Typescript giving it a significant performance improvement.
 
-- If you run this action in a container, `python` and `pip` are no longer required dependencies. See [Running in a container](concepts-guidelines.md#running-in-a-container) for details.
+- If you run this action in a container, or on [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners), `python` and `pip` are no longer required dependencies. See [Running in a container or on self-hosted runners](concepts-guidelines.md#running-in-a-container-or-on-self-hosted-runners) for details.
 
 - Inputs `labels`, `assignees`, `reviewers` and `team-reviewers` can now be newline separated, or comma separated.
   e.g.
