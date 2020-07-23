@@ -16,7 +16,7 @@ This document covers terminology, how the action works, general usage guidelines
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
   - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Authenticating with GitHub App generated tokens](#authenticating-with-github-app-generated-tokens)
-  - [Running in a container](#running-in-a-container)
+  - [Running in a container or on self-hosted runners](#running-in-a-container-or-on-self-hosted-runners)
   - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
 ## Terminology
@@ -253,13 +253,13 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
           token: ${{ steps.generate-token.outputs.token }}
 ```
 
-### Running in a container
+### Running in a container or on self-hosted runners
 
-This action can be run inside a container by installing the action's dependencies either in the Docker image itself, or during the workflow.
+This action can be run inside a container, or on [self-hosted runners](https://docs.github.com/en/actions/hosting-your-own-runners), by installing the necessary dependencies.
 
-The action requires `git` to be installed and on the `PATH`.
+This action requires `git` to be installed and on the `PATH`. Note that `actions/checkout` requires Git 2.18 or higher to be installed, otherwise it will just download the source of the repository instead of cloning it.
 
-Note that `actions/checkout` requires Git 2.18 or higher to be installed, otherwise it will just download the source of the repository instead of cloning it.
+The following examples of running in a container show the dependencies being installed during the workflow, but they could also be pre-installed in a custom image.
 
 **Alpine container example:**
 ```yml
