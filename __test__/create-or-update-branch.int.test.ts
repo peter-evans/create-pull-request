@@ -200,7 +200,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('none')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
@@ -215,7 +216,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(trackedContent)
@@ -241,7 +243,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -260,7 +263,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
@@ -286,7 +290,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -307,7 +312,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -334,7 +340,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('none')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -353,7 +360,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -388,7 +396,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -417,7 +426,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -443,7 +453,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
@@ -462,7 +473,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -500,7 +512,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
@@ -520,7 +533,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(commits.changes.tracked)
@@ -549,7 +563,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -573,7 +588,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -606,7 +622,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -632,7 +649,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -673,7 +691,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -698,7 +717,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       '',
       BRANCH,
-      FORK_REMOTE_NAME
+      FORK_REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -725,7 +745,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       '',
       BRANCH,
-      FORK_REMOTE_NAME
+      FORK_REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -748,7 +769,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('none')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
@@ -766,7 +788,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(trackedContent)
@@ -795,7 +818,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -817,7 +841,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
@@ -846,7 +871,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -870,7 +896,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -900,7 +927,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('none')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -922,7 +950,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -960,7 +989,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -992,7 +1022,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -1021,7 +1052,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
@@ -1045,7 +1077,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -1086,7 +1119,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
@@ -1109,7 +1143,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(commits.changes.tracked)
@@ -1141,7 +1176,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -1168,7 +1204,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -1204,7 +1241,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -1233,7 +1271,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -1277,7 +1316,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      REMOTE_NAME
+      REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -1305,7 +1345,8 @@ describe('create-or-update-branch tests', () => {
       commitMessage,
       BASE,
       BRANCH,
-      FORK_REMOTE_NAME
+      FORK_REMOTE_NAME,
+      false
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -1335,7 +1376,8 @@ describe('create-or-update-branch tests', () => {
       _commitMessage,
       BASE,
       BRANCH,
-      FORK_REMOTE_NAME
+      FORK_REMOTE_NAME,
+      false
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
