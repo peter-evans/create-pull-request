@@ -101,7 +101,7 @@ export async function createOrUpdateBranch(
     core.info('Uncommitted changes found. Adding a commit.')
     await git.exec(['add', '-A'])
     if (signoff == true) {
-      await git.commit(['--signoff', '-m', commitMessage])
+      await git.commit(['-m', commitMessage, '-s'])
     } else {
       await git.commit(['-m', commitMessage])
     }
