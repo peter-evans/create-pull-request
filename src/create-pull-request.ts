@@ -11,6 +11,7 @@ export interface Inputs {
   commitMessage: string
   committer: string
   author: string
+  signoff: boolean
   branch: string
   branchSuffix: string
   base: string
@@ -23,7 +24,6 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
-  signoff: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
