@@ -440,6 +440,26 @@ Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-wor
           body: ${{ env.PULL_REQUEST_BODY }}
 ```
 
+### Setting the pull request body from a file
+
+This example shows how file content can be read into a variable and passed to the action.
+The content must be [escaped to preserve newlines](https://github.community/t/set-output-truncates-multiline-strings/16852/3).
+
+```yml
+      - id: get-pr-body
+        run: |
+          body=$(cat pr-body.txt)
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}" 
+          echo ::set-output name=body::$body
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          body: ${{ steps.get-pr-body.outputs.body }}
+```
+
 ### Debugging GitHub Actions
 
 #### Runner Diagnostic Logging
