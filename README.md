@@ -45,6 +45,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
+| `signoff` | Add `Signed-off-by` line by the committer at the end of the commit log message. | `false` |
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
 | `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
@@ -57,7 +58,6 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `team-reviewers` | A comma or newline separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
-| `signoff` | Add Signed-off-by to commit message | `false` |
 
 ### Action outputs
 
@@ -157,7 +157,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 
 ## Reference Example
 
-The following workflow is a reference example that sets all the main inputs.
+The following workflow is a reference example that sets many of the main inputs.
 
 See [examples](docs/examples.md) for more realistic use cases.
 
@@ -181,6 +181,7 @@ jobs:
           commit-message: Update report
           committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          signoff: false
           branch: example-patches
           title: '[Example] Update report'
           body: |
