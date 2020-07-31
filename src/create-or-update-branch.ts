@@ -77,7 +77,8 @@ export async function createOrUpdateBranch(
   commitMessage: string,
   base: string,
   branch: string,
-  branchRemoteName: string
+  branchRemoteName: string,
+  signoff: boolean
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base. This may or may not be the actual base.
   const workingBase = await git.symbolicRef('HEAD', ['--short'])
@@ -99,7 +100,11 @@ export async function createOrUpdateBranch(
   if (await git.isDirty(true)) {
     core.info('Uncommitted changes found. Adding a commit.')
     await git.exec(['add', '-A'])
-    await git.commit(['-m', commitMessage])
+    if (signoff == true) {
+      await git.commit(['-m', commitMessage, '-s'])
+    } else {
+      await git.commit(['-m', commitMessage])
+    }
   }
 
   // Perform fetch and reset the working base

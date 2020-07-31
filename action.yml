@@ -56,6 +56,9 @@ inputs:
   draft:
     description: 'Create a draft pull request'
     default: false
+  signoff:
+    description: 'Add "Signed-off-by" to commit message'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

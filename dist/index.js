@@ -1057,7 +1057,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base. This may or may not be the actual base.
         const workingBase = yield git.symbolicRef('HEAD', ['--short']);
@@ -1077,7 +1077,12 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
             yield git.exec(['add', '-A']);
-            yield git.commit(['-m', commitMessage]);
+            if (signoff == true) {
+                yield git.commit(['-m', commitMessage, '-s']);
+            }
+            else {
+                yield git.commit(['-m', commitMessage]);
+            }
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
@@ -1307,7 +1312,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true'
+                draft: core.getInput('draft') === 'true',
+                signoff: core.getInput('signoff') === 'true'
             };
             core.debug(`Inputs: ${util_1.inspect(inputs)}`);
             yield create_pull_request_1.createPullRequest(inputs);
@@ -10578,7 +10584,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName);
+            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
