@@ -11,6 +11,7 @@ async function run(): Promise<void> {
       commitMessage: core.getInput('commit-message'),
       committer: core.getInput('committer'),
       author: core.getInput('author'),
+      signoff: core.getInput('signoff') === 'true',
       branch: core.getInput('branch'),
       branchSuffix: core.getInput('branch-suffix'),
       base: core.getInput('base'),

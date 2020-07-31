@@ -1057,7 +1057,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base. This may or may not be the actual base.
         const workingBase = yield git.symbolicRef('HEAD', ['--short']);
@@ -1077,7 +1077,11 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
             yield git.exec(['add', '-A']);
-            yield git.commit(['-m', commitMessage]);
+            const params = ['-m', commitMessage];
+            if (signoff) {
+                params.push('--signoff');
+            }
+            yield git.commit(params);
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
@@ -1296,6 +1300,7 @@ function run() {
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
+                signoff: core.getInput('signoff') === 'true',
                 branch: core.getInput('branch'),
                 branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
@@ -10578,7 +10583,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName);
+            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated

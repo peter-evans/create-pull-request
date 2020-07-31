@@ -11,6 +11,7 @@ export interface Inputs {
   commitMessage: string
   committer: string
   author: string
+  signoff: boolean
   branch: string
   branchSuffix: string
   base: string
@@ -166,7 +167,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.commitMessage,
       inputs.base,
       inputs.branch,
-      branchRemoteName
+      branchRemoteName,
+      inputs.signoff
     )
     core.endGroup()
 
