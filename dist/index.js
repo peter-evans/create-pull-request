@@ -1077,12 +1077,11 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
             yield git.exec(['add', '-A']);
-            if (signoff == true) {
-                yield git.commit(['-m', commitMessage, '-s']);
+            const params = ['-m', commitMessage];
+            if (signoff) {
+                params.push('--signoff');
             }
-            else {
-                yield git.commit(['-m', commitMessage]);
-            }
+            yield git.commit(params);
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
@@ -1301,6 +1300,7 @@ function run() {
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
+                signoff: core.getInput('signoff') === 'true',
                 branch: core.getInput('branch'),
                 branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
@@ -1312,8 +1312,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true',
-                signoff: core.getInput('signoff') === 'true'
+                draft: core.getInput('draft') === 'true'
             };
             core.debug(`Inputs: ${util_1.inspect(inputs)}`);
             yield create_pull_request_1.createPullRequest(inputs);

@@ -100,11 +100,11 @@ export async function createOrUpdateBranch(
   if (await git.isDirty(true)) {
     core.info('Uncommitted changes found. Adding a commit.')
     await git.exec(['add', '-A'])
-    if (signoff == true) {
-      await git.commit(['-m', commitMessage, '-s'])
-    } else {
-      await git.commit(['-m', commitMessage])
+    const params = ['-m', commitMessage]
+    if (signoff) {
+      params.push('--signoff')
     }
+    await git.commit(params)
   }
 
   // Perform fetch and reset the working base
