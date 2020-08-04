@@ -92,7 +92,7 @@ Workflows triggered by `pull_request` events will by default check out a [merge 
 ### Restrictions on repository forks
 
 GitHub Actions have imposed restrictions on workflow runs triggered by public repository forks.
-Private repository forks can be configured to [enable workflows](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) to run without restriction.
+Private repositories can be configured to [enable workflows](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) from forks to run without restriction.
 
 The restrictions apply to the `pull_request` event triggered by a fork opening a pull request in the upstream repository.
 
