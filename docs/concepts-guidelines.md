@@ -142,7 +142,7 @@ From a security perspective it's good practice to fork third-party actions, revi
 By using third-party actions directly the risk exists that it could be modified to do something malicious, such as capturing secrets.
 
 Alternatively, use the action directly and reference the commit hash for the version you want to target.
-```
+```yml
   - uses: thirdparty/foo-action@172ec762f2ac8e050062398456fccd30444f8f30
 ```
 
