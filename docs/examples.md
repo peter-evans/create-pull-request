@@ -89,7 +89,7 @@ This pattern will work well for updating any kind of static content from an exte
 
 This workflow will create a pull request for npm dependencies.
 It works best in combination with a build workflow triggered on `push` and `pull_request`.
-A [Personal Access Token (PAT)](https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line) can be used in order for the creation of the pull request to trigger further workflows. See the [documentation here](https://github.com/peter-evans/create-pull-request/blob/master/docs/concepts-guidelines.md#triggering-further-workflow-runs) for further details.
+A [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) can be used in order for the creation of the pull request to trigger further workflows. See the [documentation here](concepts-guidelines.md#triggering-further-workflow-runs) for further details.
 
 ```yml
 name: Update Dependencies
@@ -277,7 +277,7 @@ jobs:
 
 ## Use case: Create a pull request to update X by calling the GitHub API
 
-You can use the GitHub API to trigger a webhook event called [`repository_dispatch`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/events-that-trigger-workflows#external-events-repository_dispatch) when you want to trigger a workflow for activity that happens outside of GitHub.
+You can use the GitHub API to trigger a webhook event called [`repository_dispatch`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#repository_dispatch) when you want to trigger a workflow for activity that happens outside of GitHub.
 This pattern will work well for updating any kind of static content from an external source.
 
 You can modify any of the examples in the previous section to work in this fashion.
@@ -295,7 +295,7 @@ on:
 An `on: repository_dispatch` workflow can be triggered by a call to the GitHub API as follows.
 
 - `[username]` is a GitHub username
-- `[token]` is a `repo` scoped [Personal Access Token](https://help.github.com/en/articles/creating-a-personal-access-token-for-the-command-line)
+- `[token]` is a `repo` scoped [Personal Access Token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token)
 - `[repository]` is the name of the repository the workflow resides in.
 
 ```
@@ -326,7 +326,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 This is a pattern that lends itself to automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
-Note that due to [limitations on forked repositories](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/authenticating-with-the-github_token#permissions-for-the-github_token) workflows for this use case do not work for pull requests raised from forks.
+Note that due to [limitations on forked repositories](https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#permissions-for-the-github_token) workflows for this use case do not work for pull requests raised from forks.
 
 ### autopep8
 
@@ -409,7 +409,7 @@ jobs:
 
 The following examples show how configuration for the action can be dynamically defined in a previous workflow step.
 
-The recommended method is to use [`set-output`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-output-parameter-set-output). Note that the step where output variables are defined must have an id.
+The recommended method is to use [`set-output`](https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter). Note that the step where output variables are defined must have an id.
 
 ```yml
       - name: Set output variables
@@ -425,7 +425,7 @@ The recommended method is to use [`set-output`](https://help.github.com/en/githu
           body: ${{ steps.vars.outputs.pr_body }}
 ```
 
-Alternatively, [`set-env`](https://help.github.com/en/github/automating-your-workflow-with-github-actions/development-tools-for-github-actions#set-an-environment-variable-set-env) can be used to create environment variables.
+Alternatively, [`set-env`](https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable) can be used to create environment variables.
 
 ```yml
       - name: Set environment variables
@@ -464,12 +464,12 @@ The content must be [escaped to preserve newlines](https://github.community/t/se
 
 #### Runner Diagnostic Logging
 
-[Runner diagnostic logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-runner-diagnostic-logging) provides additional log files that contain information about how a runner is executing an action.
+[Runner diagnostic logging](https://docs.github.com/en/actions/configuring-and-managing-workflows/managing-a-workflow-run#enabling-runner-diagnostic-logging) provides additional log files that contain information about how a runner is executing an action.
 To enable runner diagnostic logging, set the secret `ACTIONS_RUNNER_DEBUG` to `true` in the repository that contains the workflow.
 
 #### Step Debug Logging
 
-[Step debug logging](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/managing-a-workflow-run#enabling-step-debug-logging) increases the verbosity of a job's logs during and after a job's execution.
+[Step debug logging](https://docs.github.com/en/actions/configuring-and-managing-workflows/managing-a-workflow-run#enabling-step-debug-logging) increases the verbosity of a job's logs during and after a job's execution.
 To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in the repository that contains the workflow.
 
 #### Output Various Contexts
