@@ -31,24 +31,24 @@
   "dependencies": {
     "@actions/core": "1.2.4",
     "@actions/exec": "1.0.4",
-    "@octokit/core": "3.1.0",
-    "@octokit/plugin-paginate-rest": "2.2.3",
-    "@octokit/plugin-rest-endpoint-methods": "4.0.0",
-    "uuid": "8.2.0"
+    "@octokit/core": "3.1.2",
+    "@octokit/plugin-paginate-rest": "2.3.0",
+    "@octokit/plugin-rest-endpoint-methods": "4.1.2",
+    "uuid": "8.3.0"
   },
   "devDependencies": {
-    "@types/jest": "25.2.2",
-    "@types/node": "14.0.1",
-    "@typescript-eslint/parser": "2.33.0",
-    "@zeit/ncc": "0.22.1",
-    "eslint": "7.0.0",
-    "eslint-plugin-github": "3.4.1",
-    "eslint-plugin-jest": "23.11.0",
-    "jest": "26.0.1",
-    "jest-circus": "26.0.1",
-    "js-yaml": "3.13.1",
+    "@types/jest": "26.0.9",
+    "@types/node": "14.0.27",
+    "@typescript-eslint/parser": "3.9.0",
+    "@zeit/ncc": "0.22.3",
+    "eslint": "7.6.0",
+    "eslint-plugin-github": "4.1.1",
+    "eslint-plugin-jest": "23.20.0",
+    "jest": "26.4.0",
+    "jest-circus": "26.4.0",
+    "js-yaml": "3.14.0",
     "prettier": "2.0.5",
-    "ts-jest": "25.5.1",
-    "typescript": "3.9.2"
+    "ts-jest": "26.2.0",
+    "typescript": "3.9.7"
   }
 }
