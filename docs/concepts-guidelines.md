@@ -171,6 +171,7 @@ Checking out a branch from a different repository from where the workflow is exe
 
 [Deploy keys](https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys) can be set per repository and so are arguably more secure than using a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
 Allowing the action to push with a configured deploy key will trigger `on: push` workflows. This makes it an alternative to using a PAT to trigger checks for pull requests.
+Note that you cannot use deploy keys alone to [create a pull request in a remote repository](#creating-pull-requests-in-a-remote-repository) because then using a PAT would become a requirement. This method only makes sense if creating a pull request in the repository where the workflow is running.
 
 How to use SSH (deploy keys) with create-pull-request action:
 
