@@ -96,7 +96,7 @@ Private repositories can be configured to [enable workflows](https://docs.github
 
 The restrictions apply to the `pull_request` event triggered by a fork opening a pull request in the upstream repository.
 
-- Events from forks cannot access secrets, except for for the default `GITHUB_TOKEN`.
+- Events from forks cannot access secrets, except for the default `GITHUB_TOKEN`.
     > With the exception of GITHUB_TOKEN, secrets are not passed to the runner when a workflow is triggered from a forked repository.
 
     [GitHub Actions: Using encrypted secrets in a workflow](https://docs.github.com/en/actions/configuring-and-managing-workflows/creating-and-storing-encrypted-secrets#using-encrypted-secrets-in-a-workflow)
@@ -105,7 +105,7 @@ The restrictions apply to the `pull_request` event triggered by a fork opening a
 
    [GitHub Actions: Permissions for the GITHUB_TOKEN](https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#permissions-for-the-github_token)
 
-These restrictions mean that during a `pull_request` event triggered by a forked repository, actions have no write access to GitHub resources and will fail on attempt.
+These restrictions mean that during a `pull_request` event triggered by a forked repository, actions have no write access to GitHub resources and will fail on any attempt.
 
 A job condition can be added to prevent workflows from executing when triggered by a repository fork.
 
@@ -202,7 +202,7 @@ It will use their own fork to push code and create the pull request.
 1. Create a new GitHub user and login.
 2. Fork the repository that you will be creating pull requests in.
 3. Create a [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
-4. Logout and log back in to your main user account.
+4. Logout and log back into your main user account.
 5. Add a secret to your repository containing the above PAT.
 6. As shown in the following example workflow, set the `push-to-fork` input to the full repository name of the fork.
 

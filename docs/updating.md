@@ -59,7 +59,7 @@
         run: git checkout "${GITHUB_REF:11}"
   ```
 
-- The two branch naming strategies have been swapped. Fixed branch naming strategy is now the default. i.e. `branch-suffix: none` is now the default and should be removed from configuration if set.
+- The two branch naming strategies have been swapped. Fixed-branch naming strategy is now the default. i.e. `branch-suffix: none` is now the default and should be removed from configuration if set.
 
 - `author-name`, `author-email`, `committer-name`, `committer-email` have been removed in favour of `author` and `committer`.
   They can both be set in the format `Display Name <email@address.com>`

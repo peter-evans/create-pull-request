@@ -313,7 +313,7 @@ jobs:
 
 ## Use case: Create a pull request to update X by calling the GitHub API
 
-You can use the GitHub API to trigger a webhook event called [`repository_dispatch`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#repository_dispatch) when you want to trigger a workflow for activity that happens outside of GitHub.
+You can use the GitHub API to trigger a webhook event called [`repository_dispatch`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#repository_dispatch) when you want to trigger a workflow for any activity that happens outside of GitHub.
 This pattern will work well for updating any kind of static content from an external source.
 
 You can modify any of the examples in the previous section to work in this fashion.

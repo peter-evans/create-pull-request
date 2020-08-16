@@ -49,13 +49,13 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
 | `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
-| `push-to-fork` | A fork of the checked out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
+| `push-to-fork` | A fork of the checked-out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
 | `body` | The body of the pull request. | `Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action` |
-| `labels` | A comma or newline separated list of labels. | |
-| `assignees` | A comma or newline separated list of assignees (GitHub usernames). | |
-| `reviewers` | A comma or newline separated list of reviewers (GitHub usernames) to request a review from. | |
-| `team-reviewers` | A comma or newline separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
+| `labels` | A comma or newline-separated list of labels. | |
+| `assignees` | A comma or newline-separated list of assignees (GitHub usernames). | |
+| `reviewers` | A comma or newline-separated list of reviewers (GitHub usernames) to request a review from. | |
+| `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
 
@@ -92,8 +92,8 @@ Any subsequent changes will be committed to the *same* branch and reflected in t
 
 How the action behaves:
 
-- If there are changes (i.e. a diff exists with the checked out base branch), the changes will be pushed to a new `branch` and a pull request created.
-- If there are no changes (i.e. no diff exists with the checked out base branch), no pull request will be created and the action exits silently.
+- If there are changes (i.e. a diff exists with the checked-out base branch), the changes will be pushed to a new `branch` and a pull request created.
+- If there are no changes (i.e. no diff exists with the checked-out base branch), no pull request will be created and the action exits silently.
 - If a pull request already exists and there are no further changes (i.e. no diff with the current pull request branch) then the action exits silently.
 - If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the base and pull request branch), the pull request is automatically closed and the branch deleted.
 
