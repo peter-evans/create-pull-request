@@ -99,12 +99,14 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       )
     }
     const workingBase = symbolicRefResult.stdout.trim()
-    // Exit if the working base is a PR branch created by this action.
-    // This may occur when using a PAT instead of GITHUB_TOKEN because
-    // a PAT allows workflow actions to trigger further events.
-    if (workingBase.startsWith(inputs.branch)) {
+    // If the base is not specified it is assumed to be the working base.
+    const base = inputs.base ? inputs.base : workingBase
+    // Throw an error if the base and branch are not different branches
+    // of the 'origin' remote. An identically named branch in the `fork`
+    // remote is perfectly fine.
+    if (branchRemoteName == 'origin' && base == inputs.branch) {
       throw new Error(
-        `Working base branch '${workingBase}' was created by this action. Unable to continue.`
+        `The 'base' and 'branch' for a pull request must be different branches. Unable to continue.`
       )
     }
     core.endGroup()
