@@ -1073,7 +1073,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // Save the working base changes to a temporary branch
         const tempBranch = uuid_1.v4();
         yield git.checkout(tempBranch, 'HEAD');
-        // Commit any uncomitted changes
+        // Commit any uncommitted changes
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
             yield git.exec(['add', '-A']);
