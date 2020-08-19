@@ -96,7 +96,7 @@ export async function createOrUpdateBranch(
   // Save the working base changes to a temporary branch
   const tempBranch = uuidv4()
   await git.checkout(tempBranch, 'HEAD')
-  // Commit any uncomitted changes
+  // Commit any uncommitted changes
   if (await git.isDirty(true)) {
     core.info('Uncommitted changes found. Adding a commit.')
     await git.exec(['add', '-A'])
