@@ -1393,6 +1393,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
                 core.info(`Updated branch '${branch}'`);
             }
             else {
+                result.action = 'not-updated';
                 core.info(`Branch '${branch}' is even with its remote and will not be updated`);
             }
             // Check if the pull request branch is ahead of the base
@@ -7718,14 +7719,16 @@ function createPullRequest(inputs) {
                     `HEAD:refs/heads/${inputs.branch}`
                 ]);
                 core.endGroup();
-                // Set the base. It would have been '' if not specified as an input
-                inputs.base = result.base;
-                if (result.hasDiffWithBase) {
-                    // Create or update the pull request
-                    yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
-                }
-                else {
-                    // If there is no longer a diff with the base delete the branch
+            }
+            // Set the base. It would have been '' if not specified as an input
+            inputs.base = result.base;
+            if (result.hasDiffWithBase) {
+                // Create or update the pull request
+                yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
+            }
+            else {
+                // If there is no longer a diff with the base delete the branch
+                if (['updated', 'not-updated'].includes(result.action)) {
                     core.info(`Branch '${inputs.branch}' no longer differs from base branch '${inputs.base}'`);
                     core.info(`Closing pull request and deleting branch '${inputs.branch}'`);
                     yield git.push([
