@@ -185,19 +185,21 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         `HEAD:refs/heads/${inputs.branch}`
       ])
       core.endGroup()
+    }
 
-      // Set the base. It would have been '' if not specified as an input
-      inputs.base = result.base
+    // Set the base. It would have been '' if not specified as an input
+    inputs.base = result.base
 
-      if (result.hasDiffWithBase) {
-        // Create or update the pull request
-        await githubHelper.createOrUpdatePullRequest(
-          inputs,
-          baseRemote.repository,
-          branchRepository
-        )
-      } else {
-        // If there is no longer a diff with the base delete the branch
+    if (result.hasDiffWithBase) {
+      // Create or update the pull request
+      await githubHelper.createOrUpdatePullRequest(
+        inputs,
+        baseRemote.repository,
+        branchRepository
+      )
+    } else {
+      // If there is no longer a diff with the base delete the branch
+      if (['updated', 'not-updated'].includes(result.action)) {
         core.info(
           `Branch '${inputs.branch}' no longer differs from base branch '${inputs.base}'`
         )

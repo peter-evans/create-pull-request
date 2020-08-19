@@ -343,7 +343,7 @@ describe('create-or-update-branch tests', () => {
       REMOTE_NAME,
       false
     )
-    expect(_result.action).toEqual('none')
+    expect(_result.action).toEqual('not-updated')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
     expect(
@@ -993,7 +993,7 @@ describe('create-or-update-branch tests', () => {
       REMOTE_NAME,
       false
     )
-    expect(_result.action).toEqual('none')
+    expect(_result.action).toEqual('not-updated')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
     expect(

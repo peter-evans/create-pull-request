@@ -178,6 +178,7 @@ export async function createOrUpdateBranch(
       result.action = 'updated'
       core.info(`Updated branch '${branch}'`)
     } else {
+      result.action = 'not-updated'
       core.info(
         `Branch '${branch}' is even with its remote and will not be updated`
       )
