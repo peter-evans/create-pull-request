@@ -8,6 +8,7 @@
   - [Update Gradle dependencies](#update-gradle-dependencies)
   - [Update Cargo dependencies](#update-cargo-dependencies)
   - [Update SwaggerUI for GitHub Pages](#update-swaggerui-for-github-pages)
+  - [Keep a fork up-to-date with its upstream](#keep-a-fork-up-to-date-with-its-upstream)
   - [Spider and download a website](#spider-and-download-a-website)
 - [Use case: Create a pull request to update X by calling the GitHub API](#use-case-create-a-pull-request-to-update-x-by-calling-the-github-api)
   - [Call the GitHub API from an external service](#call-the-github-api-from-an-external-service)
@@ -274,6 +275,40 @@ jobs:
             [2]: https://github.com/peter-evans/create-pull-request
           labels: dependencies, automated pr
           branch: swagger-ui-updates
+```
+
+### Keep a fork up-to-date with its upstream
+
+This example should not be run in the fork itself because committing anything to the fork's default branch would cause it to differ from the upstream. Create a new repository where this workflow will run.
+
+In the following example workflow, `owner/repo` is the upstream repository and `fork-owner/repo` is the fork. It assumes the default branch of the upstream repository is called `master`.
+
+The [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) should have `repo` scope. Additionally, if the upstream makes changes to the `.github/workflows` directory, the action will be unable to push the changes to a branch and throw the error "_(refusing to allow a GitHub App to create or update workflow `.github/workflows/xxx.yml` without `workflows` permission)_". To allow these changes to be pushed to the fork, add the `workflow` scope to the PAT. Of course, allowing this comes with the risk that the workflow changes from the upstream could run and do something unexpected. Disabling GitHub Actions in the fork is highly recommended to prevent this.
+
+When you merge the pull request make sure to choose the [`Rebase and merge`](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-request-merges#rebase-and-merge-your-pull-request-commits) option. This will make the fork's commits match the commits on the upstream.
+
+```yml
+name: Update fork
+on:
+  schedule:
+    - cron:  '0 0 * * 0'
+jobs:
+  updateFork:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: fork-owner/repo
+      - name: Reset the default branch with upstream changes
+        run: |
+          git remote add upstream https://github.com/owner/repo.git
+          git fetch upstream master:upstream-master
+          git reset --hard upstream-master
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.PAT }}
+          branch: upstream-changes
 ```
 
 ### Spider and download a website
