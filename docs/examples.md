@@ -279,7 +279,8 @@ jobs:
 
 ### Keep a fork up-to-date with its upstream
 
-This example should not be run in the fork itself because committing anything to the fork's default branch would cause it to differ from the upstream. Create a new repository where this workflow will run.
+This example is designed to be run in a seperate repository from the fork repository itself.
+The aim of this is to prevent committing anything to the fork's default branch would cause it to differ from the upstream.
 
 In the following example workflow, `owner/repo` is the upstream repository and `fork-owner/repo` is the fork. It assumes the default branch of the upstream repository is called `master`.
 
