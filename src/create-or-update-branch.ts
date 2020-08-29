@@ -5,6 +5,28 @@ import {v4 as uuidv4} from 'uuid'
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
 
+export enum WorkingBaseType {
+  Branch = 'branch',
+  Commit = 'commit'
+}
+
+export async function getWorkingBaseAndType(
+  git: GitCommandManager
+): Promise<[string, WorkingBaseType]> {
+  const symbolicRefResult = await git.exec(
+    ['symbolic-ref', 'HEAD', '--short'],
+    true
+  )
+  if (symbolicRefResult.exitCode == 0) {
+    // A ref is checked out
+    return [symbolicRefResult.stdout.trim(), WorkingBaseType.Branch]
+  } else {
+    // A commit is checked out (detached HEAD)
+    const headSha = await git.revParse('HEAD')
+    return [headSha, WorkingBaseType.Commit]
+  }
+}
+
 export async function tryFetch(
   git: GitCommandManager,
   remote: string,
@@ -80,8 +102,15 @@ export async function createOrUpdateBranch(
   branchRemoteName: string,
   signoff: boolean
 ): Promise<CreateOrUpdateBranchResult> {
-  // Get the working base. This may or may not be the actual base.
-  const workingBase = await git.symbolicRef('HEAD', ['--short'])
+  // Get the working base.
+  // When a ref, it may or may not be the actual base.
+  // When a commit, we must rebase onto the actual base.
+  const [workingBase, workingBaseType] = await getWorkingBaseAndType(git)
+  core.info(`Working base is ${workingBaseType} '${workingBase}'`)
+  if (workingBaseType == WorkingBaseType.Commit && !base) {
+    throw new Error(`When in 'detached HEAD' state, 'base' must be supplied.`)
+  }
+
   // If the base is not specified it is assumed to be the working base.
   base = base ? base : workingBase
   const baseRemote = 'origin'
@@ -109,12 +138,16 @@ export async function createOrUpdateBranch(
 
   // Perform fetch and reset the working base
   // Commits made during the workflow will be removed
-  await git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force'])
+  if (workingBaseType == WorkingBaseType.Branch) {
+    core.info(`Resetting working base branch '${workingBase}' to its remote`)
+    await git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force'])
+  }
 
   // If the working base is not the base, rebase the temp branch commits
+  // This will also be true if the working base type is a commit
   if (workingBase != base) {
     core.info(
-      `Rebasing commits made to branch '${workingBase}' on to base branch '${base}'`
+      `Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`
     )
     // Checkout the actual base
     await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
