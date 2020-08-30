@@ -3,6 +3,8 @@
 - [Use case: Create a pull request to update X on push](#use-case-create-a-pull-request-to-update-x-on-push)
   - [Update project authors](#update-project-authors)
   - [Keep a branch up-to-date with another](#keep-a-branch-up-to-date-with-another)
+- [Use case: Create a pull request to update X on release](#use-case-create-a-pull-request-to-update-x-on-release)
+  - [Update changelog](#update-changelog)
 - [Use case: Create a pull request to update X periodically](#use-case-create-a-pull-request-to-update-x-periodically)
   - [Update NPM dependencies](#update-npm-dependencies)
   - [Update Gradle dependencies](#update-gradle-dependencies)
@@ -81,6 +83,45 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           branch: production-promotion
+```
+
+## Use case: Create a pull request to update X on release
+
+This pattern will work well for updating any kind of static content based on the tagged commit of a release. Note that because `release` is one of the [events which checkout a commit](concepts-guidelines.md#events-which-checkout-a-commit) it is necessary to supply the `base` input to the action.
+
+### Update changelog
+
+Raises a pull request to update the `CHANGELOG.md` file based on the tagged commit of the release.
+Note that [git-chglog](https://github.com/git-chglog/git-chglog/) requires some configuration files to exist in the repository before this workflow will work.
+
+This workflow assumes the tagged release was made on a default branch called `master`.
+
+```yml
+name: Update Changelog
+on:
+  release:
+    types: [published]
+jobs:
+  updateChangelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Update Changelog
+        run: |
+          curl -o git-chglog -L https://github.com/git-chglog/git-chglog/releases/download/0.9.1/git-chglog_linux_amd64
+          chmod u+x git-chglog
+          ./git-chglog -o CHANGELOG.md
+          rm git-chglog
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          commit-message: update changelog
+          title: Update Changelog
+          body: Update changelog to reflect release changes
+          branch: update-changelog
+          base: master
 ```
 
 ## Use case: Create a pull request to update X periodically
