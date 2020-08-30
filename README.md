@@ -147,13 +147,12 @@ To create a project card for the pull request, pass the `pull-request-number` st
 
 ## Reference Example
 
-The following workflow is a reference example that sets many of the main inputs.
+The following workflow sets many of the action's inputs for reference purposes.
+Check the [defaults](#action-inputs) to avoid setting inputs unnecessarily.
 
 See [examples](docs/examples.md) for more realistic use cases.
 
 ```yml
-name: Create Pull Request
-on: push
 jobs:
   createPullRequest:
     runs-on: ubuntu-latest
