@@ -2932,10 +2932,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createOrUpdateBranch = exports.tryFetch = void 0;
+exports.createOrUpdateBranch = exports.tryFetch = exports.getWorkingBaseAndType = exports.WorkingBaseType = void 0;
 const core = __importStar(__webpack_require__(186));
 const uuid_1 = __webpack_require__(840);
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
+var WorkingBaseType;
+(function (WorkingBaseType) {
+    WorkingBaseType["Branch"] = "branch";
+    WorkingBaseType["Commit"] = "commit";
+})(WorkingBaseType = exports.WorkingBaseType || (exports.WorkingBaseType = {}));
+function getWorkingBaseAndType(git) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const symbolicRefResult = yield git.exec(['symbolic-ref', 'HEAD', '--short'], true);
+        if (symbolicRefResult.exitCode == 0) {
+            // A ref is checked out
+            return [symbolicRefResult.stdout.trim(), WorkingBaseType.Branch];
+        }
+        else {
+            // A commit is checked out (detached HEAD)
+            const headSha = yield git.revParse('HEAD');
+            return [headSha, WorkingBaseType.Commit];
+        }
+    });
+}
+exports.getWorkingBaseAndType = getWorkingBaseAndType;
 function tryFetch(git, remote, branch) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -2983,8 +3003,14 @@ function splitLines(multilineString) {
 }
 function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Get the working base. This may or may not be the actual base.
-        const workingBase = yield git.symbolicRef('HEAD', ['--short']);
+        // Get the working base.
+        // When a ref, it may or may not be the actual base.
+        // When a commit, we must rebase onto the actual base.
+        const [workingBase, workingBaseType] = yield getWorkingBaseAndType(git);
+        core.info(`Working base is ${workingBaseType} '${workingBase}'`);
+        if (workingBaseType == WorkingBaseType.Commit && !base) {
+            throw new Error(`When in 'detached HEAD' state, 'base' must be supplied.`);
+        }
         // If the base is not specified it is assumed to be the working base.
         base = base ? base : workingBase;
         const baseRemote = 'origin';
@@ -3009,10 +3035,14 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
-        yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force']);
+        if (workingBaseType == WorkingBaseType.Branch) {
+            core.info(`Resetting working base branch '${workingBase}' to its remote`);
+            yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force']);
+        }
         // If the working base is not the base, rebase the temp branch commits
+        // This will also be true if the working base type is a commit
         if (workingBase != base) {
-            core.info(`Rebasing commits made to branch '${workingBase}' on to base branch '${base}'`);
+            core.info(`Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`);
             // Checkout the actual base
             yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
             yield git.checkout(base);
@@ -6927,19 +6957,14 @@ function createPullRequest(inputs) {
                 yield gitAuthHelper.configureToken(inputs.token);
                 core.endGroup();
             }
-            // Determine if the checked out ref is a valid base for a pull request
-            // The action needs the checked out HEAD ref to be a branch
-            // This check will fail in the following cases:
-            // - HEAD is detached
-            // - HEAD is a merge commit (pull_request events)
-            // - HEAD is a tag
-            core.startGroup('Checking the checked out ref');
-            const symbolicRefResult = yield git.exec(['symbolic-ref', 'HEAD', '--short'], true);
-            if (symbolicRefResult.exitCode != 0) {
-                core.debug(`${symbolicRefResult.stderr}`);
-                throw new Error('The checked out ref is not a valid base for a pull request. Unable to continue.');
+            core.startGroup('Checking the base repository state');
+            const [workingBase, workingBaseType] = yield create_or_update_branch_1.getWorkingBaseAndType(git);
+            core.info(`Working base is ${workingBaseType} '${workingBase}'`);
+            // When in detached HEAD state (checked out on a commit), we need to
+            // know the 'base' branch in order to rebase changes.
+            if (workingBaseType == create_or_update_branch_1.WorkingBaseType.Commit && !inputs.base) {
+                throw new Error(`When the repository is checked out on a commit instead of a branch, the 'base' input must be supplied.`);
             }
-            const workingBase = symbolicRefResult.stdout.trim();
             // If the base is not specified it is assumed to be the working base.
             const base = inputs.base ? inputs.base : workingBase;
             // Throw an error if the base and branch are not different branches
