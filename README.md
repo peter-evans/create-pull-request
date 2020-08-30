@@ -73,17 +73,6 @@ Note that in order to read the step output the action step must have an id.
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
 ```
 
-### Checkout
-
-This action expects repositories to be checked out with `actions/checkout@v2`.
-
-If there is some reason you need to use `actions/checkout@v1` the following step can be added to checkout the branch.
-
-```yml
-      - uses: actions/checkout@v1
-      - run: git checkout "${GITHUB_REF:11}"
-```
-
 ### Action behaviour
 
 The default behaviour of the action is to create a pull request that will be continually updated with new changes until it is merged or closed.
@@ -115,6 +104,7 @@ To use this strategy, set input `branch-suffix` with one of the following option
 ### Controlling commits
 
 As well as relying on the action to handle uncommitted changes, you can additionally make your own commits before the action runs.
+Note that the repository must be checked out on a branch with a remote, it won't work for [events which checkout a commit](docs/concepts-guidelines.md#events-which-checkout-a-commit).
 
 ```yml
     steps:

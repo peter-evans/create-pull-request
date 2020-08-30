@@ -1,5 +1,9 @@
 import * as core from '@actions/core'
-import {createOrUpdateBranch} from './create-or-update-branch'
+import {
+  createOrUpdateBranch,
+  getWorkingBaseAndType,
+  WorkingBaseType
+} from './create-or-update-branch'
 import {GitHubHelper} from './github-helper'
 import {GitCommandManager} from './git-command-manager'
 import {GitAuthHelper} from './git-auth-helper'
@@ -81,24 +85,16 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.endGroup()
     }
 
-    // Determine if the checked out ref is a valid base for a pull request
-    // The action needs the checked out HEAD ref to be a branch
-    // This check will fail in the following cases:
-    // - HEAD is detached
-    // - HEAD is a merge commit (pull_request events)
-    // - HEAD is a tag
-    core.startGroup('Checking the checked out ref')
-    const symbolicRefResult = await git.exec(
-      ['symbolic-ref', 'HEAD', '--short'],
-      true
-    )
-    if (symbolicRefResult.exitCode != 0) {
-      core.debug(`${symbolicRefResult.stderr}`)
+    core.startGroup('Checking the base repository state')
+    const [workingBase, workingBaseType] = await getWorkingBaseAndType(git)
+    core.info(`Working base is ${workingBaseType} '${workingBase}'`)
+    // When in detached HEAD state (checked out on a commit), we need to
+    // know the 'base' branch in order to rebase changes.
+    if (workingBaseType == WorkingBaseType.Commit && !inputs.base) {
       throw new Error(
-        'The checked out ref is not a valid base for a pull request. Unable to continue.'
+        `When the repository is checked out on a commit instead of a branch, the 'base' input must be supplied.`
       )
     }
-    const workingBase = symbolicRefResult.stdout.trim()
     // If the base is not specified it is assumed to be the working base.
     const base = inputs.base ? inputs.base : workingBase
     // Throw an error if the base and branch are not different branches
