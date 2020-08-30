@@ -7,7 +7,7 @@ This document covers terminology, how the action works, general usage guidelines
 - [How the action works](#how-the-action-works)
 - [Guidelines](#guidelines)
   - [Providing a consistent base](#providing-a-consistent-base)
-  - [Pull request events](#pull-request-events)
+  - [Events which checkout a commit](#events-which-checkout-a-commit)
   - [Restrictions on repository forks](#restrictions-on-repository-forks)
   - [Triggering further workflow runs](#triggering-further-workflow-runs)
   - [Security](#security)
@@ -17,7 +17,6 @@ This document covers terminology, how the action works, general usage guidelines
   - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Authenticating with GitHub App generated tokens](#authenticating-with-github-app-generated-tokens)
   - [Running in a container or on self-hosted runners](#running-in-a-container-or-on-self-hosted-runners)
-  - [Creating pull requests on tag push](#creating-pull-requests-on-tag-push)
 
 ## Terminology
 
@@ -32,8 +31,6 @@ A pull request references two branches:
 
 For each [event type](https://docs.github.com/en/actions/reference/events-that-trigger-workflows) there is a default `GITHUB_SHA` that will be checked out by the GitHub Actions [checkout](https://github.com/actions/checkout) action.
 
-The majority of events will default to checking out the "last commit on default branch," which in most cases will be the latest commit on `master`.
-
 The default can be overridden by specifying a `ref` on checkout.
 
 ```yml
@@ -44,7 +41,7 @@ The default can be overridden by specifying a `ref` on checkout.
 
 ## How the action works
 
-By default, the action expects to be executed on the pull request `base`&mdash;the branch you intend to modify with the proposed changes.
+Unless the `base` input is supplied, the action expects the target repository to be checked out on the pull request `base`&mdash;the branch you intend to modify with the proposed changes.
 
 Workflow steps:
 
@@ -60,11 +57,11 @@ The following git diagram shows how the action creates and updates a pull reques
 
 ### Providing a consistent base
 
-For the action to work correctly it should be executed in a workflow that checks out a *consistent base* branch. This will be the base of the pull request unless overridden with the `base` input.
+For the action to work correctly it should be executed in a workflow that checks out a *consistent* base branch. This will be the base of the pull request unless overridden with the `base` input.
 
 This means your workflow should be consistently checking out the branch that you intend to modify once the PR is merged.
 
-In the following example, the [`push`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#push) and [`create`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#create) events both trigger the same workflow. This will cause the checkout action to checkout commits from inconsistent branches. Do *not* do this. It will cause multiple pull requests to be created for each additional `base` the action is executed against.
+In the following example, the [`push`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#push) and [`create`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#create) events both trigger the same workflow. This will cause the checkout action to checkout inconsistent branches and commits. Do *not* do this. It will cause multiple pull requests to be created for each additional `base` the action is executed against.
 
 ```yml
 on:
@@ -77,16 +74,29 @@ jobs:
       - uses: actions/checkout@v2
 ```
 
-Although rare, there may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.
+There may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.
 
-### Pull request events
+### Events which checkout a commit
 
-Workflows triggered by `pull_request` events will by default check out a [merge commit](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request). To prevent the merge commit being included in created pull requests it is necessary to checkout the `head_ref`.
+The [default checkout](#events-and-checkout) for the majority of events will leave the repository checked out on a branch.
+However, some events such as `release` and `pull_request` will leave the repository in a "detached HEAD" state.
+This is because they checkout a commit, not a branch.
+In these cases, you *must supply* the `base` input so the action can rebase changes made during the workflow for the pull request.
+
+Workflows triggered by [`pull_request`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request) events will by default check out a merge commit. Set the `base` input as follows to base the new pull request on the current pull request's branch.
 
 ```yml
-      - uses: actions/checkout@v2
+      - uses: peter-evans/create-pull-request@v3
         with:
-          ref: ${{ github.head_ref }}
+          base: ${{ github.head_ref }}
+```
+
+Workflows triggered by [`release`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#release) events will by default check out a tag. For most use cases, you will need to set the `base` input to the branch name of the tagged commit.
+
+```yml
+      - uses: peter-evans/create-pull-request@v3
+        with:
+          base: master
 ```
 
 ### Restrictions on repository forks
@@ -146,7 +156,7 @@ Alternatively, use the action directly and reference the commit hash for the ver
   - uses: thirdparty/foo-action@172ec762f2ac8e050062398456fccd30444f8f30
 ```
 
-This action uses [ncc](https://github.com/zeit/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory.
+This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory.
 
 ## Advanced usage
 
@@ -300,66 +310,6 @@ jobs:
           apt-get install -y git
 
       - uses: actions/checkout@v2
-
-      # Make changes to pull request here
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
-```
-
-### Creating pull requests on tag push
-
-An `on: push` workflow will also trigger when tags are pushed.
-During these events, the `actions/checkout` action will check out the `ref/tags/<tag>` git ref by default.
-This means the repository will *not* be checked out on an active branch.
-
-If you would like to run `create-pull-request` action on the tagged commit you can achieve this by creating a temporary branch as follows.
-
-```yml
-on:
-  push:
-    tags:
-      - 'v*.*.*'
-jobs:
-  example:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Create a temporary tag branch
-        run: |
-          git config --global user.name 'GitHub'
-          git config --global user.email 'noreply@github.com'
-          git checkout -b temp-${GITHUB_REF:10}
-          git push --set-upstream origin temp-${GITHUB_REF:10}
-
-      # Make changes to pull request here
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          base: master
-
-      - name: Delete tag branch
-        run: |
-          git push --delete origin temp-${GITHUB_REF:10}
-```
-
-This is an alternative, simpler workflow to the one above. However, this is not guaranteed to checkout the tagged commit.
-There is a chance that in between the tag being pushed and checking out the `master` branch in the workflow, another commit is made to `master`. If that possibility is not a concern, this workflow will work fine.
-
-```yml
-on:
-  push:
-    tags:
-      - 'v*.*.*'
-jobs:
-  example:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: master
 
       # Make changes to pull request here
 
