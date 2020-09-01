@@ -29,7 +29,8 @@ A pull request references two branches:
 
 ## Events and checkout
 
-For each [event type](https://docs.github.com/en/actions/reference/events-that-trigger-workflows) there is a default `GITHUB_SHA` that will be checked out by the GitHub Actions [checkout](https://github.com/actions/checkout) action.
+This action expects repositories to be checked out with the official GitHub Actions [checkout](https://github.com/actions/checkout) action.
+For each [event type](https://docs.github.com/en/actions/reference/events-that-trigger-workflows) there is a default `GITHUB_SHA` that will be checked out.
 
 The default can be overridden by specifying a `ref` on checkout.
 

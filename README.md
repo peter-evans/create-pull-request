@@ -26,6 +26,10 @@ Create Pull Request action will:
 ## Usage
 
 ```yml
+      - uses: actions/checkout@v2
+
+      # Make changes to pull request here
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
 ```
