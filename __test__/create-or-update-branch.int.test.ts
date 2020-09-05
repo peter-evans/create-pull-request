@@ -543,6 +543,74 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
   })
 
+  it('tests create, squash merge, and update with identical changes', async () => {
+    // Branches that have been squash merged appear to have a diff with the base due to
+    // different commits for the same changes. To prevent creating pull requests
+    // unnecessarily we reset (rebase) the pull request branch when a reset would result
+    // in no diff with the base. This will reset any undeleted branches after merging.
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false
+    )
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with the same changes as the branch
+    // This simulates squash merge of the pull request
+    const commits = await createCommits(
+      git,
+      1,
+      changes.tracked,
+      changes.untracked
+    )
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Create the same tracked and untracked file changes (no change on update)
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false
+    )
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeFalsy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+  })
+
   it('tests create and update with commits on the working base (during the workflow)', async () => {
     // Create commits on the working base
     const commits = await createCommits(git)
@@ -1195,6 +1263,80 @@ describe('create-or-update-branch tests', () => {
       commits.changes.tracked,
       commits.changes.untracked
     )
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false
+    )
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeFalsy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+  })
+
+  it('tests create, squash merge, and update with identical changes (WBNB)', async () => {
+    // Branches that have been squash merged appear to have a diff with the base due to
+    // different commits for the same changes. To prevent creating pull requests
+    // unnecessarily we reset (rebase) the pull request branch when a reset would result
+    // in no diff with the base. This will reset any undeleted branches after merging.
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false
+    )
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with the same changes as the branch
+    // This simulates squash merge of the pull request
+    const commits = await createCommits(
+      git,
+      1,
+      changes.tracked,
+      changes.untracked
+    )
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create the same tracked and untracked file changes (no change on update)
+    const _changes = await createChanges(changes.tracked, changes.untracked)
     const _commitMessage = uuidv4()
     const _result = await createOrUpdateBranch(
       git,

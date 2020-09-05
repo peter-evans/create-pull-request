@@ -3080,9 +3080,16 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             core.info(`Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`);
             // Checkout the pull request branch
             yield git.checkout(branch);
-            if (yield hasDiff(git, branch, tempBranch)) {
-                // If the branch differs from the recreated temp version then the branch is reset
-                // For changes on base this action is similar to a rebase of the pull request branch
+            // Reset the branch if one of the following conditions is true.
+            // - If the branch differs from the recreated temp branch.
+            // - If the recreated temp branch is not ahead of the base. This means there will be
+            //   no pull request diff after the branch is reset. This will reset any undeleted
+            //   branches after merging. In particular, it catches a case where the branch was
+            //   squash merged but not deleted. We need to reset to make sure it doesn't appear
+            //   to have a diff with the base due to different commits for the same changes.
+            // For changes on base this reset is equivalent to a rebase of the pull request branch.
+            if ((yield hasDiff(git, branch, tempBranch)) ||
+                !(yield isAhead(git, base, tempBranch))) {
                 core.info(`Resetting '${branch}'`);
                 // Alternatively, git switch -C branch tempBranch
                 yield git.checkout(branch, tempBranch);

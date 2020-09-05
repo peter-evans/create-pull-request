@@ -196,9 +196,18 @@ export async function createOrUpdateBranch(
     // Checkout the pull request branch
     await git.checkout(branch)
 
-    if (await hasDiff(git, branch, tempBranch)) {
-      // If the branch differs from the recreated temp version then the branch is reset
-      // For changes on base this action is similar to a rebase of the pull request branch
+    // Reset the branch if one of the following conditions is true.
+    // - If the branch differs from the recreated temp branch.
+    // - If the recreated temp branch is not ahead of the base. This means there will be
+    //   no pull request diff after the branch is reset. This will reset any undeleted
+    //   branches after merging. In particular, it catches a case where the branch was
+    //   squash merged but not deleted. We need to reset to make sure it doesn't appear
+    //   to have a diff with the base due to different commits for the same changes.
+    // For changes on base this reset is equivalent to a rebase of the pull request branch.
+    if (
+      (await hasDiff(git, branch, tempBranch)) ||
+      !(await isAhead(git, base, tempBranch))
+    ) {
       core.info(`Resetting '${branch}'`)
       // Alternatively, git switch -C branch tempBranch
       await git.checkout(branch, tempBranch)
