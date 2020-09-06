@@ -17,6 +17,7 @@ export interface Inputs {
   author: string
   signoff: boolean
   branch: string
+  deleteBranch: boolean
   branchSuffix: string
   base: string
   pushToFork: string
@@ -194,18 +195,21 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         branchRepository
       )
     } else {
-      // If there is no longer a diff with the base delete the branch
+      // There is no longer a diff with the base
+      // Check we are in a state where a branch exists
       if (['updated', 'not-updated'].includes(result.action)) {
         core.info(
           `Branch '${inputs.branch}' no longer differs from base branch '${inputs.base}'`
         )
-        core.info(`Closing pull request and deleting branch '${inputs.branch}'`)
-        await git.push([
-          '--delete',
-          '--force',
-          branchRemoteName,
-          `refs/heads/${inputs.branch}`
-        ])
+        if (inputs.deleteBranch) {
+          core.info(`Deleting branch '${inputs.branch}'`)
+          await git.push([
+            '--delete',
+            '--force',
+            branchRemoteName,
+            `refs/heads/${inputs.branch}`
+          ])
+        }
       }
     }
   } catch (error) {

@@ -34,6 +34,7 @@ jobs:
           milestone: 1
           draft: false
           branch: example-patches
+          delete-branch: true
 
       - name: Check output
         run: |
