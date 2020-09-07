@@ -18,7 +18,7 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
             token: ${{ secrets.ACTIONS_BOT_TOKEN }}
-            commit-message: 'build: update dependencies'
+            commit-message: 'chore: update dependencies'
             committer: GitHub <noreply@github.com>
             author: actions-bot <actions-bot@users.noreply.github.com>
             title: Update dependencies
