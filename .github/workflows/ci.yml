@@ -120,7 +120,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
-          commit-message: Update distribution
+          commit-message: 'build: update distribution'
           title: Update distribution
           body: |
             - Updates the distribution for changes on `master`
