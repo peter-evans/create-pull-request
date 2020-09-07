@@ -1405,6 +1405,7 @@ function run() {
                 author: core.getInput('author'),
                 signoff: core.getInput('signoff') === 'true',
                 branch: core.getInput('branch'),
+                deleteBranch: core.getInput('delete-branch') === 'true',
                 branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
                 pushToFork: core.getInput('push-to-fork'),
@@ -7042,16 +7043,19 @@ function createPullRequest(inputs) {
                 yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
             }
             else {
-                // If there is no longer a diff with the base delete the branch
+                // There is no longer a diff with the base
+                // Check we are in a state where a branch exists
                 if (['updated', 'not-updated'].includes(result.action)) {
                     core.info(`Branch '${inputs.branch}' no longer differs from base branch '${inputs.base}'`);
-                    core.info(`Closing pull request and deleting branch '${inputs.branch}'`);
-                    yield git.push([
-                        '--delete',
-                        '--force',
-                        branchRemoteName,
-                        `refs/heads/${inputs.branch}`
-                    ]);
+                    if (inputs.deleteBranch) {
+                        core.info(`Deleting branch '${inputs.branch}'`);
+                        yield git.push([
+                            '--delete',
+                            '--force',
+                            branchRemoteName,
+                            `refs/heads/${inputs.branch}`
+                        ]);
+                    }
                 }
             }
         }

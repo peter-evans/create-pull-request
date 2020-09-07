@@ -13,6 +13,7 @@ async function run(): Promise<void> {
       author: core.getInput('author'),
       signoff: core.getInput('signoff') === 'true',
       branch: core.getInput('branch'),
+      deleteBranch: core.getInput('delete-branch') === 'true',
       branchSuffix: core.getInput('branch-suffix'),
       base: core.getInput('base'),
       pushToFork: core.getInput('push-to-fork'),
