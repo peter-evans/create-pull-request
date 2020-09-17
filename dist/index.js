@@ -906,7 +906,10 @@ class GitHubHelper {
             try {
                 const { data: pull } = yield this.octokit.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, base: inputs.base, body: inputs.body, draft: inputs.draft }));
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
-                return pull.number;
+                return {
+                    number: pull.number,
+                    html_url: pull.html_url
+                };
             }
             catch (e) {
                 if (!e.message ||
@@ -918,7 +921,10 @@ class GitHubHelper {
             const { data: pulls } = yield this.octokit.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
             const { data: pull } = yield this.octokit.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body, draft: inputs.draft }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
-            return pull.number;
+            return {
+                number: pull.number,
+                html_url: pull.html_url
+            };
         });
     }
     getRepositoryParent(headRepository) {
@@ -935,11 +941,13 @@ class GitHubHelper {
             const [headOwner] = headRepository.split('/');
             const headBranch = `${headOwner}:${inputs.branch}`;
             // Create or update the pull request
-            const pullNumber = yield this.createOrUpdate(inputs, baseRepository, headBranch);
+            const pull = yield this.createOrUpdate(inputs, baseRepository, headBranch);
             // Set outputs
             core.startGroup('Setting outputs');
-            core.setOutput('pull-request-number', pullNumber);
-            core.exportVariable('PULL_REQUEST_NUMBER', pullNumber);
+            core.setOutput('pull-request-number', pull.number);
+            core.setOutput('pull-request-url', pull.html_url);
+            // Deprecated
+            core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
             core.endGroup();
             // Set milestone, labels and assignees
             const updateIssueParams = {};
@@ -956,7 +964,7 @@ class GitHubHelper {
                 core.info(`Applying assignees '${inputs.assignees}'`);
             }
             if (Object.keys(updateIssueParams).length > 0) {
-                yield this.octokit.issues.update(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pullNumber }), updateIssueParams));
+                yield this.octokit.issues.update(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number }), updateIssueParams));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
@@ -970,7 +978,7 @@ class GitHubHelper {
             }
             if (Object.keys(requestReviewersParams).length > 0) {
                 try {
-                    yield this.octokit.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pullNumber }), requestReviewersParams));
+                    yield this.octokit.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
                 }
                 catch (e) {
                     if (e.message && e.message.includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
