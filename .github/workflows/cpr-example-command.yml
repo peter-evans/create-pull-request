@@ -39,6 +39,7 @@ jobs:
       - name: Check output
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 
       - name: Add reaction
         uses: peter-evans/create-or-update-comment@v1

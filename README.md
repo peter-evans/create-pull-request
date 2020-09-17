@@ -66,8 +66,8 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 
 ### Action outputs
 
-The pull request number is output as a step output.
-Note that in order to read the step output the action step must have an id.
+The pull request number and URL are available as step outputs.
+Note that in order to read the step outputs the action step must have an id.
 
 ```yml
       - name: Create Pull Request
@@ -76,6 +76,7 @@ Note that in order to read the step output the action step must have an id.
       - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 ```
 
 ### Action behaviour
@@ -196,9 +197,10 @@ jobs:
           milestone: 1
           draft: false
 
-      - name: Check output
+      - name: Check outputs
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
+          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 ```
 
 An example based on the above reference configuration creates pull requests that look like this:
