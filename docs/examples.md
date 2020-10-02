@@ -539,21 +539,6 @@ The recommended method is to use [`set-output`](https://docs.github.com/en/actio
           body: ${{ steps.vars.outputs.pr_body }}
 ```
 
-Alternatively, [`set-env`](https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable) can be used to create environment variables.
-
-```yml
-      - name: Set environment variables
-        run: |
-          echo ::set-env name=PULL_REQUEST_TITLE::"[Test] Add report file $(date +%d-%m-%Y)"
-          echo ::set-env name=PULL_REQUEST_BODY::"This PR was auto-generated on $(date +%d-%m-%Y) \
-            by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
-        with:
-          title: ${{ env.PULL_REQUEST_TITLE }}
-          body: ${{ env.PULL_REQUEST_BODY }}
-```
-
 ### Setting the pull request body from a file
 
 This example shows how file content can be read into a variable and passed to the action.
