@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/peter-evans/create-pull-request",
   "dependencies": {
-    "@actions/core": "1.2.5",
+    "@actions/core": "1.2.6",
     "@actions/exec": "1.0.4",
     "@octokit/core": "3.1.2",
     "@octokit/plugin-paginate-rest": "2.4.0",
