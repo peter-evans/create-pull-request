@@ -20,6 +20,7 @@
 - [Misc workflow tips](#misc-workflow-tips)
   - [Filtering push events](#filtering-push-events)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
+  - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
   - [Debugging GitHub Actions](#debugging-github-actions)
 
 
