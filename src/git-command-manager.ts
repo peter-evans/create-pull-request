@@ -96,15 +96,6 @@ export class GitCommandManager {
     return output.exitCode === 0
   }
 
-  async diff(options?: string[]): Promise<string> {
-    const args = ['-c', 'core.pager=cat', 'diff']
-    if (options) {
-      args.push(...options)
-    }
-    const output = await this.exec(args)
-    return output.stdout.trim()
-  }
-
   async fetch(
     refSpec: string[],
     remoteName?: string,
@@ -153,18 +144,26 @@ export class GitCommandManager {
     return this.workingDirectory
   }
 
+  async hasDiff(options?: string[]): Promise<boolean> {
+    const args = ['diff', '--quiet']
+    if (options) {
+      args.push(...options)
+    }
+    const output = await this.exec(args, true)
+    return output.exitCode === 1
+  }
+
   async isDirty(untracked: boolean): Promise<boolean> {
-    const diffArgs = ['--abbrev=40', '--full-index', '--raw']
-    // Check staged changes
-    if (await this.diff([...diffArgs, '--staged'])) {
+    // Check untracked changes
+    if (untracked && (await this.status(['--porcelain', '-unormal']))) {
       return true
     }
     // Check working index changes
-    if (await this.diff(diffArgs)) {
+    if (await this.hasDiff()) {
       return true
     }
-    // Check untracked changes
-    if (untracked && (await this.status(['--porcelain', '-unormal']))) {
+    // Check staged changes
+    if (await this.hasDiff(['--staged'])) {
       return true
     }
     return false
