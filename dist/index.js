@@ -93,12 +93,6 @@ function isEven(git, branch1, branch2) {
             !(yield isBehind(git, branch1, branch2)));
     });
 }
-function hasDiff(git, branch1, branch2) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const result = yield git.diff([`${branch1}..${branch2}`]);
-        return result.length > 0;
-    });
-}
 function splitLines(multilineString) {
     return multilineString
         .split('\n')
@@ -192,7 +186,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             //   squash merged but not deleted. We need to reset to make sure it doesn't appear
             //   to have a diff with the base due to different commits for the same changes.
             // For changes on base this reset is equivalent to a rebase of the pull request branch.
-            if ((yield hasDiff(git, branch, tempBranch)) ||
+            if ((yield git.hasDiff([`${branch}..${tempBranch}`])) ||
                 !(yield isAhead(git, base, tempBranch))) {
                 core.info(`Resetting '${branch}'`);
                 // Alternatively, git switch -C branch tempBranch
@@ -662,16 +656,6 @@ class GitCommandManager {
             return output.exitCode === 0;
         });
     }
-    diff(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['-c', 'core.pager=cat', 'diff'];
-            if (options) {
-                args.push(...options);
-            }
-            const output = yield this.exec(args);
-            return output.stdout.trim();
-        });
-    }
     fetch(refSpec, remoteName, options) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['-c', 'protocol.version=2', 'fetch'];
@@ -712,19 +696,28 @@ class GitCommandManager {
     getWorkingDirectory() {
         return this.workingDirectory;
     }
+    hasDiff(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['diff', '--quiet'];
+            if (options) {
+                args.push(...options);
+            }
+            const output = yield this.exec(args, true);
+            return output.exitCode === 1;
+        });
+    }
     isDirty(untracked) {
         return __awaiter(this, void 0, void 0, function* () {
-            const diffArgs = ['--abbrev=40', '--full-index', '--raw'];
-            // Check staged changes
-            if (yield this.diff([...diffArgs, '--staged'])) {
+            // Check untracked changes
+            if (untracked && (yield this.status(['--porcelain', '-unormal']))) {
                 return true;
             }
             // Check working index changes
-            if (yield this.diff(diffArgs)) {
+            if (yield this.hasDiff()) {
                 return true;
             }
-            // Check untracked changes
-            if (untracked && (yield this.status(['--porcelain', '-unormal']))) {
+            // Check staged changes
+            if (yield this.hasDiff(['--staged'])) {
                 return true;
             }
             return false;

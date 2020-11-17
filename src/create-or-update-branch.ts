@@ -78,15 +78,6 @@ async function isEven(
   )
 }
 
-async function hasDiff(
-  git: GitCommandManager,
-  branch1: string,
-  branch2: string
-): Promise<boolean> {
-  const result = await git.diff([`${branch1}..${branch2}`])
-  return result.length > 0
-}
-
 function splitLines(multilineString: string): string[] {
   return multilineString
     .split('\n')
@@ -205,7 +196,7 @@ export async function createOrUpdateBranch(
     //   to have a diff with the base due to different commits for the same changes.
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
     if (
-      (await hasDiff(git, branch, tempBranch)) ||
+      (await git.hasDiff([`${branch}..${tempBranch}`])) ||
       !(await isAhead(git, base, tempBranch))
     ) {
       core.info(`Resetting '${branch}'`)
