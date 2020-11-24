@@ -291,6 +291,12 @@ function createPullRequest(inputs) {
                 const remoteUrl = utils.getRemoteUrl(baseRemote.protocol, branchRepository);
                 yield git.exec(['remote', 'add', 'fork', remoteUrl]);
             }
+            // For self-hosted runners the repository state persists between runs.
+            // This command prunes the stale remote ref when the pull request branch was
+            // deleted after being merged or closed. Without this the push using
+            // '--force-with-lease' fails due to "stale info."
+            // https://github.com/peter-evans/create-pull-request/issues/633
+            yield git.exec(['remote', 'prune', branchRemoteName]);
             core.endGroup();
             core.info(`Pull request branch target repository set to ${branchRepository}`);
             // Configure auth
