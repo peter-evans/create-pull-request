@@ -911,8 +911,11 @@ class GitHubHelper {
                 };
             }
             catch (e) {
-                if (!e.message ||
-                    !e.message.includes(`A pull request already exists for ${headBranch}`)) {
+                if (e.message &&
+                    e.message.includes(`A pull request already exists for ${headBranch}`)) {
+                    core.info(`A pull request already exists for ${headBranch}`);
+                }
+                else {
                     throw e;
                 }
             }
