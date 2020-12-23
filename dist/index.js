@@ -134,8 +134,19 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
         if (workingBaseType == WorkingBaseType.Branch) {
-            core.info(`Resetting working base branch '${workingBase}' to its remote`);
-            yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force']);
+            core.info(`Resetting working base branch '${workingBase}'`);
+            if (branchRemoteName == 'fork') {
+                // If pushing to a fork we must fetch with 'unshallow' to avoid the following error on git push
+                // ! [remote rejected] HEAD -> tests/push-branch-to-fork (shallow update not allowed)
+                yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, [
+                    '--force'
+                ]);
+            }
+            else {
+                // If the remote is 'origin' we can git reset
+                yield git.checkout(workingBase);
+                yield git.exec(['reset', '--hard', `${baseRemote}/${workingBase}`]);
+            }
         }
         // If the working base is not the base, rebase the temp branch commits
         // This will also be true if the working base type is a commit
@@ -162,7 +173,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // The pull request branch does not exist
             core.info(`Pull request branch '${branch}' does not exist yet.`);
             // Create the pull request branch
-            yield git.checkout(branch, 'HEAD');
+            yield git.checkout(branch, tempBranch);
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
             if (result.hasDiffWithBase) {
