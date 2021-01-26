@@ -23,6 +23,7 @@ export class GitHubHelper {
     if (token) {
       options.auth = `${token}`
     }
+    options.baseUrl = process.env['GITHUB_API_URL'] || 'https://api.github.com'
     this.octokit = new Octokit(options)
   }
 
