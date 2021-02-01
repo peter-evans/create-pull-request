@@ -13,6 +13,7 @@ interface Repository {
 interface Pull {
   number: number
   html_url: string
+  created: boolean
 }
 
 export class GitHubHelper {
@@ -55,7 +56,8 @@ export class GitHubHelper {
       )
       return {
         number: pull.number,
-        html_url: pull.html_url
+        html_url: pull.html_url,
+        created: true
       }
     } catch (e) {
       if (
@@ -87,7 +89,8 @@ export class GitHubHelper {
     )
     return {
       number: pull.number,
-      html_url: pull.html_url
+      html_url: pull.html_url,
+      created: false
     }
   }
 
@@ -107,20 +110,12 @@ export class GitHubHelper {
     inputs: Inputs,
     baseRepository: string,
     headRepository: string
-  ): Promise<void> {
+  ): Promise<Pull> {
     const [headOwner] = headRepository.split('/')
     const headBranch = `${headOwner}:${inputs.branch}`
 
     // Create or update the pull request
     const pull = await this.createOrUpdate(inputs, baseRepository, headBranch)
-
-    // Set outputs
-    core.startGroup('Setting outputs')
-    core.setOutput('pull-request-number', pull.number)
-    core.setOutput('pull-request-url', pull.html_url)
-    // Deprecated
-    core.exportVariable('PULL_REQUEST_NUMBER', pull.number)
-    core.endGroup()
 
     // Set milestone, labels and assignees
     const updateIssueParams = {}
@@ -169,5 +164,7 @@ export class GitHubHelper {
         }
       }
     }
+
+    return pull
   }
 }
