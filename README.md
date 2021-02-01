@@ -66,7 +66,13 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 
 ### Action outputs
 
-The pull request number and URL are available as step outputs.
+The following outputs can be used by subsequent workflow steps.
+
+- `pull-request-number` - The pull request number.
+- `pull-request-url` - The URL of the pull request.
+- `pull-request-operation` - The pull request operation performed by the action, `created`, `updated` or `closed`.
+
+Step outputs can be accessed as in the following example.
 Note that in order to read the step outputs the action step must have an id.
 
 ```yml
