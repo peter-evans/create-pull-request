@@ -391,7 +391,20 @@ function createPullRequest(inputs) {
             inputs.base = result.base;
             if (result.hasDiffWithBase) {
                 // Create or update the pull request
-                yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
+                const pull = yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
+                // Set outputs
+                core.startGroup('Setting outputs');
+                core.setOutput('pull-request-number', pull.number);
+                core.setOutput('pull-request-url', pull.html_url);
+                if (pull.created) {
+                    core.setOutput('pull-request-operation', 'created');
+                }
+                else if (result.action == 'updated') {
+                    core.setOutput('pull-request-operation', 'updated');
+                }
+                // Deprecated
+                core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
+                core.endGroup();
             }
             else {
                 // There is no longer a diff with the base
@@ -406,6 +419,10 @@ function createPullRequest(inputs) {
                             branchRemoteName,
                             `refs/heads/${inputs.branch}`
                         ]);
+                        // Set outputs
+                        core.startGroup('Setting outputs');
+                        core.setOutput('pull-request-operation', 'closed');
+                        core.endGroup();
                     }
                 }
             }
@@ -919,7 +936,8 @@ class GitHubHelper {
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
                     number: pull.number,
-                    html_url: pull.html_url
+                    html_url: pull.html_url,
+                    created: true
                 };
             }
             catch (e) {
@@ -937,7 +955,8 @@ class GitHubHelper {
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
             return {
                 number: pull.number,
-                html_url: pull.html_url
+                html_url: pull.html_url,
+                created: false
             };
         });
     }
@@ -956,13 +975,6 @@ class GitHubHelper {
             const headBranch = `${headOwner}:${inputs.branch}`;
             // Create or update the pull request
             const pull = yield this.createOrUpdate(inputs, baseRepository, headBranch);
-            // Set outputs
-            core.startGroup('Setting outputs');
-            core.setOutput('pull-request-number', pull.number);
-            core.setOutput('pull-request-url', pull.html_url);
-            // Deprecated
-            core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
-            core.endGroup();
             // Set milestone, labels and assignees
             const updateIssueParams = {};
             if (inputs.milestone) {
@@ -1003,6 +1015,7 @@ class GitHubHelper {
                     }
                 }
             }
+            return pull;
         });
     }
 }
