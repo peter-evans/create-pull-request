@@ -117,25 +117,31 @@ export class GitHubHelper {
     // Create or update the pull request
     const pull = await this.createOrUpdate(inputs, baseRepository, headBranch)
 
-    // Set milestone, labels and assignees
-    const updateIssueParams = {}
+    // Apply milestone
     if (inputs.milestone) {
-      updateIssueParams['milestone'] = inputs.milestone
       core.info(`Applying milestone '${inputs.milestone}'`)
-    }
-    if (inputs.labels.length > 0) {
-      updateIssueParams['labels'] = inputs.labels
-      core.info(`Applying labels '${inputs.labels}'`)
-    }
-    if (inputs.assignees.length > 0) {
-      updateIssueParams['assignees'] = inputs.assignees
-      core.info(`Applying assignees '${inputs.assignees}'`)
-    }
-    if (Object.keys(updateIssueParams).length > 0) {
       await this.octokit.issues.update({
         ...this.parseRepository(baseRepository),
         issue_number: pull.number,
-        ...updateIssueParams
+        milestone: inputs.milestone
+      })
+    }
+    // Apply labels
+    if (inputs.labels.length > 0) {
+      core.info(`Applying labels '${inputs.labels}'`)
+      await this.octokit.issues.addLabels({
+        ...this.parseRepository(baseRepository),
+        issue_number: pull.number,
+        labels: inputs.labels
+      })
+    }
+    // Apply assignees
+    if (inputs.assignees.length > 0) {
+      core.info(`Applying assignees '${inputs.assignees}'`)
+      await this.octokit.issues.addAssignees({
+        ...this.parseRepository(baseRepository),
+        issue_number: pull.number,
+        labels: inputs.assignees
       })
     }
 
