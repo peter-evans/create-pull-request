@@ -975,22 +975,20 @@ class GitHubHelper {
             const headBranch = `${headOwner}:${inputs.branch}`;
             // Create or update the pull request
             const pull = yield this.createOrUpdate(inputs, baseRepository, headBranch);
-            // Set milestone, labels and assignees
-            const updateIssueParams = {};
+            // Apply milestone
             if (inputs.milestone) {
-                updateIssueParams['milestone'] = inputs.milestone;
                 core.info(`Applying milestone '${inputs.milestone}'`);
+                yield this.octokit.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
             }
+            // Apply labels
             if (inputs.labels.length > 0) {
-                updateIssueParams['labels'] = inputs.labels;
                 core.info(`Applying labels '${inputs.labels}'`);
+                yield this.octokit.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels }));
             }
+            // Apply assignees
             if (inputs.assignees.length > 0) {
-                updateIssueParams['assignees'] = inputs.assignees;
                 core.info(`Applying assignees '${inputs.assignees}'`);
-            }
-            if (Object.keys(updateIssueParams).length > 0) {
-                yield this.octokit.issues.update(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number }), updateIssueParams));
+                yield this.octokit.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.assignees }));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
