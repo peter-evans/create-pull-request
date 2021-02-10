@@ -988,7 +988,7 @@ class GitHubHelper {
             // Apply assignees
             if (inputs.assignees.length > 0) {
                 core.info(`Applying assignees '${inputs.assignees}'`);
-                yield this.octokit.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.assignees }));
+                yield this.octokit.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
