@@ -141,7 +141,7 @@ export class GitHubHelper {
       await this.octokit.issues.addAssignees({
         ...this.parseRepository(baseRepository),
         issue_number: pull.number,
-        labels: inputs.assignees
+        assignees: inputs.assignees
       })
     }
 
