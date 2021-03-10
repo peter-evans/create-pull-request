@@ -64,6 +64,9 @@ inputs:
   draft:
     description: 'Create a draft pull request'
     default: false
+  skinUnstagedFiles:
+    description: 'Skips any unstaged files when creating a pull request.'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

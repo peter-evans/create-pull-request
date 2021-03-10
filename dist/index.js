@@ -99,7 +99,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, skipUnstagedFiles) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
@@ -122,7 +122,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         const tempBranch = uuid_1.v4();
         yield git.checkout(tempBranch, 'HEAD');
         // Commit any uncommitted changes
-        if (yield git.isDirty(true)) {
+        if (skipUnstagedFiles === false && (yield git.isDirty(true))) {
             core.info('Uncommitted changes found. Adding a commit.');
             yield git.exec(['add', '-A']);
             const params = ['-m', commitMessage];
@@ -375,7 +375,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff);
+            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.skipUnstagedFiles);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
@@ -1082,7 +1082,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true'
+                draft: core.getInput('draft') === 'true',
+                skipUnstagedFiles: core.getInput('skip-unstaged-files') === 'true'
             };
             core.debug(`Inputs: ${util_1.inspect(inputs)}`);
             yield create_pull_request_1.createPullRequest(inputs);
@@ -3497,7 +3498,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 var request = __nccwpck_require__(234);
 var universalUserAgent = __nccwpck_require__(30);
 
-const VERSION = "4.6.0";
+const VERSION = "4.6.1";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -3520,10 +3521,18 @@ class GraphqlError extends Error {
 }
 
 const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
+const FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 const GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
 function graphql(request, query, options) {
-  if (typeof query === "string" && options && "query" in options) {
-    return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+  if (options) {
+    if (typeof query === "string" && "query" in options) {
+      return Promise.reject(new Error(`[@octokit/graphql] "query" cannot be used as variable name`));
+    }
+
+    for (const key in options) {
+      if (!FORBIDDEN_VARIABLE_OPTIONS.includes(key)) continue;
+      return Promise.reject(new Error(`[@octokit/graphql] "${key}" cannot be used as variable name`));
+    }
   }
 
   const parsedOptions = typeof query === "string" ? Object.assign({

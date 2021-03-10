@@ -91,7 +91,8 @@ export async function createOrUpdateBranch(
   base: string,
   branch: string,
   branchRemoteName: string,
-  signoff: boolean
+  signoff: boolean,
+  skipUnstagedFiles: boolean
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -117,7 +118,7 @@ export async function createOrUpdateBranch(
   const tempBranch = uuidv4()
   await git.checkout(tempBranch, 'HEAD')
   // Commit any uncommitted changes
-  if (await git.isDirty(true)) {
+  if (skipUnstagedFiles === false && (await git.isDirty(true))) {
     core.info('Uncommitted changes found. Adding a commit.')
     await git.exec(['add', '-A'])
     const params = ['-m', commitMessage]

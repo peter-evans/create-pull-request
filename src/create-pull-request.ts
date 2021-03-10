@@ -29,6 +29,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  skipUnstagedFiles: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -173,7 +174,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.base,
       inputs.branch,
       branchRemoteName,
-      inputs.signoff
+      inputs.signoff,
+      inputs.skipUnstagedFiles
     )
     core.endGroup()
 
