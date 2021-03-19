@@ -66,6 +66,13 @@ export class GitHubHelper {
       ) {
         core.info(`A pull request already exists for ${headBranch}`)
       } else {
+        core.info(
+          `ERROR: title:${inputs.title}
+             head: ${headBranch},
+             base: ${inputs.base},
+             body: ${inputs.body},
+             draft: ${inputs.draft}`
+        )
         throw e
       }
     }
