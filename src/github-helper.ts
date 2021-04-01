@@ -43,7 +43,7 @@ export class GitHubHelper {
   ): Promise<Pull> {
     // Try to create the pull request
     try {
-      const {data: pull} = await this.octokit.pulls.create({
+      const {data: pull} = await this.octokit.rest.pulls.create({
         ...this.parseRepository(baseRepository),
         title: inputs.title,
         head: headBranch,
@@ -71,13 +71,13 @@ export class GitHubHelper {
     }
 
     // Update the pull request that exists for this branch and base
-    const {data: pulls} = await this.octokit.pulls.list({
+    const {data: pulls} = await this.octokit.rest.pulls.list({
       ...this.parseRepository(baseRepository),
       state: 'open',
       head: headBranch,
       base: inputs.base
     })
-    const {data: pull} = await this.octokit.pulls.update({
+    const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),
       pull_number: pulls[0].number,
       title: inputs.title,
@@ -95,7 +95,7 @@ export class GitHubHelper {
   }
 
   async getRepositoryParent(headRepository: string): Promise<string> {
-    const {data: headRepo} = await this.octokit.repos.get({
+    const {data: headRepo} = await this.octokit.rest.repos.get({
       ...this.parseRepository(headRepository)
     })
     if (!headRepo.parent) {
@@ -120,7 +120,7 @@ export class GitHubHelper {
     // Apply milestone
     if (inputs.milestone) {
       core.info(`Applying milestone '${inputs.milestone}'`)
-      await this.octokit.issues.update({
+      await this.octokit.rest.issues.update({
         ...this.parseRepository(baseRepository),
         issue_number: pull.number,
         milestone: inputs.milestone
@@ -129,7 +129,7 @@ export class GitHubHelper {
     // Apply labels
     if (inputs.labels.length > 0) {
       core.info(`Applying labels '${inputs.labels}'`)
-      await this.octokit.issues.addLabels({
+      await this.octokit.rest.issues.addLabels({
         ...this.parseRepository(baseRepository),
         issue_number: pull.number,
         labels: inputs.labels
@@ -138,7 +138,7 @@ export class GitHubHelper {
     // Apply assignees
     if (inputs.assignees.length > 0) {
       core.info(`Applying assignees '${inputs.assignees}'`)
-      await this.octokit.issues.addAssignees({
+      await this.octokit.rest.issues.addAssignees({
         ...this.parseRepository(baseRepository),
         issue_number: pull.number,
         assignees: inputs.assignees
@@ -157,7 +157,7 @@ export class GitHubHelper {
     }
     if (Object.keys(requestReviewersParams).length > 0) {
       try {
-        await this.octokit.pulls.requestReviewers({
+        await this.octokit.rest.pulls.requestReviewers({
           ...this.parseRepository(baseRepository),
           pull_number: pull.number,
           ...requestReviewersParams
