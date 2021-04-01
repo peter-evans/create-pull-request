@@ -932,7 +932,7 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             // Try to create the pull request
             try {
-                const { data: pull } = yield this.octokit.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, base: inputs.base, body: inputs.body, draft: inputs.draft }));
+                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, base: inputs.base, body: inputs.body, draft: inputs.draft }));
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
                     number: pull.number,
@@ -950,8 +950,8 @@ class GitHubHelper {
                 }
             }
             // Update the pull request that exists for this branch and base
-            const { data: pulls } = yield this.octokit.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
-            const { data: pull } = yield this.octokit.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body, draft: inputs.draft }));
+            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body, draft: inputs.draft }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
             return {
                 number: pull.number,
@@ -962,7 +962,7 @@ class GitHubHelper {
     }
     getRepositoryParent(headRepository) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { data: headRepo } = yield this.octokit.repos.get(Object.assign({}, this.parseRepository(headRepository)));
+            const { data: headRepo } = yield this.octokit.rest.repos.get(Object.assign({}, this.parseRepository(headRepository)));
             if (!headRepo.parent) {
                 throw new Error(`Repository '${headRepository}' is not a fork. Unable to continue.`);
             }
@@ -978,17 +978,17 @@ class GitHubHelper {
             // Apply milestone
             if (inputs.milestone) {
                 core.info(`Applying milestone '${inputs.milestone}'`);
-                yield this.octokit.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
+                yield this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
             }
             // Apply labels
             if (inputs.labels.length > 0) {
                 core.info(`Applying labels '${inputs.labels}'`);
-                yield this.octokit.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels }));
+                yield this.octokit.rest.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels }));
             }
             // Apply assignees
             if (inputs.assignees.length > 0) {
                 core.info(`Applying assignees '${inputs.assignees}'`);
-                yield this.octokit.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
+                yield this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
@@ -1002,7 +1002,7 @@ class GitHubHelper {
             }
             if (Object.keys(requestReviewersParams).length > 0) {
                 try {
-                    yield this.octokit.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
+                    yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
                 }
                 catch (e) {
                     if (e.message && e.message.includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
@@ -2910,7 +2910,7 @@ function _objectWithoutProperties(source, excluded) {
   return target;
 }
 
-const VERSION = "3.3.0";
+const VERSION = "3.3.2";
 
 class Octokit {
   constructor(options = {}) {
@@ -3619,7 +3619,7 @@ exports.withCustomRequest = withCustomRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "2.13.0";
+const VERSION = "2.13.3";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -3770,6 +3770,55 @@ exports.paginatingEndpoints = paginatingEndpoints;
 
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(Object(source), true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(Object(source)).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
+}
 
 const Endpoints = {
   actions: {
@@ -4228,8 +4277,14 @@ const Endpoints = {
     deletePackageForOrg: ["DELETE /orgs/{org}/packages/{package_type}/{package_name}"],
     deletePackageVersionForAuthenticatedUser: ["DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}"],
     deletePackageVersionForOrg: ["DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
-    getAllPackageVersionsForAPackageOwnedByAnOrg: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions"],
-    getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions"],
+    getAllPackageVersionsForAPackageOwnedByAnOrg: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions", {}, {
+      renamed: ["packages", "getAllPackageVersionsForPackageOwnedByOrg"]
+    }],
+    getAllPackageVersionsForAPackageOwnedByTheAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions", {}, {
+      renamed: ["packages", "getAllPackageVersionsForPackageOwnedByAuthenticatedUser"]
+    }],
+    getAllPackageVersionsForPackageOwnedByAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions"],
+    getAllPackageVersionsForPackageOwnedByOrg: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions"],
     getAllPackageVersionsForPackageOwnedByUser: ["GET /users/{username}/packages/{package_type}/{package_name}/versions"],
     getPackageForAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}"],
     getPackageForOrganization: ["GET /orgs/{org}/packages/{package_type}/{package_name}"],
@@ -4237,8 +4292,8 @@ const Endpoints = {
     getPackageVersionForAuthenticatedUser: ["GET /user/packages/{package_type}/{package_name}/versions/{package_version_id}"],
     getPackageVersionForOrganization: ["GET /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
     getPackageVersionForUser: ["GET /users/{username}/packages/{package_type}/{package_name}/versions/{package_version_id}"],
-    restorePackageForAuthenticatedUser: ["POST /user/packages/{package_type}/{package_name}/restore"],
-    restorePackageForOrg: ["POST /orgs/{org}/packages/{package_type}/{package_name}/restore"],
+    restorePackageForAuthenticatedUser: ["POST /user/packages/{package_type}/{package_name}/restore{?token}"],
+    restorePackageForOrg: ["POST /orgs/{org}/packages/{package_type}/{package_name}/restore{?token}"],
     restorePackageVersionForAuthenticatedUser: ["POST /user/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"],
     restorePackageVersionForOrg: ["POST /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}/restore"]
   },
@@ -4538,7 +4593,7 @@ const Endpoints = {
     createDeploymentStatus: ["POST /repos/{owner}/{repo}/deployments/{deployment_id}/statuses"],
     createDispatchEvent: ["POST /repos/{owner}/{repo}/dispatches"],
     createForAuthenticatedUser: ["POST /user/repos"],
-    createFork: ["POST /repos/{owner}/{repo}/forks"],
+    createFork: ["POST /repos/{owner}/{repo}/forks{?org,organization}"],
     createInOrg: ["POST /orgs/{org}/repos"],
     createOrUpdateEnvironment: ["PUT /repos/{owner}/{repo}/environments/{environment_name}"],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
@@ -4644,6 +4699,7 @@ const Endpoints = {
     getPullRequestReviewProtection: ["GET /repos/{owner}/{repo}/branches/{branch}/protection/required_pull_request_reviews"],
     getPunchCardStats: ["GET /repos/{owner}/{repo}/stats/punch_card"],
     getReadme: ["GET /repos/{owner}/{repo}/readme"],
+    getReadmeInDirectory: ["GET /repos/{owner}/{repo}/readme/{dir}"],
     getRelease: ["GET /repos/{owner}/{repo}/releases/{release_id}"],
     getReleaseAsset: ["GET /repos/{owner}/{repo}/releases/assets/{asset_id}"],
     getReleaseByTag: ["GET /repos/{owner}/{repo}/releases/tags/{tag}"],
@@ -4847,7 +4903,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.13.5";
+const VERSION = "5.0.0";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -4931,10 +4987,21 @@ function decorate(octokit, scope, methodName, defaults, decorations) {
 }
 
 function restEndpointMethods(octokit) {
-  return endpointsToMethods(octokit, Endpoints);
+  const api = endpointsToMethods(octokit, Endpoints);
+  return {
+    rest: api
+  };
 }
 restEndpointMethods.VERSION = VERSION;
+function legacyRestEndpointMethods(octokit) {
+  const api = endpointsToMethods(octokit, Endpoints);
+  return _objectSpread2(_objectSpread2({}, api), {}, {
+    rest: api
+  });
+}
+legacyRestEndpointMethods.VERSION = VERSION;
 
+exports.legacyRestEndpointMethods = legacyRestEndpointMethods;
 exports.restEndpointMethods = restEndpointMethods;
 //# sourceMappingURL=index.js.map
 
