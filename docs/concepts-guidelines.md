@@ -129,6 +129,8 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
 ```
 
+For further reading regarding the security of pull requests, see this GitHub blog post titled [Keeping your GitHub Actions and workflows secure: Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
+
 ### Triggering further workflow runs
 
 Pull requests created by the action using the default `GITHUB_TOKEN` cannot trigger other workflows. If you have `on: pull_request` or `on: push` workflows acting as checks on pull requests, they will not run.
