@@ -21,6 +21,7 @@
   - [Filtering push events](#filtering-push-events)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
+  - [Using a markdown template](#using-a-markdown-template)
   - [Debugging GitHub Actions](#debugging-github-actions)
 
 
@@ -558,6 +559,31 @@ The content must be [escaped to preserve newlines](https://github.community/t/se
         uses: peter-evans/create-pull-request@v3
         with:
           body: ${{ steps.get-pr-body.outputs.body }}
+```
+
+### Using a markdown template
+
+In this example, a markdown template file is added to the repository at `.github/pull-request-template.md` with the following content.
+```
+This is a test pull request template
+Render template variables such as {{ .foo }} and {{ .bar }}.
+```
+
+The template is rendered using the [render-template](https://github.com/chuhlomin/render-template) action and the result is used to create the pull request.
+```yml
+      - name: Render template
+        id: template
+        uses: chuhlomin/render-template@v1.2
+        with:
+          template: .github/pull-request-template.md
+          vars: |
+            foo: this
+            bar: that
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          body: ${{ steps.template.outputs.result }}
 ```
 
 ### Debugging GitHub Actions
