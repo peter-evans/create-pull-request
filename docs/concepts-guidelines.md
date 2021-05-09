@@ -16,6 +16,7 @@ This document covers terminology, how the action works, general usage guidelines
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
   - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Authenticating with GitHub App generated tokens](#authenticating-with-github-app-generated-tokens)
+  - [GPG commit signature verification](#gpg-commit-signature-verification)
   - [Running in a container or on self-hosted runners](#running-in-a-container-or-on-self-hosted-runners)
 
 ## Terminology
@@ -272,6 +273,49 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ steps.generate-token.outputs.token }}
+```
+
+### GPG commit signature verification
+
+The action can use GPG to sign commits with a GPG key that you generate yourself.
+
+1. Follow GitHub's guide to [generate a new GPG key](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-gpg-key).
+
+2. [Add the public key](https://docs.github.com/en/github/authenticating-to-github/adding-a-new-gpg-key-to-your-github-account) to the user account associated with the [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) that you will use with the action.
+
+3. Copy the private key to your clipboard, replacing `email@example.com` with the email address of your GPG key.
+   ```
+   # macOS
+   gpg --armor --export-secret-key email@example.com | pbcopy
+   ```
+
+4. Paste the private key into a repository secret where the workflow will run. e.g. `GPG_PRIVATE_KEY`
+
+5. Create another repository secret for the key's passphrase, if applicable. e.g. `GPG_PASSPHRASE`
+
+6. The following example workflow shows how to use [crazy-max/ghaction-import-gpg](https://github.com/crazy-max/ghaction-import-gpg) to import your GPG key and instruct the action to sign commits by setting the `gpg-sign` input to `true`.
+
+   Note that the `committer` email address *MUST* match the email address used to create your GPG key.
+
+```yaml
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: crazy-max/ghaction-import-gpg@v3
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+          git-user-signingkey: true
+          git-commit-gpgsign: true
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.PAT }}
+          committer: example <email@example.com>
+          gpg-sign: true
 ```
 
 ### Running in a container or on self-hosted runners
