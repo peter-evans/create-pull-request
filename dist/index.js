@@ -99,7 +99,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, gpgSign) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
@@ -128,6 +128,9 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             const params = ['-m', commitMessage];
             if (signoff) {
                 params.push('--signoff');
+            }
+            if (gpgSign) {
+                params.push('--gpg-sign');
             }
             yield git.commit(params);
         }
@@ -375,7 +378,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff);
+            const result = yield create_or_update_branch_1.createOrUpdateBranch(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.gpgSign);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
@@ -1070,6 +1073,7 @@ function run() {
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
                 signoff: core.getInput('signoff') === 'true',
+                gpgSign: core.getInput('gpg-sign') === 'true',
                 branch: core.getInput('branch'),
                 deleteBranch: core.getInput('delete-branch') === 'true',
                 branchSuffix: core.getInput('branch-suffix'),
