@@ -158,6 +158,11 @@ To create a project card for the pull request, pass the `pull-request-number` st
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
 ```
 
+### Auto-merge
+
+Auto-merge can be enabled on a pull request allowing it to be automatically merged once requirements have been satisfied.
+See [enable-pull-request-automerge](https://github.com/peter-evans/enable-pull-request-automerge) action for usage details.
+
 ## Reference Example
 
 The following workflow sets many of the action's inputs for reference purposes.
