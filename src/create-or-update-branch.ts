@@ -91,8 +91,7 @@ export async function createOrUpdateBranch(
   base: string,
   branch: string,
   branchRemoteName: string,
-  signoff: boolean,
-  gpgSign: boolean
+  signoff: boolean
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -124,9 +123,6 @@ export async function createOrUpdateBranch(
     const params = ['-m', commitMessage]
     if (signoff) {
       params.push('--signoff')
-    }
-    if (gpgSign) {
-      params.push('--gpg-sign')
     }
     await git.commit(params)
   }

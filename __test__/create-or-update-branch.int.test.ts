@@ -220,7 +220,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('none')
@@ -237,7 +236,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -265,7 +263,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -286,7 +283,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -314,7 +310,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -337,7 +332,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -366,7 +360,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('not-updated')
@@ -387,7 +380,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -424,7 +416,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -455,7 +446,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -483,7 +473,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -504,7 +493,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -544,7 +532,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -571,7 +558,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -614,7 +600,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -636,7 +621,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -667,7 +651,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -693,7 +676,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -728,7 +710,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -756,7 +737,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -799,7 +779,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -826,7 +805,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       FORK_REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -855,7 +833,6 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       FORK_REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -877,8 +854,7 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      true,
-      false
+      true
     )
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
@@ -913,8 +889,7 @@ describe('create-or-update-branch tests', () => {
       '',
       BRANCH,
       REMOTE_NAME,
-      true,
-      false
+      true
     )
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
@@ -945,7 +920,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('none')
@@ -965,7 +939,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -996,7 +969,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1020,7 +992,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1051,7 +1022,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1077,7 +1047,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1109,7 +1078,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('not-updated')
@@ -1133,7 +1101,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1173,7 +1140,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1207,7 +1173,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1238,7 +1203,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1264,7 +1228,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1307,7 +1270,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1337,7 +1299,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1383,7 +1344,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1408,7 +1368,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1442,7 +1401,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1471,7 +1429,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1509,7 +1466,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1540,7 +1496,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1586,7 +1541,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1616,7 +1570,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       FORK_REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1648,7 +1601,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       FORK_REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1677,7 +1629,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1710,7 +1661,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
@@ -1736,7 +1686,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(result.action).toEqual('created')
@@ -1777,7 +1726,6 @@ describe('create-or-update-branch tests', () => {
       BASE,
       BRANCH,
       REMOTE_NAME,
-      false,
       false
     )
     expect(_result.action).toEqual('updated')
