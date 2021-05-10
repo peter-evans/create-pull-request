@@ -16,7 +16,6 @@ export interface Inputs {
   committer: string
   author: string
   signoff: boolean
-  gpgSign: boolean
   branch: string
   deleteBranch: boolean
   branchSuffix: string
@@ -174,8 +173,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.base,
       inputs.branch,
       branchRemoteName,
-      inputs.signoff,
-      inputs.gpgSign
+      inputs.signoff
     )
     core.endGroup()
 
