@@ -44,7 +44,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 
 | Name | Description | Default |
 | --- | --- | --- |
-| `token` | `GITHUB_TOKEN` or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
+| `token` | `GITHUB_TOKEN` (`contents: write`, `pull-requests: write`) or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
