@@ -38,7 +38,7 @@ name: Update AUTHORS
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   updateAuthors:
     runs-on: ubuntu-latest
@@ -62,14 +62,14 @@ jobs:
 
 This is a use case where a branch should be kept up to date with another by opening a pull request to update it. The pull request should then be updated with new changes until it is merged or closed.
 
-In this example scenario, a branch called `production` should be updated via pull request to keep it in sync with `master`. Merging the pull request is effectively promoting those changes to production.
+In this example scenario, a branch called `production` should be updated via pull request to keep it in sync with `main`. Merging the pull request is effectively promoting those changes to production.
 
 ```yml
 name: Create production promotion pull request
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   productionPromotion:
     runs-on: ubuntu-latest
@@ -79,8 +79,8 @@ jobs:
           ref: production
       - name: Reset promotion branch
         run: |
-          git fetch origin master:master
-          git reset --hard master
+          git fetch origin main:main
+          git reset --hard main
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
@@ -96,7 +96,7 @@ This pattern will work well for updating any kind of static content based on the
 Raises a pull request to update the `CHANGELOG.md` file based on the tagged commit of the release.
 Note that [git-chglog](https://github.com/git-chglog/git-chglog/) requires some configuration files to exist in the repository before this workflow will work.
 
-This workflow assumes the tagged release was made on a default branch called `master`.
+This workflow assumes the tagged release was made on a default branch called `main`.
 
 ```yml
 name: Update Changelog
@@ -123,7 +123,7 @@ jobs:
           title: Update Changelog
           body: Update changelog to reflect release changes
           branch: update-changelog
-          base: master
+          base: main
 ```
 
 ## Use case: Create a pull request to update X periodically
@@ -174,9 +174,9 @@ The above workflow works best in combination with a build workflow triggered on 
 name: CI
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -325,7 +325,7 @@ jobs:
 This example is designed to be run in a seperate repository from the fork repository itself.
 The aim of this is to prevent committing anything to the fork's default branch would cause it to differ from the upstream.
 
-In the following example workflow, `owner/repo` is the upstream repository and `fork-owner/repo` is the fork. It assumes the default branch of the upstream repository is called `master`.
+In the following example workflow, `owner/repo` is the upstream repository and `fork-owner/repo` is the fork. It assumes the default branch of the upstream repository is called `main`.
 
 The [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) should have `repo` scope. Additionally, if the upstream makes changes to the `.github/workflows` directory, the action will be unable to push the changes to a branch and throw the error "_(refusing to allow a GitHub App to create or update workflow `.github/workflows/xxx.yml` without `workflows` permission)_". To allow these changes to be pushed to the fork, add the `workflow` scope to the PAT. Of course, allowing this comes with the risk that the workflow changes from the upstream could run and do something unexpected. Disabling GitHub Actions in the fork is highly recommended to prevent this.
 
@@ -346,8 +346,8 @@ jobs:
       - name: Reset the default branch with upstream changes
         run: |
           git remote add upstream https://github.com/owner/repo.git
-          git fetch upstream master:upstream-master
-          git reset --hard upstream-master
+          git fetch upstream main:upstream-main
+          git reset --hard upstream-main
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:

@@ -98,7 +98,7 @@ Workflows triggered by [`release`](https://docs.github.com/en/actions/reference/
 ```yml
       - uses: peter-evans/create-pull-request@v3
         with:
-          base: master
+          base: main
 ```
 
 ### Restrictions on repository forks
@@ -164,7 +164,7 @@ Alternatively, use the action directly and reference the commit hash for the ver
   - uses: thirdparty/foo-action@172ec762f2ac8e050062398456fccd30444f8f30
 ```
 
-This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/master/dist) directory.
+This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/main/dist) directory.
 
 ## Advanced usage
 
