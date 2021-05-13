@@ -29,37 +29,37 @@
             orientation: "vertical-reverse"
         });
 
-        const master = gitgraph.branch("master");
-        master.commit("Last commit on base");
-        const localMaster = gitgraph.branch("<#1> master (local)");
-        localMaster.commit({
+        const main = gitgraph.branch("main");
+        main.commit("Last commit on base");
+        const localMain = gitgraph.branch("<#1> main (local)");
+        localMain.commit({
             subject: "<uncommitted changes>",
             body: "Changes to the local base during the workflow",
         })
         const remotePatch = gitgraph.branch("create-pull-request/patch");
         remotePatch.merge({
-            branch: localMaster,
+            branch: localMain,
             commitOptions: {
                 subject: "[create-pull-request] automated change",
                 body: "Changes pushed to create the remote branch",
             },
         });
-        master.commit("New commit on base");
+        main.commit("New commit on base");
 
-        const localMaster2 = gitgraph.branch("<#2> master (local)");
-        localMaster2.commit({
+        const localMain2 = gitgraph.branch("<#2> main (local)");
+        localMain2.commit({
             subject: "<uncommitted changes>",
             body: "Changes to the updated local base during the workflow",
         })
         remotePatch.merge({
-            branch: localMaster2,
+            branch: localMain2,
             commitOptions: {
                 subject: "[create-pull-request] automated change",
                 body: "Changes force pushed to update the remote branch",
             },
         });
 
-        master.merge(remotePatch);
+        main.merge(remotePatch);
 
     </script>
 
