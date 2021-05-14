@@ -43,6 +43,7 @@ export class GitHubHelper {
   ): Promise<Pull> {
     // Try to create the pull request
     try {
+      core.info(`Attempting creation of pull request`)
       const {data: pull} = await this.octokit.rest.pulls.create({
         ...this.parseRepository(baseRepository),
         title: inputs.title,
@@ -71,12 +72,14 @@ export class GitHubHelper {
     }
 
     // Update the pull request that exists for this branch and base
+    core.info(`Fetching existing pull request`)
     const {data: pulls} = await this.octokit.rest.pulls.list({
       ...this.parseRepository(baseRepository),
       state: 'open',
       head: headBranch,
       base: inputs.base
     })
+    core.info(`Attempting update of pull request`)
     const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),
       pull_number: pulls[0].number,
