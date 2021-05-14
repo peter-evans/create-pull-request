@@ -195,11 +195,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     if (result.hasDiffWithBase) {
       // Create or update the pull request
+      core.startGroup('Create or update the pull request')
       const pull = await githubHelper.createOrUpdatePullRequest(
         inputs,
         baseRemote.repository,
         branchRepository
       )
+      core.endGroup()
 
       // Set outputs
       core.startGroup('Setting outputs')
