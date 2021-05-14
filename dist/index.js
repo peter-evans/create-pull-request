@@ -390,7 +390,9 @@ function createPullRequest(inputs) {
             inputs.base = result.base;
             if (result.hasDiffWithBase) {
                 // Create or update the pull request
+                core.startGroup('Create or update the pull request');
                 const pull = yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
+                core.endGroup();
                 // Set outputs
                 core.startGroup('Setting outputs');
                 core.setOutput('pull-request-number', pull.number);
@@ -931,6 +933,7 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             // Try to create the pull request
             try {
+                core.info(`Attempting creation of pull request`);
                 const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, base: inputs.base, body: inputs.body, draft: inputs.draft }));
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
@@ -949,7 +952,9 @@ class GitHubHelper {
                 }
             }
             // Update the pull request that exists for this branch and base
+            core.info(`Fetching existing pull request`);
             const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            core.info(`Attempting update of pull request`);
             const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body, draft: inputs.draft }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
             return {
