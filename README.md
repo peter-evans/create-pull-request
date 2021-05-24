@@ -64,6 +64,14 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
 
+For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
+```yml
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        env:
+          https_proxy: http://<proxy_address>:<port>
+```
+
 ### Action outputs
 
 The following outputs can be used by subsequent workflow steps.
