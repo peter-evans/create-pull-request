@@ -1,6 +1,7 @@
 import {Octokit as Core} from '@octokit/core'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
 import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods'
+import {retry} from '@octokit/plugin-retry'
 import {HttpsProxyAgent} from 'https-proxy-agent'
 export {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
 export {OctokitOptions} from '@octokit/core/dist-types/types'
@@ -8,6 +9,7 @@ export {OctokitOptions} from '@octokit/core/dist-types/types'
 export const Octokit = Core.plugin(
   paginateRest,
   restEndpointMethods,
+  retry,
   autoProxyAgent
 )
 
