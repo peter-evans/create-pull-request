@@ -7,6 +7,7 @@ import {
 import {GitHubHelper} from './github-helper'
 import {GitCommandManager} from './git-command-manager'
 import {GitAuthHelper} from './git-auth-helper'
+import {pushWithRetry} from './git-push-retry'
 import * as utils from './utils'
 
 export interface Inputs {
@@ -182,7 +183,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      await git.push([
+      await pushWithRetry(git, [
         '--force-with-lease',
         branchRemoteName,
         `HEAD:refs/heads/${inputs.branch}`

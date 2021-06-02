@@ -35,6 +35,7 @@
     "@octokit/plugin-paginate-rest": "2.14.0",
     "@octokit/plugin-rest-endpoint-methods": "5.5.0",
     "@octokit/plugin-retry": "3.0.7",
+    "bottleneck": "2.19.5",
     "https-proxy-agent": "5.0.0",
     "uuid": "8.3.2"
   },
