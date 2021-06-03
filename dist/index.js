@@ -5006,7 +5006,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "5.3.0";
+const VERSION = "5.3.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
