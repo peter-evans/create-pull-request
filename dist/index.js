@@ -924,7 +924,7 @@ const waitMilliseconds = 60000;
 const limiter = new bottleneck_1.default();
 limiter.on('failed', (error, jobInfo) => __awaiter(void 0, void 0, void 0, function* () {
     const id = jobInfo.options.id;
-    core.info(`Job '${id}' failed: ${error}`);
+    core.warning(`Job '${id}' failed: ${error}`);
     if (error.message in retryableErrors && jobInfo.retryCount < maxRetries) {
         core.info(`Retrying job '${id}' in ${waitMilliseconds}ms`);
         return waitMilliseconds + randomFromInterval(0, 10000);

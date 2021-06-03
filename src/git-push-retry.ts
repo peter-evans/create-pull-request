@@ -12,7 +12,7 @@ const limiter = new Bottleneck()
 
 limiter.on('failed', async (error, jobInfo) => {
   const id = jobInfo.options.id
-  core.info(`Job '${id}' failed: ${error}`)
+  core.warning(`Job '${id}' failed: ${error}`)
 
   if (error.message in retryableErrors && jobInfo.retryCount < maxRetries) {
     core.info(`Retrying job '${id}' in ${waitMilliseconds}ms`)
