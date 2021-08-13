@@ -1740,4 +1740,26 @@ describe('create-or-update-branch tests', () => {
       ])
     ).toBeTruthy()
   })
+
+  // This failure mode is a limitation of the action. Controlling your own commits cannot be used in detached HEAD state.
+  // https://github.com/peter-evans/create-pull-request/issues/902
+  it('tests failure to create with commits on the working base (during the workflow) in detached HEAD state (WBNR)', async () => {
+    // Checkout the HEAD commit SHA
+    const headSha = await git.revParse('HEAD')
+    await git.checkout(headSha)
+
+    // Create commits on the working base
+    const commits = await createCommits(git)
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false
+    )
+    // The action cannot successfully create the branch
+    expect(result.action).toEqual('none')
+  })
 })

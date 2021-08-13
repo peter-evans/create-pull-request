@@ -16,7 +16,7 @@ COPY __test__/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 EOF
 
-    docker build -t $IMAGE .
+    docker build --no-cache -t $IMAGE .
     rm Dockerfile
 fi
 
