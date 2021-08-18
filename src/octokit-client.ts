@@ -23,3 +23,10 @@ function autoProxyAgent(octokit: Core) {
     options.request.agent = agent
   })
 }
+
+export const retryOptions = {
+  // Allow retry for 403 (rate-limiting / abuse detection)
+  doNotRetry: [400, 401, 404, 422],
+  retryAfterBaseValue: 2000,
+  retries: 3
+}

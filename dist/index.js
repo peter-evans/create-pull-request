@@ -984,7 +984,9 @@ const octokit_client_1 = __nccwpck_require__(5040);
 const ERROR_PR_REVIEW_FROM_AUTHOR = 'Review cannot be requested from pull request author';
 class GitHubHelper {
     constructor(token) {
-        const options = {};
+        const options = {
+            retry: octokit_client_1.retryOptions
+        };
         if (token) {
             options.auth = `${token}`;
         }
@@ -1176,7 +1178,7 @@ run();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Octokit = void 0;
+exports.retryOptions = exports.Octokit = void 0;
 const core_1 = __nccwpck_require__(6762);
 const plugin_paginate_rest_1 = __nccwpck_require__(4193);
 const plugin_rest_endpoint_methods_1 = __nccwpck_require__(3044);
@@ -1193,6 +1195,12 @@ function autoProxyAgent(octokit) {
         options.request.agent = agent;
     });
 }
+exports.retryOptions = {
+    // Allow retry for 403 (rate-limiting / abuse detection)
+    doNotRetry: [400, 401, 404, 422],
+    retryAfterBaseValue: 2000,
+    retries: 3
+};
 
 
 /***/ }),

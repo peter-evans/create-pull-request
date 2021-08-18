@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
-import {Octokit, OctokitOptions} from './octokit-client'
+import {Octokit, OctokitOptions, retryOptions} from './octokit-client'
 
 const ERROR_PR_REVIEW_FROM_AUTHOR =
   'Review cannot be requested from pull request author'
@@ -20,7 +20,9 @@ export class GitHubHelper {
   private octokit: InstanceType<typeof Octokit>
 
   constructor(token: string) {
-    const options: OctokitOptions = {}
+    const options: OctokitOptions = {
+      retry: retryOptions
+    }
     if (token) {
       options.auth = `${token}`
     }
