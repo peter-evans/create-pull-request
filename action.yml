@@ -67,6 +67,10 @@ inputs:
 outputs:
   pull-request-number:
     description: 'The pull request number'
+  pull-request-url:
+    description: 'The URL of the pull request.'
+  pull-request-operation:
+    description: 'The pull request operation performed by the action, `created`, `updated` or `closed`.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
