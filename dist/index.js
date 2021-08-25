@@ -263,9 +263,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createPullRequest = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const create_or_update_branch_1 = __nccwpck_require__(8363);
-const github_helper_1 = __nccwpck_require__(446);
-const git_command_manager_1 = __nccwpck_require__(738);
 const git_auth_helper_1 = __nccwpck_require__(2565);
+const git_command_manager_1 = __nccwpck_require__(738);
+const github_helper_1 = __nccwpck_require__(446);
 const utils = __importStar(__nccwpck_require__(918));
 function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -984,6 +984,11 @@ class GitHubHelper {
                 core.info(`Applying milestone '${inputs.milestone}'`);
                 yield this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
             }
+            // Remove labels
+            if (inputs.removeLabels) {
+                core.info(`Removing ALL labels`);
+                yield this.octokit.rest.issues.removeAllLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number }));
+            }
             // Apply labels
             if (inputs.labels.length > 0) {
                 core.info(`Applying labels '${inputs.labels}'`);
@@ -1061,8 +1066,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
-const create_pull_request_1 = __nccwpck_require__(3780);
 const util_1 = __nccwpck_require__(1669);
+const create_pull_request_1 = __nccwpck_require__(3780);
 const utils = __importStar(__nccwpck_require__(918));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -1082,6 +1087,7 @@ function run() {
                 title: core.getInput('title'),
                 body: core.getInput('body'),
                 labels: utils.getInputAsArray('labels'),
+                removeLabels: core.getInput('remove-labels') === 'true',
                 assignees: utils.getInputAsArray('assignees'),
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
