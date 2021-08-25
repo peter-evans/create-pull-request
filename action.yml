@@ -1,39 +1,39 @@
-name: 'Create Pull Request'
-description: 'Creates a pull request for changes to your repository in the actions workspace'
+name: "Create Pull Request"
+description: "Creates a pull request for changes to your repository in the actions workspace"
 inputs:
   token:
-    description: 'GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)'
+    description: "GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)"
     default: ${{ github.token }}
   path:
     description: >
       Relative path under $GITHUB_WORKSPACE to the repository.
       Defaults to $GITHUB_WORKSPACE.
   commit-message:
-    description: 'The message to use when committing changes.'
-    default: '[create-pull-request] automated change'
+    description: "The message to use when committing changes."
+    default: "[create-pull-request] automated change"
   committer:
     description: >
       The committer name and email address in the format `Display Name <email@address.com>`.
       Defaults to the GitHub Actions bot user.
-    default: 'GitHub <noreply@github.com>'
+    default: "GitHub <noreply@github.com>"
   author:
     description: >
       The author name and email address in the format `Display Name <email@address.com>`.
       Defaults to the user who triggered the workflow run.
-    default: '${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>'
+    default: "${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>"
   signoff:
-    description: 'Add `Signed-off-by` line by the committer at the end of the commit log message.'
+    description: "Add `Signed-off-by` line by the committer at the end of the commit log message."
     default: false
   branch:
-    description: 'The pull request branch name.'
-    default: 'create-pull-request/patch'
+    description: "The pull request branch name."
+    default: "create-pull-request/patch"
   delete-branch:
     description: >
       Delete the `branch` when closing pull requests, and when undeleted after merging.
       Recommend `true`.
     default: false
   branch-suffix:
-    description: 'The branch suffix type when using the alternative branching strategy.'
+    description: "The branch suffix type when using the alternative branching strategy."
   base:
     description: >
       The pull request base branch.
@@ -44,36 +44,39 @@ inputs:
       e.g. `owner/repo-fork`.
       The pull request will be created to merge the fork's branch into the parent's base.
   title:
-    description: 'The title of the pull request.'
-    default: 'Changes by create-pull-request action'
+    description: "The title of the pull request."
+    default: "Changes by create-pull-request action"
   body:
-    description: 'The body of the pull request.'
-    default: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
+    description: "The body of the pull request."
+    default: "Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action"
   labels:
-    description: 'A comma or newline separated list of labels.'
+    description: "A comma or newline separated list of labels to add."
+  remove-labels:
+    description: "If true, remove all existing labels."
+    default: false
   assignees:
-    description: 'A comma or newline separated list of assignees (GitHub usernames).'
+    description: "A comma or newline separated list of assignees (GitHub usernames)."
   reviewers:
-    description: 'A comma or newline separated list of reviewers (GitHub usernames) to request a review from.'
+    description: "A comma or newline separated list of reviewers (GitHub usernames) to request a review from."
   team-reviewers:
     description: >
       A comma or newline separated list of GitHub teams to request a review from.
       Note that a `repo` scoped Personal Access Token (PAT) may be required.
   milestone:
-    description: 'The number of the milestone to associate the pull request with.'
+    description: "The number of the milestone to associate the pull request with."
   draft:
-    description: 'Create a draft pull request'
+    description: "Create a draft pull request"
     default: false
 outputs:
   pull-request-number:
-    description: 'The pull request number'
+    description: "The pull request number"
   pull-request-url:
-    description: 'The URL of the pull request.'
+    description: "The URL of the pull request."
   pull-request-operation:
-    description: 'The pull request operation performed by the action, `created`, `updated` or `closed`.'
+    description: "The pull request operation performed by the action, `created`, `updated` or `closed`."
 runs:
-  using: 'node12'
-  main: 'dist/index.js'
+  using: "node12"
+  main: "dist/index.js"
 branding:
-  icon: 'git-pull-request'
-  color: 'gray-dark'
+  icon: "git-pull-request"
+  color: "gray-dark"

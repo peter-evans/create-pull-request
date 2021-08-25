@@ -129,6 +129,14 @@ export class GitHubHelper {
         milestone: inputs.milestone
       })
     }
+    // Remove labels
+    if (inputs.removeLabels) {
+      core.info(`Removing ALL labels`)
+      await this.octokit.rest.issues.removeAllLabels({
+        ...this.parseRepository(baseRepository),
+        issue_number: pull.number
+      })
+    }
     // Apply labels
     if (inputs.labels.length > 0) {
       core.info(`Applying labels '${inputs.labels}'`)

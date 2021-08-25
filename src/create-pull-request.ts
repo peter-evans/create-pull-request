@@ -4,9 +4,9 @@ import {
   getWorkingBaseAndType,
   WorkingBaseType
 } from './create-or-update-branch'
-import {GitHubHelper} from './github-helper'
-import {GitCommandManager} from './git-command-manager'
 import {GitAuthHelper} from './git-auth-helper'
+import {GitCommandManager} from './git-command-manager'
+import {GitHubHelper} from './github-helper'
 import * as utils from './utils'
 
 export interface Inputs {
@@ -24,6 +24,7 @@ export interface Inputs {
   title: string
   body: string
   labels: string[]
+  removeLabels: boolean
   assignees: string[]
   reviewers: string[]
   teamReviewers: string[]

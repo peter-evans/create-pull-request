@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
-import {Inputs, createPullRequest} from './create-pull-request'
 import {inspect} from 'util'
+import {createPullRequest, Inputs} from './create-pull-request'
 import * as utils from './utils'
 
 async function run(): Promise<void> {
@@ -20,6 +20,7 @@ async function run(): Promise<void> {
       title: core.getInput('title'),
       body: core.getInput('body'),
       labels: utils.getInputAsArray('labels'),
+      removeLabels: core.getInput('remove-labels') === 'true',
       assignees: utils.getInputAsArray('assignees'),
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
