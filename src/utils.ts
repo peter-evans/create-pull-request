@@ -134,7 +134,7 @@ export function fileExistsSync(path: string): boolean {
   let stats: fs.Stats
   try {
     stats = fs.statSync(path)
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 'ENOENT') {
       return false
     }

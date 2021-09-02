@@ -33,7 +33,7 @@ export class GitAuthHelper {
       try {
         await this.setExtraheaderConfig(this.persistedExtraheaderConfigValue)
         core.info('Persisted git credentials restored')
-      } catch (e) {
+      } catch (e: any) {
         core.warning(e)
       }
     }
