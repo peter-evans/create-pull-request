@@ -237,7 +237,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         }
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     core.setFailed(error.message)
   } finally {
     // Remove auth and restore persisted auth config if it existed

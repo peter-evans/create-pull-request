@@ -60,7 +60,7 @@ export class GitHubHelper {
         html_url: pull.html_url,
         created: true
       }
-    } catch (e) {
+    } catch (e: any) {
       if (
         e.message &&
         e.message.includes(`A pull request already exists for ${headBranch}`)
@@ -165,7 +165,7 @@ export class GitHubHelper {
           pull_number: pull.number,
           ...requestReviewersParams
         })
-      } catch (e) {
+      } catch (e: any) {
         if (e.message && e.message.includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
           core.warning(ERROR_PR_REVIEW_FROM_AUTHOR)
         } else {

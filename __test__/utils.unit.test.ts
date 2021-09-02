@@ -58,7 +58,7 @@ describe('utils tests', () => {
       utils.getRemoteDetail(remoteUrl)
       // Fail the test if an error wasn't thrown
       expect(true).toEqual(false)
-    } catch (e) {
+    } catch (e: any) {
       expect(e.message).toEqual(
         `The format of '${remoteUrl}' is not a valid GitHub repository URL`
       )
@@ -104,7 +104,7 @@ describe('utils tests', () => {
       utils.parseDisplayNameEmail(displayNameEmail1)
       // Fail the test if an error wasn't thrown
       expect(true).toEqual(false)
-    } catch (e) {
+    } catch (e: any) {
       expect(e.message).toEqual(
         `The format of '${displayNameEmail1}' is not a valid email address with display name`
       )
@@ -115,7 +115,7 @@ describe('utils tests', () => {
       utils.parseDisplayNameEmail(displayNameEmail2)
       // Fail the test if an error wasn't thrown
       expect(true).toEqual(false)
-    } catch (e) {
+    } catch (e: any) {
       expect(e.message).toEqual(
         `The format of '${displayNameEmail2}' is not a valid email address with display name`
       )
