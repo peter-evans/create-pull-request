@@ -79,6 +79,7 @@ The following outputs can be used by subsequent workflow steps.
 - `pull-request-number` - The pull request number.
 - `pull-request-url` - The URL of the pull request.
 - `pull-request-operation` - The pull request operation performed by the action, `created`, `updated` or `closed`.
+- `pull-request-head-sha` - The commit SHA of the pull request branch.
 
 Step outputs can be accessed as in the following example.
 Note that in order to read the step outputs the action step must have an id.
@@ -215,11 +216,6 @@ jobs:
             maintainers
           milestone: 1
           draft: false
-
-      - name: Check outputs
-        run: |
-          echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
-          echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
 ```
 
 An example based on the above reference configuration creates pull requests that look like this:
