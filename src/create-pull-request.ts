@@ -212,6 +212,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       } else if (result.action == 'updated') {
         core.setOutput('pull-request-operation', 'updated')
       }
+      core.setOutput('pull-request-head-sha', result.headSha)
       // Deprecated
       core.exportVariable('PULL_REQUEST_NUMBER', pull.number)
       core.endGroup()

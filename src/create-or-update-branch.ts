@@ -110,7 +110,8 @@ export async function createOrUpdateBranch(
   const result: CreateOrUpdateBranchResult = {
     action: 'none',
     base: base,
-    hasDiffWithBase: false
+    hasDiffWithBase: false,
+    headSha: ''
   }
 
   // Save the working base changes to a temporary branch
@@ -231,6 +232,9 @@ export async function createOrUpdateBranch(
     result.hasDiffWithBase = await isAhead(git, base, branch)
   }
 
+  // Get the pull request branch SHA
+  result.headSha = await git.revParse('HEAD')
+
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])
 
@@ -241,4 +245,5 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
+  headSha: string
 }
