@@ -71,6 +71,8 @@ outputs:
     description: 'The URL of the pull request.'
   pull-request-operation:
     description: 'The pull request operation performed by the action, `created`, `updated` or `closed`.'
+  pull-request-head-sha:
+    description: 'The commit SHA of the pull request branch.'
 runs:
   using: 'node12'
   main: 'dist/index.js'
