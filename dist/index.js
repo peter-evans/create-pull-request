@@ -115,7 +115,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         const result = {
             action: 'none',
             base: base,
-            hasDiffWithBase: false
+            hasDiffWithBase: false,
+            headSha: ''
         };
         // Save the working base changes to a temporary branch
         const tempBranch = (0, uuid_1.v4)();
@@ -216,6 +217,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
         }
+        // Get the pull request branch SHA
+        result.headSha = yield git.revParse('HEAD');
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
         return result;
@@ -403,6 +406,7 @@ function createPullRequest(inputs) {
                 else if (result.action == 'updated') {
                     core.setOutput('pull-request-operation', 'updated');
                 }
+                core.setOutput('pull-request-head-sha', result.headSha);
                 // Deprecated
                 core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
                 core.endGroup();
