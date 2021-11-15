@@ -248,6 +248,8 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
     - Uncheck `Active` under `Webhook`. You do not need to enter a `Webhook URL`.
     - Under `Repository permissions: Contents` select `Access: Read & write`.
     - Under `Repository permissions: Pull requests` select `Access: Read & write`.
+    - Under `Organization permissions: Members` select `Access: Read-only`.
+      - **NOTE**: Only needed if you would like add teams as reviewers to PRs.
 
 2. Create a Private key from the App settings page and store it securely.
 
