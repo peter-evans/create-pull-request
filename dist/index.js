@@ -125,7 +125,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
             for (const filePattern of filePatterns) {
-                yield git.exec(['add', filePattern]);
+                yield git.exec(['add', filePattern], true);
             }
             const params = ['-m', commitMessage];
             if (signoff) {

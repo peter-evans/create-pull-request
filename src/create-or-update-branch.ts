@@ -122,7 +122,7 @@ export async function createOrUpdateBranch(
   if (await git.isDirty(true)) {
     core.info('Uncommitted changes found. Adding a commit.')
     for (const filePattern of filePatterns) {
-      await git.exec(['add', filePattern])
+      await git.exec(['add', filePattern], true)
     }
     const params = ['-m', commitMessage]
     if (signoff) {
