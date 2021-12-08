@@ -132,6 +132,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
                 params.push('--signoff');
             }
             yield git.commit(params);
+            git.exec(['reset', '--hard']);
+            git.exec(['clean', '-f']);
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed

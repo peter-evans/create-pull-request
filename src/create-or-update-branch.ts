@@ -129,6 +129,8 @@ export async function createOrUpdateBranch(
       params.push('--signoff')
     }
     await git.commit(params)
+    git.exec(['reset', '--hard'])
+    git.exec(['clean', '-f'])
   }
 
   // Perform fetch and reset the working base
