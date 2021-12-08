@@ -64,6 +64,10 @@ inputs:
   draft:
     description: 'Create a draft pull request'
     default: false
+  add-pattern-array:
+    description: 'git add [pattern]'
+    default: |
+      -A
 outputs:
   pull-request-number:
     description: 'The pull request number'
