@@ -123,6 +123,20 @@ To use this strategy, set input `branch-suffix` with one of the following option
 
 - `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
 
+### Controlling committed files
+
+You may control files to added on pull request with argument `add-pattern-array`.
+It specify `git add` pattern of files. By example:
+```yml
+      ...
+      uses: peter-evans/create-pull-request@main #TODO put next version here
+        with:
+          add-pattern-array: |
+            **.txt
+            **some/dirs**.png
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
+
 ### Controlling commits
 
 As well as relying on the action to handle uncommitted changes, you can additionally make your own commits before the action runs.
