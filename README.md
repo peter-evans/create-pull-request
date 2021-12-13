@@ -62,7 +62,8 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `reviewers` | A comma or newline-separated list of reviewers (GitHub usernames) to request a review from. | |
 | `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). If using a GitHub App, refer to [Authenticating with GitHub App generated tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) for the proper permissions. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
-| `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` |
+| `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` | |
+| `add-pattern-array` | A comma or newline-separated list of file path patterns, by example `**.txt, **some_dir**.png`. | `-A (what means --all)` |
 
 For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
 ```yml
@@ -121,6 +122,20 @@ To use this strategy, set input `branch-suffix` with one of the following option
 - `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
 
 - `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
+
+### Controlling committed files
+
+You may control files to added on pull request with argument `add-pattern-array`.
+It specify `git add` pattern of files. By example:
+```yml
+      ...
+      uses: peter-evans/create-pull-request@main #TODO put next version here
+        with:
+          add-pattern-array: |
+            **.txt
+            **some/dirs**.png
+          token: ${{ secrets.GITHUB_TOKEN }}
+```
 
 ### Controlling commits
 
