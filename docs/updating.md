@@ -68,6 +68,6 @@
 
 ### New features
 
-- Unpushed commits made during the workflow before the action runs will now be considered as changes to be raised in the pull request. See [Controlling commits](https://github.com/peter-evans/create-pull-request#controlling-commits) for details.
+- Unpushed commits made during the workflow before the action runs will now be considered as changes to be raised in the pull request. See [Create your own commits](https://github.com/peter-evans/create-pull-request#create-your-own-commits) for details.
 - New commits made to the pull request base will now be taken into account when pull requests are updated.
 - If an updated pull request no longer differs from its base it will automatically be closed and the pull request branch deleted.
