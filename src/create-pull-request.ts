@@ -12,6 +12,7 @@ import * as utils from './utils'
 export interface Inputs {
   token: string
   path: string
+  addPaths: string[]
   commitMessage: string
   committer: string
   author: string
@@ -29,7 +30,6 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
-  addPatternArray: string[]
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -175,7 +175,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPatternArray
+      inputs.addPaths
     )
     core.endGroup()
 

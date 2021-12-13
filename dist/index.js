@@ -98,7 +98,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, filePatterns) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, addPaths) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
@@ -124,14 +124,15 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // Commit any uncommitted changes
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
-            for (const filePattern of filePatterns) {
-                yield git.exec(['add', filePattern], true);
+            for (const path of addPaths) {
+                yield git.exec(['add', path], true);
             }
             const params = ['-m', commitMessage];
             if (signoff) {
                 params.push('--signoff');
             }
             yield git.commit(params);
+            // Remove uncommitted tracked and untracked changes
             git.exec(['reset', '--hard']);
             git.exec(['clean', '-f']);
         }
@@ -381,7 +382,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPatternArray);
+            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
@@ -1078,6 +1079,7 @@ function run() {
             const inputs = {
                 token: core.getInput('token'),
                 path: core.getInput('path'),
+                addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
@@ -1094,8 +1096,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true',
-                addPatternArray: utils.getInputAsArray('add-pattern-array')
+                draft: core.getInput('draft') === 'true'
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             yield (0, create_pull_request_1.createPullRequest)(inputs);

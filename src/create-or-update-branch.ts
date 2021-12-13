@@ -92,7 +92,7 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  filePatterns: string[]
+  addPaths: string[]
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -121,14 +121,15 @@ export async function createOrUpdateBranch(
   // Commit any uncommitted changes
   if (await git.isDirty(true)) {
     core.info('Uncommitted changes found. Adding a commit.')
-    for (const filePattern of filePatterns) {
-      await git.exec(['add', filePattern], true)
+    for (const path of addPaths) {
+      await git.exec(['add', path], true)
     }
     const params = ['-m', commitMessage]
     if (signoff) {
       params.push('--signoff')
     }
     await git.commit(params)
+    // Remove uncommitted tracked and untracked changes
     git.exec(['reset', '--hard'])
     git.exec(['clean', '-f'])
   }

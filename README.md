@@ -46,6 +46,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | --- | --- | --- |
 | `token` | `GITHUB_TOKEN` (`contents: write`, `pull-requests: write`) or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
+| `add-paths` | A comma or newline-separated list of file paths to commit. Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax. Defaults to adding all new and modified files. See [Controlling committed files](#controlling-committed-files). | `-A` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
@@ -63,7 +64,6 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). If using a GitHub App, refer to [Authenticating with GitHub App generated tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) for the proper permissions. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). | `false` | |
-| `add-pattern-array` | A comma or newline-separated list of file path patterns, by example `**.txt, **some_dir**.png`. | `-A (what means --all)` |
 
 For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
 ```yml
@@ -125,16 +125,18 @@ To use this strategy, set input `branch-suffix` with one of the following option
 
 ### Controlling committed files
 
-You may control files to added on pull request with argument `add-pattern-array`.
-It specify `git add` pattern of files. By example:
+The action defaults to adding all new and modified files.
+You can override this behaviour and control which files are committed with the `add-paths` input.
+Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax.
+All file changes that do not match one of the paths will be discarded.
+
 ```yml
-      ...
-      uses: peter-evans/create-pull-request@main #TODO put next version here
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
         with:
-          add-pattern-array: |
-            **.txt
-            **some/dirs**.png
-          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: |
+            *.java
+            docs/\*.txt
 ```
 
 ### Controlling commits
