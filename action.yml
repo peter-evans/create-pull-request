@@ -8,6 +8,13 @@ inputs:
     description: >
       Relative path under $GITHUB_WORKSPACE to the repository.
       Defaults to $GITHUB_WORKSPACE.
+  add-paths:
+    description: >
+      A comma or newline-separated list of file paths to commit.
+      Paths should follow git's pathspec syntax.
+      Defaults to adding all new and modified files.
+    default: |
+      -A
   commit-message:
     description: 'The message to use when committing changes.'
     default: '[create-pull-request] automated change'
