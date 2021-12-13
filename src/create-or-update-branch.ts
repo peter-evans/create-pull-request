@@ -130,8 +130,8 @@ export async function createOrUpdateBranch(
     }
     await git.commit(params)
     // Remove uncommitted tracked and untracked changes
-    git.exec(['reset', '--hard'])
-    git.exec(['clean', '-f'])
+    await git.exec(['reset', '--hard'])
+    await git.exec(['clean', '-f'])
   }
 
   // Perform fetch and reset the working base

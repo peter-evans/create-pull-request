@@ -133,8 +133,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             }
             yield git.commit(params);
             // Remove uncommitted tracked and untracked changes
-            git.exec(['reset', '--hard']);
-            git.exec(['clean', '-f']);
+            yield git.exec(['reset', '--hard']);
+            yield git.exec(['clean', '-f']);
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
