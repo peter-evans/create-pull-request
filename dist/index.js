@@ -98,7 +98,7 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, addPaths) {
     return __awaiter(this, void 0, void 0, function* () {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
@@ -124,12 +124,17 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // Commit any uncommitted changes
         if (yield git.isDirty(true)) {
             core.info('Uncommitted changes found. Adding a commit.');
-            yield git.exec(['add', '-A']);
+            for (const path of addPaths) {
+                yield git.exec(['add', path], true);
+            }
             const params = ['-m', commitMessage];
             if (signoff) {
                 params.push('--signoff');
             }
             yield git.commit(params);
+            // Remove uncommitted tracked and untracked changes
+            git.exec(['reset', '--hard']);
+            git.exec(['clean', '-f']);
         }
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
@@ -377,7 +382,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff);
+            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
@@ -1074,6 +1079,7 @@ function run() {
             const inputs = {
                 token: core.getInput('token'),
                 path: core.getInput('path'),
+                addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
