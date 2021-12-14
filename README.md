@@ -46,6 +46,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | --- | --- | --- |
 | `token` | `GITHUB_TOKEN` (`contents: write`, `pull-requests: write`) or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
+| `add-paths` | A comma or newline-separated list of file paths to commit. Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax. Defaults to adding all new and modified files. See [Add specific paths](#add-specific-paths). | `-A` |
 | `commit-message` | The message to use when committing changes. | `[create-pull-request] automated change` |
 | `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `GitHub <noreply@github.com>` |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
@@ -122,7 +123,42 @@ To use this strategy, set input `branch-suffix` with one of the following option
 
 - `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
 
-### Controlling commits
+### Controlling committed files
+
+The action defaults to adding all new and modified files.
+If there are files that should not be included in the pull request, you can use the following methods to control the committed content.
+
+#### Remove files
+
+The most straightforward way to handle unwanted files is simply to remove them in a step before the action runs.
+
+```yml
+      - run: |
+          rm -rf temp-dir
+          rm temp-file.txt
+```
+
+#### Ignore files
+
+If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
+
+#### Add specific paths
+
+You can control which files are committed with the `add-paths` input.
+Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax.
+Each path must resolve to a least one new or modified file to add.
+All file changes that do not match one of the paths will be discarded.
+
+```yml
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          add-paths: |
+            *.java
+            docs/*.md
+```
+
+#### Create your own commits
 
 As well as relying on the action to handle uncommitted changes, you can additionally make your own commits before the action runs.
 Note that the repository must be checked out on a branch with a remote, it won't work for [events which checkout a commit](docs/concepts-guidelines.md#events-which-checkout-a-commit).
@@ -144,10 +180,6 @@ Note that the repository must be checked out on a branch with a remote, it won't
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
 ```
-
-### Ignoring files
-
-If there are files or directories you want to ignore you can simply add them to a `.gitignore` file at the root of your repository. The action will respect this file.
 
 ### Create a project card
 

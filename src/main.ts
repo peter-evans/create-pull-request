@@ -8,6 +8,7 @@ async function run(): Promise<void> {
     const inputs: Inputs = {
       token: core.getInput('token'),
       path: core.getInput('path'),
+      addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),
       committer: core.getInput('committer'),
       author: core.getInput('author'),
