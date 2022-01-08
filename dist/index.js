@@ -186,6 +186,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
                 core.info(`Created branch '${branch}'`);
             }
             else {
+                result.action = 'not-created';
                 core.info(`Branch '${branch}' is not ahead of base '${base}' and will not be created`);
             }
         }
@@ -384,6 +385,9 @@ function createPullRequest(inputs) {
             core.startGroup('Create or update the pull request branch');
             const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
             core.endGroup();
+            if (['not-created', 'not-updated'].includes(result.action) && inputs.failIfNoChanges) {
+                throw new Error('No changes were made. Will not continue.');
+            }
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
@@ -1096,7 +1100,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true'
+                draft: core.getInput('draft') === 'true',
+                failIfNoChanges: core.getInput('fail-if-no-changes') === 'true'
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             yield (0, create_pull_request_1.createPullRequest)(inputs);

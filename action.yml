@@ -71,6 +71,9 @@ inputs:
   draft:
     description: 'Create a draft pull request'
     default: false
+  fail-if-no-changes:
+    description: 'Whether the job should fail if no changes are made.'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

@@ -226,7 +226,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS
     )
-    expect(result.action).toEqual('none')
+    expect(result.action).toEqual('not-created')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
 
@@ -1004,7 +1004,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS
     )
-    expect(result.action).toEqual('none')
+    expect(result.action).toEqual('not-created')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
 
@@ -1869,6 +1869,6 @@ describe('create-or-update-branch tests', () => {
       ADD_PATHS
     )
     // The action cannot successfully create the branch
-    expect(result.action).toEqual('none')
+    expect(result.action).toEqual('not-created')
   })
 })

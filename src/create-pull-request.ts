@@ -30,6 +30,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  failIfNoChanges: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -178,6 +179,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.addPaths
     )
     core.endGroup()
+
+    if (['not-created', 'not-updated'].includes(result.action) && inputs.failIfNoChanges) {
+        throw new Error('No changes were made. Will not continue.')
+    }
 
     if (['created', 'updated'].includes(result.action)) {
       // The branch was created or updated

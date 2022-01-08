@@ -192,6 +192,7 @@ export async function createOrUpdateBranch(
       result.action = 'created'
       core.info(`Created branch '${branch}'`)
     } else {
+      result.action = 'not-created'
       core.info(
         `Branch '${branch}' is not ahead of base '${base}' and will not be created`
       )
