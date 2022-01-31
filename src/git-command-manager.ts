@@ -32,6 +32,8 @@ export class GitCommandManager {
     } else {
       args.push(ref)
     }
+    // https://github.com/git/git/commit/a047fafc7866cc4087201e284dc1f53e8f9a32d5
+    args.push('--')
     await this.exec(args)
   }
 
