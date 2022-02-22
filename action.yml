@@ -69,7 +69,7 @@ inputs:
   milestone:
     description: 'The number of the milestone to associate the pull request with.'
   draft:
-    description: 'Create a draft pull request'
+    description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
 outputs:
   pull-request-number:
