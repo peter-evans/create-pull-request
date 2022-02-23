@@ -84,8 +84,7 @@ export class GitHubHelper {
       ...this.parseRepository(baseRepository),
       pull_number: pulls[0].number,
       title: inputs.title,
-      body: inputs.body,
-      draft: inputs.draft
+      body: inputs.body
     })
     core.info(
       `Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`
