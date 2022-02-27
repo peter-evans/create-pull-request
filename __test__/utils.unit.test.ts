@@ -17,14 +17,6 @@ describe('utils tests', () => {
     }
   })
 
-  test('getStringAsArray splits string input by newlines and commas', async () => {
-    const array = utils.getStringAsArray('1, 2, 3\n4, 5, 6')
-    expect(array.length).toEqual(6)
-
-    const array2 = utils.getStringAsArray('')
-    expect(array2.length).toEqual(0)
-  })
-
   test('getRepoPath successfully returns the path to the repository', async () => {
     expect(utils.getRepoPath()).toEqual(process.env['GITHUB_WORKSPACE'])
     expect(utils.getRepoPath('foo')).toEqual(
