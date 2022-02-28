@@ -81,7 +81,7 @@ outputs:
   pull-request-head-sha:
     description: 'The commit SHA of the pull request branch.'
 runs:
-  using: 'node16'
+  using: 'node12'
   main: 'dist/index.js'
 branding:
   icon: 'git-pull-request'

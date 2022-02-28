@@ -12,9 +12,9 @@ async function run(): Promise<void> {
       commitMessage: core.getInput('commit-message'),
       committer: core.getInput('committer'),
       author: core.getInput('author'),
-      signoff: core.getBooleanInput('signoff'),
+      signoff: core.getInput('signoff') === 'true',
       branch: core.getInput('branch'),
-      deleteBranch: core.getBooleanInput('delete-branch'),
+      deleteBranch: core.getInput('delete-branch') === 'true',
       branchSuffix: core.getInput('branch-suffix'),
       base: core.getInput('base'),
       pushToFork: core.getInput('push-to-fork'),
@@ -25,7 +25,7 @@ async function run(): Promise<void> {
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
-      draft: core.getBooleanInput('draft')
+      draft: core.getInput('draft') === 'true'
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 
