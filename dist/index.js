@@ -1074,13 +1074,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2186));
 const create_pull_request_1 = __nccwpck_require__(3780);
 const util_1 = __nccwpck_require__(3837);
+const utils = __importStar(__nccwpck_require__(918));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const inputs = {
                 token: core.getInput('token'),
                 path: core.getInput('path'),
-                addPaths: core.getMultilineInput('add-paths'),
+                addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
@@ -1092,10 +1093,10 @@ function run() {
                 pushToFork: core.getInput('push-to-fork'),
                 title: core.getInput('title'),
                 body: core.getInput('body'),
-                labels: core.getMultilineInput('labels'),
-                assignees: core.getMultilineInput('assignees'),
-                reviewers: core.getMultilineInput('reviewers'),
-                teamReviewers: core.getMultilineInput('team-reviewers'),
+                labels: utils.getInputAsArray('labels'),
+                assignees: utils.getInputAsArray('assignees'),
+                reviewers: utils.getInputAsArray('reviewers'),
+                teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
                 draft: core.getBooleanInput('draft')
             };
@@ -1163,10 +1164,21 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = void 0;
+exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
+function getInputAsArray(name, options) {
+    return getStringAsArray(core.getInput(name, options));
+}
+exports.getInputAsArray = getInputAsArray;
+function getStringAsArray(str) {
+    return str
+        .split(/[\n,]+/)
+        .map(s => s.trim())
+        .filter(x => x !== '');
+}
+exports.getStringAsArray = getStringAsArray;
 function getRepoPath(relativePath) {
     let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
     if (!githubWorkspacePath) {
