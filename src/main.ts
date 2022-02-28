@@ -1,13 +1,14 @@
 import * as core from '@actions/core'
 import {Inputs, createPullRequest} from './create-pull-request'
 import {inspect} from 'util'
+import * as utils from './utils'
 
 async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
       token: core.getInput('token'),
       path: core.getInput('path'),
-      addPaths: core.getMultilineInput('add-paths'),
+      addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),
       committer: core.getInput('committer'),
       author: core.getInput('author'),
@@ -19,10 +20,10 @@ async function run(): Promise<void> {
       pushToFork: core.getInput('push-to-fork'),
       title: core.getInput('title'),
       body: core.getInput('body'),
-      labels: core.getMultilineInput('labels'),
-      assignees: core.getMultilineInput('assignees'),
-      reviewers: core.getMultilineInput('reviewers'),
-      teamReviewers: core.getMultilineInput('team-reviewers'),
+      labels: utils.getInputAsArray('labels'),
+      assignees: utils.getInputAsArray('assignees'),
+      reviewers: utils.getInputAsArray('reviewers'),
+      teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
       draft: core.getBooleanInput('draft')
     }
