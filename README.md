@@ -90,6 +90,7 @@ Note that in order to read the step outputs the action step must have an id.
         id: cpr
         uses: peter-evans/create-pull-request@v3
       - name: Check outputs
+        if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
@@ -191,6 +192,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
         uses: peter-evans/create-pull-request@v3
 
       - name: Create or Update Project Card
+        if: ${{ steps.cpr.outputs.pull-request-number }}
         uses: peter-evans/create-or-update-project-card@v1
         with:
           project-name: My project
