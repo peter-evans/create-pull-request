@@ -155,17 +155,22 @@ export class GitCommandManager {
     return output.exitCode === 1
   }
 
-  async isDirty(untracked: boolean): Promise<boolean> {
+  async isDirty(untracked: boolean, pathspec?: string[]): Promise<boolean> {
+    const pathspecArgs = pathspec ? ['--', ...pathspec] : []
     // Check untracked changes
-    if (untracked && (await this.status(['--porcelain', '-unormal']))) {
+    const sargs = ['--porcelain', '-unormal']
+    sargs.push(...pathspecArgs)
+    if (untracked && (await this.status(sargs))) {
       return true
     }
     // Check working index changes
-    if (await this.hasDiff()) {
+    if (await this.hasDiff(pathspecArgs)) {
       return true
     }
     // Check staged changes
-    if (await this.hasDiff(['--staged'])) {
+    const dargs = ['--staged']
+    dargs.push(...pathspecArgs)
+    if (await this.hasDiff(dargs)) {
       return true
     }
     return false
