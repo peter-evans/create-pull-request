@@ -13,8 +13,6 @@ inputs:
       A comma or newline-separated list of file paths to commit.
       Paths should follow git's pathspec syntax.
       Defaults to adding all new and modified files.
-    default: |
-      -A
   commit-message:
     description: 'The message to use when committing changes.'
     default: '[create-pull-request] automated change'
@@ -81,7 +79,7 @@ outputs:
   pull-request-head-sha:
     description: 'The commit SHA of the pull request branch.'
 runs:
-  using: 'node12'
+  using: 'node16'
   main: 'dist/index.js'
 branding:
   icon: 'git-pull-request'
