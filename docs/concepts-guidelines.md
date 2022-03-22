@@ -36,7 +36,7 @@ For each [event type](https://docs.github.com/en/actions/reference/events-that-t
 The default can be overridden by specifying a `ref` on checkout.
 
 ```yml
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: develop
 ```
@@ -73,7 +73,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 ```
 
 There may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.

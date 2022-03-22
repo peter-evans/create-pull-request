@@ -192,7 +192,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 
       - name: Create or Update Project Card
         if: ${{ steps.cpr.outputs.pull-request-number }}
-        uses: peter-evans/create-or-update-project-card@v1
+        uses: peter-evans/create-or-update-project-card@v2
         with:
           project-name: My project
           column-name: My column

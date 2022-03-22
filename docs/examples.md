@@ -146,9 +146,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Update dependencies
         run: |
           npx -p npm-check-updates ncu -u
@@ -182,9 +182,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v2
+      - uses: actions/setup-node@v3
         with:
-          node-version: 12.x
+          node-version: 16.x
       - run: npm ci
       - run: npm run test
       - run: npm run build
@@ -428,7 +428,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 ```yml
 - name: Repository Dispatch
-  uses: peter-evans/repository-dispatch@v1
+  uses: peter-evans/repository-dispatch@v2
   with:
     token: ${{ secrets.REPO_ACCESS_TOKEN }}
     repository: username/my-repo
@@ -574,7 +574,7 @@ The template is rendered using the [render-template](https://github.com/chuhlomi
 ```yml
       - name: Render template
         id: template
-        uses: chuhlomin/render-template@v1.2
+        uses: chuhlomin/render-template@v1.4
         with:
           template: .github/pull-request-template.md
           vars: |
