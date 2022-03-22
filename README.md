@@ -21,7 +21,7 @@ Create Pull Request action will:
 
 - [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
-- [Updating to v3](docs/updating.md)
+- [Updating to v4](docs/updating.md)
 
 ## Usage
 
@@ -31,10 +31,10 @@ Create Pull Request action will:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 ```
 
-You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v3.x.x`
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v4.x.x`
 
 ### Action inputs
 
@@ -68,7 +68,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         env:
           https_proxy: http://<proxy_address>:<port>
 ```
@@ -88,7 +88,7 @@ Note that in order to read the step outputs the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
       - name: Check outputs
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
@@ -152,7 +152,7 @@ All file changes that do not match one of the paths will be discarded.
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           add-paths: |
             *.java
@@ -179,7 +179,7 @@ Note that the repository must be checked out on a branch with a remote, it won't
       - name: Uncommitted change
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 ```
 
 ### Create a project card
@@ -189,7 +189,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 
       - name: Create or Update Project Card
         if: ${{ steps.cpr.outputs.pull-request-number }}
@@ -224,7 +224,7 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.PAT }}
           commit-message: Update report
