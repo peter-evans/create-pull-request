@@ -26,7 +26,7 @@ Create Pull Request action will:
 ## Usage
 
 ```yml
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Make changes to pull request here
 
@@ -165,7 +165,7 @@ Note that the repository must be checked out on a branch with a remote, it won't
 
 ```yml
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Create commits
         run: |
           git config user.name 'Peter Evans'
@@ -216,7 +216,7 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Make changes to pull request
         run: date +%s > report.txt
