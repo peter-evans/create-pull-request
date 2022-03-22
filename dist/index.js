@@ -122,20 +122,25 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         const tempBranch = (0, uuid_1.v4)();
         yield git.checkout(tempBranch, 'HEAD');
         // Commit any uncommitted changes
-        if (yield git.isDirty(true)) {
+        if (yield git.isDirty(true, addPaths)) {
             core.info('Uncommitted changes found. Adding a commit.');
-            for (const path of addPaths) {
-                yield git.exec(['add', path], true);
+            const aopts = ['add'];
+            if (addPaths.length > 0) {
+                aopts.push(...['--', ...addPaths]);
             }
-            const params = ['-m', commitMessage];
+            else {
+                aopts.push('-A');
+            }
+            yield git.exec(aopts, true);
+            const popts = ['-m', commitMessage];
             if (signoff) {
-                params.push('--signoff');
+                popts.push('--signoff');
             }
-            yield git.commit(params);
-            // Remove uncommitted tracked and untracked changes
-            yield git.exec(['reset', '--hard']);
-            yield git.exec(['clean', '-f']);
+            yield git.commit(popts);
         }
+        // Remove uncommitted tracked and untracked changes
+        yield git.exec(['reset', '--hard']);
+        yield git.exec(['clean', '-f', '-d']);
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
         if (workingBaseType == WorkingBaseType.Branch) {
@@ -752,18 +757,23 @@ class GitCommandManager {
             return output.exitCode === 1;
         });
     }
-    isDirty(untracked) {
+    isDirty(untracked, pathspec) {
         return __awaiter(this, void 0, void 0, function* () {
+            const pathspecArgs = pathspec ? ['--', ...pathspec] : [];
             // Check untracked changes
-            if (untracked && (yield this.status(['--porcelain', '-unormal']))) {
+            const sargs = ['--porcelain', '-unormal'];
+            sargs.push(...pathspecArgs);
+            if (untracked && (yield this.status(sargs))) {
                 return true;
             }
             // Check working index changes
-            if (yield this.hasDiff()) {
+            if (yield this.hasDiff(pathspecArgs)) {
                 return true;
             }
             // Check staged changes
-            if (yield this.hasDiff(['--staged'])) {
+            const dargs = ['--staged'];
+            dargs.push(...pathspecArgs);
+            if (yield this.hasDiff(dargs)) {
                 return true;
             }
             return false;
@@ -1085,9 +1095,9 @@ function run() {
                 commitMessage: core.getInput('commit-message'),
                 committer: core.getInput('committer'),
                 author: core.getInput('author'),
-                signoff: core.getInput('signoff') === 'true',
+                signoff: core.getBooleanInput('signoff'),
                 branch: core.getInput('branch'),
-                deleteBranch: core.getInput('delete-branch') === 'true',
+                deleteBranch: core.getBooleanInput('delete-branch'),
                 branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
                 pushToFork: core.getInput('push-to-fork'),
@@ -1098,7 +1108,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getInput('draft') === 'true'
+                draft: core.getBooleanInput('draft')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             yield (0, create_pull_request_1.createPullRequest)(inputs);
