@@ -2,6 +2,8 @@
 
 ### Breaking changes
 
+- The `add-paths` input no longer accepts `-A` as a valid value. When committing all new and modified files the `add-paths` input should be omitted.
+
 - If using self-hosted runners or GitHub Enterprise Server, there are minimum requirements for `v4` to run. See "What's new" below for details.
 
 ### What's new
