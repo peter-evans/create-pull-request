@@ -1,6 +1,6 @@
 {
   "name": "create-pull-request",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "lib/main.js",

@@ -43,14 +43,14 @@ jobs:
   updateAuthors:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Update AUTHORS
         run: |
           git log --format='%aN <%aE>%n%cN <%cE>' | sort -u > AUTHORS
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           commit-message: update authors
           title: Update AUTHORS
@@ -74,7 +74,7 @@ jobs:
   productionPromotion:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: production
       - name: Reset promotion branch
@@ -82,7 +82,7 @@ jobs:
           git fetch origin main:main
           git reset --hard main
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           branch: production-promotion
 ```
@@ -107,7 +107,7 @@ jobs:
   updateChangelog:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Update Changelog
@@ -117,7 +117,7 @@ jobs:
           ./git-chglog -o CHANGELOG.md
           rm git-chglog
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           commit-message: update changelog
           title: Update Changelog
@@ -145,16 +145,16 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: '12.x'
+          node-version: '16.x'
       - name: Update dependencies
         run: |
           npx -p npm-check-updates ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -181,10 +181,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
         with:
-          node-version: 12.x
+          node-version: 16.x
       - run: npm ci
       - run: npm run test
       - run: npm run build
@@ -205,16 +205,17 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-java@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-java@v2
         with:
+          distribution: 'temurin'
           java-version: 1.8
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Perform dependency resolution and write new lockfiles
         run: ./gradlew dependencies --write-locks
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -242,14 +243,14 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Update dependencies
         run: |
           cargo install cargo-edit
           cargo update
           cargo upgrade --to-lockfile
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -277,7 +278,7 @@ jobs:
   updateSwagger:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         run: |
@@ -305,7 +306,7 @@ jobs:
           # Update current release
           echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
           title: Update SwaggerUI to ${{ steps.swagger-ui.outputs.release_tag }}
@@ -340,7 +341,7 @@ jobs:
   updateFork:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           repository: fork-owner/repo
       - name: Reset the default branch with upstream changes
@@ -349,7 +350,7 @@ jobs:
           git fetch upstream main:upstream-main
           git reset --hard upstream-main
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.PAT }}
           branch: upstream-changes
@@ -368,7 +369,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Download website
         run: |
           wget \
@@ -382,7 +383,7 @@ jobs:
             --domains quotes.toscrape.com \
             http://quotes.toscrape.com/
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           commit-message: update local website copy
           title: Automated Updates to Local Website Copy
@@ -427,7 +428,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 
 ```yml
 - name: Repository Dispatch
-  uses: peter-evans/repository-dispatch@v1
+  uses: peter-evans/repository-dispatch@v2
   with:
     token: ${{ secrets.REPO_ACCESS_TOKEN }}
     repository: username/my-repo
@@ -464,7 +465,7 @@ jobs:
     if: startsWith(github.head_ref, 'autopep8-patches') == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: ${{ github.head_ref }}
       - name: autopep8
@@ -477,7 +478,7 @@ jobs:
         run: echo ::set-output name=branch-name::"autopep8-patches/${{ github.head_ref }}"
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           commit-message: autopep8 action fixes
           title: Fixes by autopep8 action
@@ -511,13 +512,13 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       ...
 
   someOtherJob:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       ...
 ```
 
@@ -535,7 +536,7 @@ The recommended method is to use [`set-output`](https://docs.github.com/en/actio
           echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           title: ${{ steps.vars.outputs.pr_title }}
           body: ${{ steps.vars.outputs.pr_body }}
@@ -556,7 +557,7 @@ The content must be [escaped to preserve newlines](https://github.community/t/se
           echo ::set-output name=body::$body
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           body: ${{ steps.get-pr-body.outputs.body }}
 ```
@@ -573,7 +574,7 @@ The template is rendered using the [render-template](https://github.com/chuhlomi
 ```yml
       - name: Render template
         id: template
-        uses: chuhlomin/render-template@v1.2
+        uses: chuhlomin/render-template@v1.4
         with:
           template: .github/pull-request-template.md
           vars: |
@@ -581,7 +582,7 @@ The template is rendered using the [render-template](https://github.com/chuhlomi
             bar: that
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           body: ${{ steps.template.outputs.result }}
 ```

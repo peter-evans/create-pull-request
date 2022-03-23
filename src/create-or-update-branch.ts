@@ -119,20 +119,25 @@ export async function createOrUpdateBranch(
   const tempBranch = uuidv4()
   await git.checkout(tempBranch, 'HEAD')
   // Commit any uncommitted changes
-  if (await git.isDirty(true)) {
+  if (await git.isDirty(true, addPaths)) {
     core.info('Uncommitted changes found. Adding a commit.')
-    for (const path of addPaths) {
-      await git.exec(['add', path], true)
+    const aopts = ['add']
+    if (addPaths.length > 0) {
+      aopts.push(...['--', ...addPaths])
+    } else {
+      aopts.push('-A')
     }
-    const params = ['-m', commitMessage]
+    await git.exec(aopts, true)
+    const popts = ['-m', commitMessage]
     if (signoff) {
-      params.push('--signoff')
+      popts.push('--signoff')
     }
-    await git.commit(params)
-    // Remove uncommitted tracked and untracked changes
-    await git.exec(['reset', '--hard'])
-    await git.exec(['clean', '-f'])
+    await git.commit(popts)
   }
+
+  // Remove uncommitted tracked and untracked changes
+  await git.exec(['reset', '--hard'])
+  await git.exec(['clean', '-f', '-d'])
 
   // Perform fetch and reset the working base
   // Commits made during the workflow will be removed

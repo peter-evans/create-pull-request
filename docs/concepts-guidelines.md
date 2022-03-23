@@ -36,7 +36,7 @@ For each [event type](https://docs.github.com/en/actions/reference/events-that-t
 The default can be overridden by specifying a `ref` on checkout.
 
 ```yml
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: develop
 ```
@@ -73,7 +73,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 ```
 
 There may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.
@@ -88,7 +88,7 @@ In these cases, you *must supply* the `base` input so the action can rebase chan
 Workflows triggered by [`pull_request`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request) events will by default check out a merge commit. Set the `base` input as follows to base the new pull request on the current pull request's branch.
 
 ```yml
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v4
         with:
           base: ${{ github.head_ref }}
 ```
@@ -96,7 +96,7 @@ Workflows triggered by [`pull_request`](https://docs.github.com/en/actions/refer
 Workflows triggered by [`release`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#release) events will by default check out a tag. For most use cases, you will need to set the `base` input to the branch name of the tagged commit.
 
 ```yml
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v4
         with:
           base: main
 ```
@@ -173,14 +173,14 @@ This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js cod
 Checking out a branch from a different repository from where the workflow is executing will make *that repository* the target for the created pull request. In this case, a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) is required.
 
 ```yml
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.PAT }}
           repository: owner/repo
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.PAT }}
 ```
@@ -200,14 +200,14 @@ How to use SSH (deploy keys) with create-pull-request action:
 
 ```yml
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 ```
 
 ### Push pull request branches to a fork
@@ -225,11 +225,11 @@ It will use their own fork to push code and create the pull request.
 6. As shown in the following example workflow, set the `push-to-fork` input to the full repository name of the fork.
 
 ```yaml
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.MACHINE_USER_PAT }}
           push-to-fork: machine-user/fork-of-repository
@@ -261,7 +261,7 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 
 ```yaml
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: tibdex/github-app-token@v1
         id: generate-token
@@ -272,7 +272,7 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ steps.generate-token.outputs.token }}
 ```
@@ -301,7 +301,7 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
 
 ```yaml
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: crazy-max/ghaction-import-gpg@v3
         with:
@@ -313,7 +313,7 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
         with:
           token: ${{ secrets.PAT }}
           committer: example <email@example.com>
@@ -338,12 +338,12 @@ jobs:
       - name: Install dependencies
         run: apk --no-cache add git
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 ```
 
 **Ubuntu container example:**
@@ -361,10 +361,10 @@ jobs:
           add-apt-repository -y ppa:git-core/ppa
           apt-get install -y git
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v3
+        uses: peter-evans/create-pull-request@v4
 ```

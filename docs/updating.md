@@ -1,3 +1,17 @@
+## Updating from `v3` to `v4`
+
+### Breaking changes
+
+- The `add-paths` input no longer accepts `-A` as a valid value. When committing all new and modified files the `add-paths` input should be omitted.
+
+- If using self-hosted runners or GitHub Enterprise Server, there are minimum requirements for `v4` to run. See "What's new" below for details.
+
+### What's new
+
+- Updated runtime to Node.js 16
+  - The action now requires a minimum version of v2.285.0 for the [Actions Runner](https://github.com/actions/runner/releases/tag/v2.285.0).
+  - If using GitHub Enterprise Server, the action requires [GHES 3.4](https://docs.github.com/en/enterprise-server@3.4/admin/release-notes) or later.
+
 ## Updating from `v2` to `v3`
 
 ### Breaking changes
@@ -31,7 +45,7 @@
           push-to-fork: machine-user/fork-of-repository
   ```
 
-### New features
+### What's new
 
 - The action has been converted to Typescript giving it a significant performance improvement.
 
@@ -66,7 +80,7 @@
 
   If neither `author` or `committer` are set the action will default to making commits as the GitHub Actions bot user.
 
-### New features
+### What's new
 
 - Unpushed commits made during the workflow before the action runs will now be considered as changes to be raised in the pull request. See [Create your own commits](https://github.com/peter-evans/create-pull-request#create-your-own-commits) for details.
 - New commits made to the pull request base will now be taken into account when pull requests are updated.
