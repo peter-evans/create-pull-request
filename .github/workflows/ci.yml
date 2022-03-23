@@ -75,7 +75,7 @@ jobs:
           branch: ci-test-${{ matrix.target }}
 
       - name: Close Pull
-        uses: peter-evans/close-pull@v1
+        uses: peter-evans/close-pull@v2
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           comment: '[CI] test ${{ matrix.target }}'
