@@ -46,12 +46,14 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
     throw new Error('Could not parse GitHub Server name')
   }
 
+  remoteUrl = remoteUrl.replace(/\.git$/, '')
+
   const httpsUrlPattern = new RegExp(
     '^https?://.*@?' + githubServerMatch[1] + '/(.+/.+)$',
     'i'
   )
   const sshUrlPattern = new RegExp(
-    '^git@' + githubServerMatch[1] + ':(.+/.+).git$',
+    '^git@' + githubServerMatch[1] + ':(.+/.+)$',
     'i'
   )
 
