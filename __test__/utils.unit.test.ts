@@ -50,6 +50,12 @@ describe('utils tests', () => {
     )
     expect(remote3.protocol).toEqual('SSH')
     expect(remote3.repository).toEqual('peter-evans/create-pull-request')
+
+    const remote4 = utils.getRemoteDetail(
+      'https://github.com/peter-evans/create-pull-request.git'
+    )
+    expect(remote4.protocol).toEqual('HTTPS')
+    expect(remote4.repository).toEqual('peter-evans/create-pull-request')
   })
 
   test('getRemoteDetail fails to parse a remote URL', async () => {

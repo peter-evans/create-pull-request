@@ -47,7 +47,7 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
   }
 
   const httpsUrlPattern = new RegExp(
-    '^https?://.*@?' + githubServerMatch[1] + '/(.+/.+)$',
+    '^https?://.*@?' + githubServerMatch[1] + '/(.+/.+?)(.git)?$',
     'i'
   )
   const sshUrlPattern = new RegExp(
