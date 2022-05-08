@@ -10,7 +10,7 @@ if [[ "$(docker images -q $IMAGE 2> /dev/null)" == "" || $ARG1 == "build" ]]; th
     cat > Dockerfile << EOF
 FROM node:12-alpine
 RUN apk --no-cache add git git-daemon
-RUN npm install jest --global
+RUN npm install jest jest-environment-jsdom --global
 WORKDIR /cpr
 COPY __test__/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
