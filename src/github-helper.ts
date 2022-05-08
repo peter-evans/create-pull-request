@@ -67,7 +67,7 @@ export class GitHubHelper {
     } catch (e: any) {
       if (
         e.message &&
-        e.message.includes(`A pull request already exists for ${headBranch}`)
+        e.message.includes(`A pull request already exists for`)
       ) {
         core.info(`A pull request already exists for ${headBranch}`)
       } else {
