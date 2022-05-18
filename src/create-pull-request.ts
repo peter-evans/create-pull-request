@@ -30,6 +30,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  force: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -185,7 +186,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
       await git.push([
-        '--force-with-lease',
+        inputs.force ? '--force' : '--force-with-lease',
         branchRemoteName,
         `HEAD:refs/heads/${inputs.branch}`
       ])

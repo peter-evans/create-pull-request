@@ -393,7 +393,7 @@ function createPullRequest(inputs) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
                 yield git.push([
-                    '--force-with-lease',
+                    inputs.force ? '--force' : '--force-with-lease',
                     branchRemoteName,
                     `HEAD:refs/heads/${inputs.branch}`
                 ]);
@@ -1109,7 +1109,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getBooleanInput('draft')
+                draft: core.getBooleanInput('draft'),
+                force: core.getBooleanInput('force')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             yield (0, create_pull_request_1.createPullRequest)(inputs);
