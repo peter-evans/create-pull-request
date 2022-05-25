@@ -62,7 +62,9 @@ exports.getWorkingBaseAndType = getWorkingBaseAndType;
 function tryFetch(git, remote, branch) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote);
+            yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
+                '--force'
+            ]);
             return true;
         }
         catch (_a) {

@@ -33,7 +33,9 @@ export async function tryFetch(
   branch: string
 ): Promise<boolean> {
   try {
-    await git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote)
+    await git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
+      '--force'
+    ])
     return true
   } catch {
     return false
