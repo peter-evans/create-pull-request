@@ -106,7 +106,7 @@ How the action behaves:
 
 - If there are changes (i.e. a diff exists with the checked-out base branch), the changes will be pushed to a new `branch` and a pull request created.
 - If there are no changes (i.e. no diff exists with the checked-out base branch), no pull request will be created and the action exits silently.
-- If a pull request already exists and there are no further changes (i.e. no diff with the current pull request branch) then the action exits silently.
+- If a pull request already exists it will be updated if necessary. Local changes in the Actions workspace, or changes on the base branch, can cause an update. If no update is required the action exits silently.
 - If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the pull request branch and the base), the pull request is automatically closed. Additionally, if `delete-branch` is set to `true` the `branch` will be deleted.
 
 For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
