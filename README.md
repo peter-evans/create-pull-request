@@ -36,6 +36,13 @@ Create Pull Request action will:
 
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v4.x.x`
 
+### Workflow permissions
+
+For this action to work you must explicitly allow GitHub Actions to create pull requests.
+This setting can be found in a repository's settings under Actions > General > Workflow permissions.
+
+For repositories belonging to an organization, this setting can be managed by admins in organization settings under Actions > General > Workflow permissions.
+
 ### Action inputs
 
 All inputs are **optional**. If not set, sensible defaults will be used.
