@@ -1,6 +1,7 @@
 lib/
 node_modules/
+.github/
 
 .DS_Store
 .idea
-.github
+
