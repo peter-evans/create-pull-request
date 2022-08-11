@@ -127,7 +127,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     # Check if the event is not triggered by a fork
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: ${{ !github.event.pull_request.head.repo.fork }}
 ```
 
 For further reading regarding the security of pull requests, see this GitHub blog post titled [Keeping your GitHub Actions and workflows secure: Preventing pwn requests](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
