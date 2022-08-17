@@ -39,6 +39,7 @@ exports.createOrUpdateBranch = exports.tryFetch = exports.getWorkingBaseAndType 
 const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
+const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean';
 var WorkingBaseType;
 (function (WorkingBaseType) {
     WorkingBaseType["Branch"] = "branch";
@@ -138,7 +139,12 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             if (signoff) {
                 popts.push('--signoff');
             }
-            yield git.commit(popts);
+            const commitResult = yield git.commit(popts, true);
+            // 'nothing to commit' can occur when core.autocrlf is set to true
+            if (commitResult.exitCode != 0 &&
+                !commitResult.stdout.includes(NOTHING_TO_COMMIT)) {
+                throw new Error(`Unexpected error: ${commitResult.stderr}`);
+            }
         }
         // Remove uncommitted tracked and untracked changes
         yield git.exec(['reset', '--hard']);
@@ -674,7 +680,7 @@ class GitCommandManager {
             return yield this.exec(args, allowAllExitCodes);
         });
     }
-    commit(options) {
+    commit(options, allowAllExitCodes = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['commit'];
             if (this.identityGitOptions) {
@@ -683,7 +689,7 @@ class GitCommandManager {
             if (options) {
                 args.push(...options);
             }
-            yield this.exec(args);
+            return yield this.exec(args, allowAllExitCodes);
         });
     }
     config(configKey, configValue, globalConfig) {
