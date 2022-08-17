@@ -1138,13 +1138,21 @@ const plugin_paginate_rest_1 = __nccwpck_require__(4193);
 const plugin_rest_endpoint_methods_1 = __nccwpck_require__(3044);
 const https_proxy_agent_1 = __nccwpck_require__(7219);
 exports.Octokit = core_1.Octokit.plugin(plugin_paginate_rest_1.paginateRest, plugin_rest_endpoint_methods_1.restEndpointMethods, autoProxyAgent);
-// Octokit plugin to support the https_proxy environment variable
+// Octokit plugin to support the https_proxy and no_proxy environment variable
 function autoProxyAgent(octokit) {
     const proxy = process.env.https_proxy || process.env.HTTPS_PROXY;
+    const noProxy = process.env.no_proxy || process.env.NO_PROXY;
+    let noProxyArray = [];
+    if (noProxy) {
+        noProxyArray = noProxy.split(',');
+    }
     if (!proxy)
         return;
     const agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
     octokit.hook.before('request', options => {
+        if (noProxyArray.includes(options.request.hostname)) {
+            return;
+        }
         options.request.agent = agent;
     });
 }
