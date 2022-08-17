@@ -53,7 +53,10 @@ export class GitCommandManager {
     return await this.exec(args, allowAllExitCodes)
   }
 
-  async commit(options?: string[]): Promise<void> {
+  async commit(
+    options?: string[],
+    allowAllExitCodes = false
+  ): Promise<GitOutput> {
     const args = ['commit']
     if (this.identityGitOptions) {
       args.unshift(...this.identityGitOptions)
@@ -63,7 +66,7 @@ export class GitCommandManager {
       args.push(...options)
     }
 
-    await this.exec(args)
+    return await this.exec(args, allowAllExitCodes)
   }
 
   async config(

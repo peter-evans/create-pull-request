@@ -4,6 +4,7 @@ import {v4 as uuidv4} from 'uuid'
 
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
+const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean'
 
 export enum WorkingBaseType {
   Branch = 'branch',
@@ -134,7 +135,14 @@ export async function createOrUpdateBranch(
     if (signoff) {
       popts.push('--signoff')
     }
-    await git.commit(popts)
+    const commitResult = await git.commit(popts, true)
+    // 'nothing to commit' can occur when core.autocrlf is set to true
+    if (
+      commitResult.exitCode != 0 &&
+      !commitResult.stdout.includes(NOTHING_TO_COMMIT)
+    ) {
+      throw new Error(`Unexpected error: ${commitResult.stderr}`)
+    }
   }
 
   // Remove uncommitted tracked and untracked changes
