@@ -141,7 +141,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             }
             const commitResult = yield git.commit(popts, true);
             // 'nothing to commit' can occur when core.autocrlf is set to true
-            if (commitResult.exitCode != 0 && !commitResult.stdout.includes(NOTHING_TO_COMMIT)) {
+            if (commitResult.exitCode != 0 &&
+                !commitResult.stdout.includes(NOTHING_TO_COMMIT)) {
                 throw new Error(`Unexpected error: ${commitResult.stderr}`);
             }
         }
