@@ -134,13 +134,15 @@ export function fileExistsSync(path: string): boolean {
   let stats: fs.Stats
   try {
     stats = fs.statSync(path)
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error) {
+    if (hasErrorCode(error) && error.code === 'ENOENT') {
       return false
     }
 
     throw new Error(
-      `Encountered an error when checking whether path '${path}' exists: ${error.message}`
+      `Encountered an error when checking whether path '${path}' exists: ${getErrorMessage(
+        error
+      )}`
     )
   }
 
@@ -149,4 +151,14 @@ export function fileExistsSync(path: string): boolean {
   }
 
   return false
+}
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+function hasErrorCode(error: any): error is {code: string} {
+  return typeof (error && error.code) === 'string'
+}
+
+export function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  return String(error)
 }

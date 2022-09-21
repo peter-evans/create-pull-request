@@ -243,8 +243,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         }
       }
     }
-  } catch (error: any) {
-    core.setFailed(error.message)
+  } catch (error) {
+    core.setFailed(utils.getErrorMessage(error))
   } finally {
     // Remove auth and restore persisted auth config if it existed
     core.startGroup('Restore persisted git credentials')
