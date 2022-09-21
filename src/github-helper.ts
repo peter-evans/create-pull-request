@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Octokit, OctokitOptions} from './octokit-client'
+import * as utils from './utils'
 
 const ERROR_PR_REVIEW_FROM_AUTHOR =
   'Review cannot be requested from pull request author'
@@ -64,10 +65,9 @@ export class GitHubHelper {
         html_url: pull.html_url,
         created: true
       }
-    } catch (e: any) {
+    } catch (e) {
       if (
-        e.message &&
-        e.message.includes(`A pull request already exists for`)
+        utils.getErrorMessage(e).includes(`A pull request already exists for`)
       ) {
         core.info(`A pull request already exists for ${headBranch}`)
       } else {
@@ -169,8 +169,8 @@ export class GitHubHelper {
           pull_number: pull.number,
           ...requestReviewersParams
         })
-      } catch (e: any) {
-        if (e.message && e.message.includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
+      } catch (e) {
+        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
           core.warning(ERROR_PR_REVIEW_FROM_AUTHOR)
         } else {
           throw e

@@ -30,8 +30,8 @@ async function run(): Promise<void> {
     core.debug(`Inputs: ${inspect(inputs)}`)
 
     await createPullRequest(inputs)
-  } catch (error: any) {
-    core.setFailed(error.message)
+  } catch (error) {
+    core.setFailed(utils.getErrorMessage(error))
   }
 }
 

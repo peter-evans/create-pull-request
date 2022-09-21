@@ -452,7 +452,7 @@ function createPullRequest(inputs) {
             }
         }
         catch (error) {
-            core.setFailed(error.message);
+            core.setFailed(utils.getErrorMessage(error));
         }
         finally {
             // Remove auth and restore persisted auth config if it existed
@@ -507,6 +507,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const url_1 = __nccwpck_require__(7310);
+const utils = __importStar(__nccwpck_require__(918));
 class GitAuthHelper {
     constructor(git) {
         this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
@@ -531,7 +532,7 @@ class GitAuthHelper {
                     core.info('Persisted git credentials restored');
                 }
                 catch (e) {
-                    core.warning(e);
+                    core.warning(utils.getErrorMessage(e));
                 }
             }
         });
@@ -942,6 +943,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const octokit_client_1 = __nccwpck_require__(5040);
+const utils = __importStar(__nccwpck_require__(918));
 const ERROR_PR_REVIEW_FROM_AUTHOR = 'Review cannot be requested from pull request author';
 class GitHubHelper {
     constructor(token) {
@@ -976,8 +978,7 @@ class GitHubHelper {
                 };
             }
             catch (e) {
-                if (e.message &&
-                    e.message.includes(`A pull request already exists for`)) {
+                if (utils.getErrorMessage(e).includes(`A pull request already exists for`)) {
                     core.info(`A pull request already exists for ${headBranch}`);
                 }
                 else {
@@ -1040,7 +1041,7 @@ class GitHubHelper {
                     yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
                 }
                 catch (e) {
-                    if (e.message && e.message.includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
+                    if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
                         core.warning(ERROR_PR_REVIEW_FROM_AUTHOR);
                     }
                     else {
@@ -1124,7 +1125,7 @@ function run() {
             yield (0, create_pull_request_1.createPullRequest)(inputs);
         }
         catch (error) {
-            core.setFailed(error.message);
+            core.setFailed(utils.getErrorMessage(error));
         }
     });
 }
@@ -1192,7 +1193,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
+exports.getErrorMessage = exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1293,10 +1294,10 @@ function fileExistsSync(path) {
         stats = fs.statSync(path);
     }
     catch (error) {
-        if (error.code === 'ENOENT') {
+        if (hasErrorCode(error) && error.code === 'ENOENT') {
             return false;
         }
-        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${error.message}`);
+        throw new Error(`Encountered an error when checking whether path '${path}' exists: ${getErrorMessage(error)}`);
     }
     if (!stats.isDirectory()) {
         return true;
@@ -1304,6 +1305,16 @@ function fileExistsSync(path) {
     return false;
 }
 exports.fileExistsSync = fileExistsSync;
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+function hasErrorCode(error) {
+    return typeof (error && error.code) === 'string';
+}
+function getErrorMessage(error) {
+    if (error instanceof Error)
+        return error.message;
+    return String(error);
+}
+exports.getErrorMessage = getErrorMessage;
 
 
 /***/ }),
