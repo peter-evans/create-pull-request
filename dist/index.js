@@ -1230,8 +1230,8 @@ function getRemoteDetail(remoteUrl) {
     if (!githubServerMatch) {
         throw new Error('Could not parse GitHub Server name');
     }
-    const httpsUrlPattern = new RegExp('^https?://.*@?' + githubServerMatch[1] + '/(.+/.+?)(.git)?$', 'i');
-    const sshUrlPattern = new RegExp('^git@' + githubServerMatch[1] + ':(.+/.+).git$', 'i');
+    const httpsUrlPattern = new RegExp('^https?://.*@?' + githubServerMatch[1] + '/(.+/.+?)(\\.git)?$', 'i');
+    const sshUrlPattern = new RegExp('^git@' + githubServerMatch[1] + ':(.+/.+)\\.git$', 'i');
     const httpsMatch = remoteUrl.match(httpsUrlPattern);
     if (httpsMatch) {
         return {
