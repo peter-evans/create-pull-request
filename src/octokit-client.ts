@@ -25,7 +25,7 @@ function autoProxyAgent(octokit: Core) {
 
   const agent = new HttpsProxyAgent(proxy)
   octokit.hook.before('request', options => {
-    if (noProxyArray.includes(options.request.hostname)) {
+    if (noProxyArray.includes(options.request.hostname) || noProxyArray.includes( new URL(options.baseUrl).host) {
       return
     }
     options.request.agent = agent
