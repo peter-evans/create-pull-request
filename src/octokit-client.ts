@@ -1,7 +1,7 @@
 import {Octokit as Core} from '@octokit/core'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
 import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods'
-import {HttpsProxyAgent} from 'https-proxy-agent'
+import ProxyAgent from 'proxy-agent'
 export {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
 export {OctokitOptions} from '@octokit/core/dist-types/types'
 
@@ -11,23 +11,18 @@ export const Octokit = Core.plugin(
   autoProxyAgent
 )
 
-// Octokit plugin to support the https_proxy and no_proxy environment variable
+// Octokit plugin to support the standard environment variables http_proxy, https_proxy and no_proxy
 function autoProxyAgent(octokit: Core) {
-  const proxy = process.env.https_proxy || process.env.HTTPS_PROXY
-
-  const noProxy = process.env.no_proxy || process.env.NO_PROXY
-  let noProxyArray: string[] = []
-  if (noProxy) {
-    noProxyArray = noProxy.split(',')
-  }
+  const proxy =
+    process.env.https_proxy ||
+    process.env.HTTPS_PROXY ||
+    process.env.http_proxy ||
+    process.env.HTTP_PROXY
 
   if (!proxy) return
 
-  const agent = new HttpsProxyAgent(proxy)
+  const agent = new ProxyAgent()
   octokit.hook.before('request', options => {
-    if (noProxyArray.includes(options.request.hostname)) {
-      return
-    }
     options.request.agent = agent
   })
 }
