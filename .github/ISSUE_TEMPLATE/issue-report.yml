@@ -1,0 +1,16 @@
+name: Issue report
+description: Report an issue
+body:
+  - type: textarea
+    attributes:
+      label: Subject of the issue
+      description: "Describe your issue here."
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      description: "If this issue is describing a possible bug please provide (or link to) your GitHub Actions workflow."
+    validations:
+      required: true
