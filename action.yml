@@ -53,7 +53,7 @@ inputs:
     default: 'Changes by create-pull-request action'
   body:
     description: 'The body of the pull request.'
-    default: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
+    default: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action.'
   labels:
     description: 'A comma or newline separated list of labels.'
   assignees:
