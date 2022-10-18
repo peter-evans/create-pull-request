@@ -282,8 +282,10 @@ jobs:
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         run: |
-          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
-          echo ::set-output name=current_tag::$(<swagger-ui.version)
+          release_tag=$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
+          echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+          current_tag=$(<swagger-ui.version)
+          echo "current_tag=$current_tag" >> $GITHUB_OUTPUT
       - name: Update Swagger UI
         if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag
         env:
