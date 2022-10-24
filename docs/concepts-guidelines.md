@@ -214,8 +214,9 @@ How to use SSH (deploy keys) with create-pull-request action:
 
 Instead of pushing pull request branches to the repository you want to update, you can push them to a fork of that repository.
 This allows you to employ the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) by using a dedicated user acting as a [machine account](https://docs.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements).
-This user has no access to the main repository.
+This user only has `read` access to the main repository.
 It will use their own fork to push code and create the pull request.
+Note that if you choose to use this method (not give the machine account `write` access to the repository) the following inputs cannot be used: `labels`, `assignees`, `reviewers`, `team-reviewers` and `milestone`.
 
 1. Create a new GitHub user and login.
 2. Fork the repository that you will be creating pull requests in.
