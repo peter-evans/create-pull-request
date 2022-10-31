@@ -196,12 +196,13 @@ How to use SSH (deploy keys) with create-pull-request action:
 1. [Create a new SSH key pair](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent#generating-a-new-ssh-key) for your repository. Do not set a passphrase.
 2. Copy the contents of the public key (.pub file) to a new repository [deploy key](https://developer.github.com/v3/guides/managing-deploy-keys/#deploy-keys) and check the box to "Allow write access."
 3. Add a secret to the repository containing the entire contents of the private key.
-4. As shown in the example below, configure `actions/checkout` to use the deploy key you have created.
+4. As shown in the example below, configure `actions/checkout` to use the deploy key you have created. Additionally, set fetch-depth because git won't accept a new branch from a shallow clone. 
 
 ```yml
     steps:
       - uses: actions/checkout@v3
         with:
+          fetch-depth: 0
           ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       # Make changes to pull request here
