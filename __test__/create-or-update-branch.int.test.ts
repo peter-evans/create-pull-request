@@ -14,7 +14,7 @@ const REMOTE_NAME = 'origin'
 const TRACKED_FILE = 'a/tracked-file.txt'
 const UNTRACKED_FILE = 'b/untracked-file.txt'
 
-const DEFAULT_BRANCH = 'tests/master'
+const DEFAULT_BRANCH = 'tests/main'
 const NOT_BASE_BRANCH = 'tests/branch-that-is-not-the-base'
 const NOT_EXIST_BRANCH = 'tests/branch-that-does-not-exist'
 
@@ -108,10 +108,10 @@ describe('create-or-update-branch tests', () => {
     // Check there are no local changes that might be destroyed by running these tests
     expect(await git.isDirty(true)).toBeFalsy()
     // Fetch the default branch
-    await git.fetch(['master:refs/remotes/origin/master'])
+    await git.fetch(['main:refs/remotes/origin/main'])
 
     // Create a "not base branch" for the test run
-    await git.checkout('master')
+    await git.checkout('main')
     await git.checkout(NOT_BASE_BRANCH, 'HEAD')
     await createFile(TRACKED_FILE)
     await git.exec(['add', '-A'])
@@ -123,7 +123,7 @@ describe('create-or-update-branch tests', () => {
     ])
 
     // Create a new default branch for the test run with a tracked file
-    await git.checkout('master')
+    await git.checkout('main')
     await git.checkout(DEFAULT_BRANCH, 'HEAD')
     await createFile(TRACKED_FILE)
     await git.exec(['add', '-A'])
