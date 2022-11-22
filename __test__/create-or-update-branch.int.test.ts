@@ -631,6 +631,69 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
   })
 
+  it('tests create, force push of base branch, and update with identical changes', async () => {
+    // If the base branch is force pushed to a different commit when there is an open
+    // pull request, the branch must be reset to rebase the changes on the base.
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Force push the base branch to a different commit
+    const amendedCommitMessage = uuidv4()
+    await git.commit(['--amend', '-m', amendedCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Create the same tracked and untracked file changes (no change on update)
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([_commitMessage, amendedCommitMessage])
+    ).toBeTruthy()
+  })
+
   it('tests create and update with commits on the working base (during the workflow)', async () => {
     // Create commits on the working base
     const commits = await createCommits(git)
@@ -1516,6 +1579,75 @@ describe('create-or-update-branch tests', () => {
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
     expect(
       await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+  })
+
+  it('tests create, force push of base branch, and update with identical changes (WBNB)', async () => {
+    // If the base branch is force pushed to a different commit when there is an open
+    // pull request, the branch must be reset to rebase the changes on the base.
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Force push the base branch to a different commit
+    const amendedCommitMessage = uuidv4()
+    await git.commit(['--amend', '-m', amendedCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create the same tracked and untracked file changes (no change on update)
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([_commitMessage, amendedCommitMessage])
     ).toBeTruthy()
   })
 
