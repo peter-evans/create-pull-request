@@ -53,10 +53,7 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
     '^https?://.*@?' + hostname + '/(.+/.+?)(\\.git)?$',
     'i'
   )
-  const sshUrlPattern = new RegExp(
-    '^git@' + hostname + ':(.+/.+)\\.git$',
-    'i'
-  )
+  const sshUrlPattern = new RegExp('^git@' + hostname + ':(.+/.+)\\.git$', 'i')
 
   const httpsMatch = remoteUrl.match(httpsUrlPattern)
   if (httpsMatch) {
@@ -81,7 +78,11 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
   )
 }
 
-export function getRemoteUrl(protocol: string, hostname: string, repository: string): string {
+export function getRemoteUrl(
+  protocol: string,
+  hostname: string,
+  repository: string
+): string {
   return protocol == 'HTTPS'
     ? `https://${hostname}/${repository}`
     : `git@${hostname}:${repository}.git`
