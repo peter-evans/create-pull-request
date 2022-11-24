@@ -74,6 +74,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       // Add a remote for the fork
       const remoteUrl = utils.getRemoteUrl(
         baseRemote.protocol,
+        baseRemote.hostname,
         branchRepository
       )
       await git.exec(['remote', 'add', 'fork', remoteUrl])

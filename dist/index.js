@@ -339,7 +339,7 @@ function createPullRequest(inputs) {
                     throw new Error(`Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`);
                 }
                 // Add a remote for the fork
-                const remoteUrl = utils.getRemoteUrl(baseRemote.protocol, branchRepository);
+                const remoteUrl = utils.getRemoteUrl(baseRemote.protocol, baseRemote.hostname, branchRepository);
                 yield git.exec(['remote', 'add', 'fork', remoteUrl]);
             }
             core.endGroup();
@@ -1247,11 +1247,13 @@ function getRemoteDetail(remoteUrl) {
     if (!githubServerMatch) {
         throw new Error('Could not parse GitHub Server name');
     }
-    const httpsUrlPattern = new RegExp('^https?://.*@?' + githubServerMatch[1] + '/(.+/.+?)(\\.git)?$', 'i');
-    const sshUrlPattern = new RegExp('^git@' + githubServerMatch[1] + ':(.+/.+)\\.git$', 'i');
+    const hostname = githubServerMatch[1];
+    const httpsUrlPattern = new RegExp('^https?://.*@?' + hostname + '/(.+/.+?)(\\.git)?$', 'i');
+    const sshUrlPattern = new RegExp('^git@' + hostname + ':(.+/.+)\\.git$', 'i');
     const httpsMatch = remoteUrl.match(httpsUrlPattern);
     if (httpsMatch) {
         return {
+            hostname,
             protocol: 'HTTPS',
             repository: httpsMatch[1]
         };
@@ -1259,6 +1261,7 @@ function getRemoteDetail(remoteUrl) {
     const sshMatch = remoteUrl.match(sshUrlPattern);
     if (sshMatch) {
         return {
+            hostname,
             protocol: 'SSH',
             repository: sshMatch[1]
         };
@@ -1266,10 +1269,10 @@ function getRemoteDetail(remoteUrl) {
     throw new Error(`The format of '${remoteUrl}' is not a valid GitHub repository URL`);
 }
 exports.getRemoteDetail = getRemoteDetail;
-function getRemoteUrl(protocol, repository) {
+function getRemoteUrl(protocol, hostname, repository) {
     return protocol == 'HTTPS'
-        ? `https://github.com/${repository}`
-        : `git@github.com:${repository}.git`;
+        ? `https://${hostname}/${repository}`
+        : `git@${hostname}:${repository}.git`;
 }
 exports.getRemoteUrl = getRemoteUrl;
 function secondsSinceEpoch() {
