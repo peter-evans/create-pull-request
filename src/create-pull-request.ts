@@ -35,6 +35,10 @@ export interface Inputs {
 export async function createPullRequest(inputs: Inputs): Promise<void> {
   let gitAuthHelper
   try {
+    if (!inputs.token) {
+      throw new Error(`Input 'token' not supplied. Unable to continue.`)
+    }
+
     // Get the repository path
     const repoPath = utils.getRepoPath(inputs.path)
     // Create a git command manager

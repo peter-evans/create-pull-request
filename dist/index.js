@@ -311,6 +311,9 @@ function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
         let gitAuthHelper;
         try {
+            if (!inputs.token) {
+                throw new Error(`Input 'token' not supplied. Unable to continue.`);
+            }
             // Get the repository path
             const repoPath = utils.getRepoPath(inputs.path);
             // Create a git command manager
