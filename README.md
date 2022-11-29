@@ -154,7 +154,7 @@ If there are files or directories you want to ignore you can simply add them to 
 
 You can control which files are committed with the `add-paths` input.
 Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax.
-All file changes that do not match one of the paths will be discarded.
+File changes that do not match one of the paths will be stashed and restored after the action has completed.
 
 ```yml
       - name: Create Pull Request
