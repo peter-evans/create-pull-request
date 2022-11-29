@@ -19,6 +19,12 @@ jobs:
                 "named_args": true
               },
               {
+                "command": "testv4",
+                "permission": "admin",
+                "repository": "peter-evans/create-pull-request-tests",
+                "named_args": true
+              },
+              {
                 "command": "clean",
                 "permission": "admin",
                 "repository": "peter-evans/create-pull-request-tests"
