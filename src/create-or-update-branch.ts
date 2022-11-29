@@ -106,6 +106,13 @@ function splitLines(multilineString: string): string[] {
     .filter(x => x !== '')
 }
 
+interface CreateOrUpdateBranchResult {
+  action: string
+  base: string
+  hasDiffWithBase: boolean
+  headSha: string
+}
+
 export async function createOrUpdateBranch(
   git: GitCommandManager,
   commitMessage: string,
@@ -287,11 +294,4 @@ export async function createOrUpdateBranch(
   await git.checkout(workingBase)
 
   return result
-}
-
-interface CreateOrUpdateBranchResult {
-  action: string
-  base: string
-  hasDiffWithBase: boolean
-  headSha: string
 }
