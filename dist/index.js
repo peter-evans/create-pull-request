@@ -158,9 +158,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
                 throw new Error(`Unexpected error: ${commitResult.stderr}`);
             }
         }
-        // Remove uncommitted tracked and untracked changes
-        yield git.exec(['reset', '--hard']);
-        yield git.exec(['clean', '-f', '-d']);
+        // Stash any uncommitted tracked and untracked changes
+        const stashed = yield git.stashPush(['--include-untracked']);
         // Perform fetch and reset the working base
         // Commits made during the workflow will be removed
         if (workingBaseType == WorkingBaseType.Branch) {
@@ -260,6 +259,10 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
         // Checkout the working base to leave the local repository as it was found
         yield git.checkout(workingBase);
+        // Restore any stashed changes
+        if (stashed) {
+            yield git.stashPop();
+        }
         return result;
     });
 }
@@ -842,6 +845,25 @@ class GitCommandManager {
             args.push(ref);
             const output = yield this.exec(args);
             return output.stdout.trim();
+        });
+    }
+    stashPush(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['stash', 'push'];
+            if (options) {
+                args.push(...options);
+            }
+            const output = yield this.exec(args);
+            return output.stdout.trim() !== 'No local changes to save';
+        });
+    }
+    stashPop(options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['stash', 'pop'];
+            if (options) {
+                args.push(...options);
+            }
+            yield this.exec(args);
         });
     }
     status(options) {

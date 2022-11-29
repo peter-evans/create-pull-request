@@ -1150,6 +1150,50 @@ describe('create-or-update-branch tests', () => {
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
 
+  it('tests create consecutive branches with restored changes from stash', async () => {
+    const BRANCHA = `${BRANCH}-a`
+    const BRANCHB = `${BRANCH}-b`
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const resultA = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCHA,
+      REMOTE_NAME,
+      false,
+      ['a']
+    )
+    const resultB = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCHB,
+      REMOTE_NAME,
+      false,
+      ['b']
+    )
+    await git.checkout(BRANCHA)
+    expect(resultA.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+    await git.checkout(BRANCHB)
+    expect(resultB.action).toEqual('created')
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Delete the local branches
+    await git.checkout(DEFAULT_BRANCH)
+    await git.exec(['branch', '--delete', '--force', BRANCHA])
+    await git.exec(['branch', '--delete', '--force', BRANCHB])
+  })
+
   // Working Base is Not Base (WBNB)
 
   it('tests no changes resulting in no new branch being created (WBNB)', async () => {
@@ -2131,5 +2175,53 @@ describe('create-or-update-branch tests', () => {
     await git.checkout(BRANCH)
     // The action cannot successfully create the branch
     expect(result.action).toEqual('none')
+  })
+
+  it('tests create consecutive branches with restored changes from stash in detached HEAD state (WBNR)', async () => {
+    // Checkout the HEAD commit SHA
+    const headSha = await git.revParse('HEAD')
+    await git.checkout(headSha)
+
+    const BRANCHA = `${BRANCH}-a`
+    const BRANCHB = `${BRANCH}-b`
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const resultA = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCHA,
+      REMOTE_NAME,
+      false,
+      ['a']
+    )
+    const resultB = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCHB,
+      REMOTE_NAME,
+      false,
+      ['b']
+    )
+    await git.checkout(BRANCHA)
+    expect(resultA.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+    await git.checkout(BRANCHB)
+    expect(resultB.action).toEqual('created')
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Delete the local branches
+    await git.checkout(DEFAULT_BRANCH)
+    await git.exec(['branch', '--delete', '--force', BRANCHA])
+    await git.exec(['branch', '--delete', '--force', BRANCHB])
   })
 })

@@ -170,9 +170,8 @@ export async function createOrUpdateBranch(
     }
   }
 
-  // Remove uncommitted tracked and untracked changes
-  await git.exec(['reset', '--hard'])
-  await git.exec(['clean', '-f', '-d'])
+  // Stash any uncommitted tracked and untracked changes
+  const stashed = await git.stashPush(['--include-untracked'])
 
   // Perform fetch and reset the working base
   // Commits made during the workflow will be removed
@@ -292,6 +291,11 @@ export async function createOrUpdateBranch(
 
   // Checkout the working base to leave the local repository as it was found
   await git.checkout(workingBase)
+
+  // Restore any stashed changes
+  if (stashed) {
+    await git.stashPop()
+  }
 
   return result
 }
