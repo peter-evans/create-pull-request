@@ -283,6 +283,9 @@ export async function createOrUpdateBranch(
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])
 
+  // Checkout the working base to leave the local repository as it was found
+  await git.checkout(workingBase)
+
   return result
 }
 

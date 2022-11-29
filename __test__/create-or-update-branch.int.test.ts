@@ -245,6 +245,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(trackedContent)
     expect(
@@ -273,6 +274,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_trackedContent)
@@ -294,6 +296,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
     expect(
@@ -322,6 +325,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_untrackedContent)
@@ -345,6 +349,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -374,6 +379,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('not-updated')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -395,6 +401,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -432,6 +439,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -463,6 +471,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -491,6 +500,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(defaultTrackedContent)
@@ -512,6 +522,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -552,6 +563,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -579,6 +591,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -622,6 +635,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -647,6 +661,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -685,6 +700,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -707,6 +723,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(commits.changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(
@@ -738,6 +755,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_commits.changes.tracked)
@@ -764,6 +782,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -799,6 +818,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -827,6 +847,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -870,6 +891,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -897,6 +919,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -926,6 +949,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -948,6 +972,7 @@ describe('create-or-update-branch tests', () => {
       true,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -984,6 +1009,7 @@ describe('create-or-update-branch tests', () => {
       true,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1013,6 +1039,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_MULTI
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1042,6 +1069,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_MULTI
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1064,6 +1092,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_WILDCARD
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1093,6 +1122,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_WILDCARD
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1115,6 +1145,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ['nonexistent/*']
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('none')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
@@ -1135,6 +1166,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('none')
     expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
@@ -1155,6 +1187,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(trackedContent)
     expect(
@@ -1186,6 +1219,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_trackedContent)
@@ -1210,6 +1244,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
     expect(
@@ -1241,6 +1276,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_untrackedContent)
@@ -1267,6 +1303,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1299,6 +1336,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('not-updated')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1323,6 +1361,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1363,6 +1402,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1397,6 +1437,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1428,6 +1469,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(defaultTrackedContent)
@@ -1454,6 +1496,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1497,6 +1540,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1527,6 +1571,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1573,6 +1618,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1601,6 +1647,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1642,6 +1689,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1667,6 +1715,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(commits.changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(
@@ -1701,6 +1750,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_commits.changes.tracked)
@@ -1730,6 +1780,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1768,6 +1819,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1799,6 +1851,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1845,6 +1898,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1875,6 +1929,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1907,6 +1962,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1936,6 +1992,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -1969,6 +2026,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -1995,6 +2053,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(result.action).toEqual('created')
     expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
@@ -2036,6 +2095,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     expect(_result.action).toEqual('updated')
     expect(_result.hasDiffWithBase).toBeTruthy()
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
@@ -2068,6 +2128,7 @@ describe('create-or-update-branch tests', () => {
       false,
       ADD_PATHS_DEFAULT
     )
+    await git.checkout(BRANCH)
     // The action cannot successfully create the branch
     expect(result.action).toEqual('none')
   })

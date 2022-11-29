@@ -258,6 +258,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         result.headSha = yield git.revParse('HEAD');
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
+        // Checkout the working base to leave the local repository as it was found
+        yield git.checkout(workingBase);
         return result;
     });
 }
