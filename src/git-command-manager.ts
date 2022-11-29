@@ -210,6 +210,23 @@ export class GitCommandManager {
     return output.stdout.trim()
   }
 
+  async stashPush(options?: string[]): Promise<boolean> {
+    const args = ['stash', 'push']
+    if (options) {
+      args.push(...options)
+    }
+    const output = await this.exec(args)
+    return output.stdout.trim() !== 'No local changes to save'
+  }
+
+  async stashPop(options?: string[]): Promise<void> {
+    const args = ['stash', 'pop']
+    if (options) {
+      args.push(...options)
+    }
+    await this.exec(args)
+  }
+
   async status(options?: string[]): Promise<string> {
     const args = ['status']
     if (options) {
