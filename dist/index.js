@@ -431,7 +431,7 @@ function createPullRequest(inputs) {
                 yield git.push([
                     '--force-with-lease',
                     branchRemoteName,
-                    `HEAD:refs/heads/${inputs.branch}`
+                    `${inputs.branch}:refs/heads/${inputs.branch}`
                 ]);
                 core.endGroup();
             }

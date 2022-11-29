@@ -195,7 +195,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       await git.push([
         '--force-with-lease',
         branchRemoteName,
-        `HEAD:refs/heads/${inputs.branch}`
+        `${inputs.branch}:refs/heads/${inputs.branch}`
       ])
       core.endGroup()
     }
