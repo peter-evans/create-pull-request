@@ -69,6 +69,9 @@ inputs:
   draft:
     description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
+  no-verify:
+    description: 'Do not run pre-push steps when pushing'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

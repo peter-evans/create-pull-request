@@ -423,11 +423,15 @@ function createPullRequest(inputs) {
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
-                yield git.push([
+                let push_args = [
                     '--force-with-lease',
                     branchRemoteName,
                     `HEAD:refs/heads/${inputs.branch}`
-                ]);
+                ];
+                if (inputs.no_verify) {
+                    push_args.push('--no-verify');
+                }
+                yield git.push(push_args);
                 core.endGroup();
             }
             // Set the base. It would have been '' if not specified as an input
@@ -1141,7 +1145,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getBooleanInput('draft')
+                draft: core.getBooleanInput('draft'),
+                no_verify: core.getBooleanInput('no-verify'),
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             yield (0, create_pull_request_1.createPullRequest)(inputs);

@@ -30,6 +30,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  no_verify: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -192,11 +193,15 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      await git.push([
+      let push_args = [
         '--force-with-lease',
         branchRemoteName,
         `HEAD:refs/heads/${inputs.branch}`
-      ])
+      ]
+      if (inputs.no_verify) {
+        push_args.push('--no-verify')
+      }
+      await git.push(push_args)
       core.endGroup()
     }
 
