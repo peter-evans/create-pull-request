@@ -19,6 +19,7 @@
   - [autopep8](#autopep8)
 - [Misc workflow tips](#misc-workflow-tips)
   - [Filtering push events](#filtering-push-events)
+  - [Bypassing git hooks](#bypassing-git-hooks)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
   - [Using a markdown template](#using-a-markdown-template)
@@ -524,6 +525,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       ...
+```
+
+### Bypassing git hooks
+
+If you have git hooks that prevent the action from working correctly you can remove them before running the action.
+
+```yml
+      # Remove git hooks
+      - run: rm -rf .git/hooks
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
 ```
 
 ### Dynamic configuration using variables
