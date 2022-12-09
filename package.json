@@ -44,7 +44,7 @@
     "@vercel/ncc": "^0.32.0",
     "eslint": "^8.3.0",
     "eslint-import-resolver-typescript": "^3.5.2",
-    "eslint-plugin-github": "^4.3.5",
+    "eslint-plugin-github": "^4.6.0",
     "eslint-plugin-import": "^2.25.3",
     "eslint-plugin-jest": "^27.1.6",
     "jest": "^28.1.0",
