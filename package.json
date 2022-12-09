@@ -46,7 +46,7 @@
     "eslint-import-resolver-typescript": "^2.5.0",
     "eslint-plugin-github": "^4.3.5",
     "eslint-plugin-import": "^2.25.3",
-    "eslint-plugin-jest": "^26.1.5",
+    "eslint-plugin-jest": "^27.1.6",
     "jest": "^28.1.0",
     "jest-circus": "^28.1.0",
     "jest-environment-jsdom": "^28.1.0",
