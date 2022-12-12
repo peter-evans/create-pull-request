@@ -32,7 +32,7 @@
     "@actions/core": "^1.10.0",
     "@actions/exec": "^1.1.1",
     "@octokit/core": "^3.5.1",
-    "@octokit/plugin-paginate-rest": "^2.17.0",
+    "@octokit/plugin-paginate-rest": "^2.21.3",
     "@octokit/plugin-rest-endpoint-methods": "^5.13.0",
     "proxy-agent": "^5.0.0",
     "uuid": "^9.0.0"
