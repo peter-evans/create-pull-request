@@ -9,6 +9,7 @@
 
 - At the end of the action run the local repository is now checked out on the branch or commit that it was when the action started.
 - Any uncommitted tracked or untracked changes are now stashed and restored at the end of the action run. Currently, this can only occur when using the `add-paths` input, which allows for changes to not be committed. Previously, any uncommitted changes would be destroyed.
+- The proxy implementation has been revised but is not expected to have any change in behaviour. It continues to support the standard environment variables `http_proxy`, `https_proxy` and `no_proxy`.
 
 ## Updating from `v3` to `v4`
 
