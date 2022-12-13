@@ -15,7 +15,7 @@ export const Octokit = Core.plugin(
 // Octokit plugin to support the standard environment variables http_proxy, https_proxy and no_proxy
 function autoProxyAgent(octokit: Core) {
   octokit.hook.before('request', options => {
-    const proxy = getProxyForUrl(options.url)
+    const proxy = getProxyForUrl(options.baseUrl)
     if (proxy) {
       options.request.agent = new HttpsProxyAgent(proxy)
     }

@@ -1241,7 +1241,7 @@ exports.Octokit = core_1.Octokit.plugin(plugin_paginate_rest_1.paginateRest, plu
 // Octokit plugin to support the standard environment variables http_proxy, https_proxy and no_proxy
 function autoProxyAgent(octokit) {
     octokit.hook.before('request', options => {
-        const proxy = (0, proxy_from_env_1.getProxyForUrl)(options.url);
+        const proxy = (0, proxy_from_env_1.getProxyForUrl)(options.baseUrl);
         if (proxy) {
             options.request.agent = new https_proxy_agent_1.HttpsProxyAgent(proxy);
         }
