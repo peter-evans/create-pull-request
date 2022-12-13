@@ -332,8 +332,9 @@ function createPullRequest(inputs) {
             // Create a git command manager
             const git = yield git_command_manager_1.GitCommandManager.create(repoPath);
             // Save and unset the extraheader auth config if it exists
-            core.startGroup('Save persisted git credentials');
+            core.startGroup('Prepare git configuration');
             gitAuthHelper = new git_auth_helper_1.GitAuthHelper(git);
+            yield gitAuthHelper.addSafeDirectory();
             yield gitAuthHelper.savePersistedAuth();
             core.endGroup();
             // Init the GitHub client
@@ -491,9 +492,10 @@ function createPullRequest(inputs) {
         }
         finally {
             // Remove auth and restore persisted auth config if it existed
-            core.startGroup('Restore persisted git credentials');
+            core.startGroup('Restore git configuration');
             yield gitAuthHelper.removeAuth();
             yield gitAuthHelper.restorePersistedAuth();
+            yield gitAuthHelper.removeSafeDirectory();
             core.endGroup();
         }
     });
@@ -549,13 +551,32 @@ const url_1 = __nccwpck_require__(7310);
 const utils = __importStar(__nccwpck_require__(918));
 class GitAuthHelper {
     constructor(git) {
+        this.safeDirectoryConfigKey = 'safe.directory';
+        this.safeDirectoryAdded = false;
         this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
         this.extraheaderConfigValueRegex = '^AUTHORIZATION:';
         this.persistedExtraheaderConfigValue = '';
         this.git = git;
-        this.gitConfigPath = path.join(this.git.getWorkingDirectory(), '.git', 'config');
+        this.workingDirectory = this.git.getWorkingDirectory();
+        this.gitConfigPath = path.join(this.workingDirectory, '.git', 'config');
         const serverUrl = this.getServerUrl();
         this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
+    }
+    addSafeDirectory() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const exists = yield this.git.configExists(this.safeDirectoryConfigKey, this.workingDirectory, true);
+            if (!exists) {
+                yield this.git.config(this.safeDirectoryConfigKey, this.workingDirectory, true, true);
+                this.safeDirectoryAdded = true;
+            }
+        });
+    }
+    removeSafeDirectory() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.safeDirectoryAdded) {
+                yield this.git.tryConfigUnset(this.safeDirectoryConfigKey, this.workingDirectory, true);
+            }
+        });
     }
     savePersistedAuth() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -737,14 +758,14 @@ class GitCommandManager {
             return yield this.exec(args, allowAllExitCodes);
         });
     }
-    config(configKey, configValue, globalConfig) {
+    config(configKey, configValue, globalConfig, add) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.exec([
-                'config',
-                globalConfig ? '--global' : '--local',
-                configKey,
-                configValue
-            ]);
+            const args = ['config', globalConfig ? '--global' : '--local'];
+            if (add) {
+                args.push('--add');
+            }
+            args.push(...[configKey, configValue]);
+            yield this.exec(args);
         });
     }
     configExists(configKey, configValue = '.', globalConfig) {

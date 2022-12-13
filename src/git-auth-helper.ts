@@ -8,6 +8,9 @@ import * as utils from './utils'
 export class GitAuthHelper {
   private git: GitCommandManager
   private gitConfigPath: string
+  private workingDirectory: string
+  private safeDirectoryConfigKey = 'safe.directory'
+  private safeDirectoryAdded = false
   private extraheaderConfigKey: string
   private extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***'
   private extraheaderConfigValueRegex = '^AUTHORIZATION:'
@@ -15,13 +18,37 @@ export class GitAuthHelper {
 
   constructor(git: GitCommandManager) {
     this.git = git
-    this.gitConfigPath = path.join(
-      this.git.getWorkingDirectory(),
-      '.git',
-      'config'
-    )
+    this.workingDirectory = this.git.getWorkingDirectory()
+    this.gitConfigPath = path.join(this.workingDirectory, '.git', 'config')
     const serverUrl = this.getServerUrl()
     this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
+  }
+
+  async addSafeDirectory(): Promise<void> {
+    const exists = await this.git.configExists(
+      this.safeDirectoryConfigKey,
+      this.workingDirectory,
+      true
+    )
+    if (!exists) {
+      await this.git.config(
+        this.safeDirectoryConfigKey,
+        this.workingDirectory,
+        true,
+        true
+      )
+      this.safeDirectoryAdded = true
+    }
+  }
+
+  async removeSafeDirectory(): Promise<void> {
+    if (this.safeDirectoryAdded) {
+      await this.git.tryConfigUnset(
+        this.safeDirectoryConfigKey,
+        this.workingDirectory,
+        true
+      )
+    }
   }
 
   async savePersistedAuth(): Promise<void> {

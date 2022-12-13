@@ -72,14 +72,15 @@ export class GitCommandManager {
   async config(
     configKey: string,
     configValue: string,
-    globalConfig?: boolean
+    globalConfig?: boolean,
+    add?: boolean
   ): Promise<void> {
-    await this.exec([
-      'config',
-      globalConfig ? '--global' : '--local',
-      configKey,
-      configValue
-    ])
+    const args: string[] = ['config', globalConfig ? '--global' : '--local']
+    if (add) {
+      args.push('--add')
+    }
+    args.push(...[configKey, configValue])
+    await this.exec(args)
   }
 
   async configExists(

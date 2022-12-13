@@ -45,8 +45,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     const git = await GitCommandManager.create(repoPath)
 
     // Save and unset the extraheader auth config if it exists
-    core.startGroup('Save persisted git credentials')
+    core.startGroup('Prepare git configuration')
     gitAuthHelper = new GitAuthHelper(git)
+    await gitAuthHelper.addSafeDirectory()
     await gitAuthHelper.savePersistedAuth()
     core.endGroup()
 
@@ -252,9 +253,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.setFailed(utils.getErrorMessage(error))
   } finally {
     // Remove auth and restore persisted auth config if it existed
-    core.startGroup('Restore persisted git credentials')
+    core.startGroup('Restore git configuration')
     await gitAuthHelper.removeAuth()
     await gitAuthHelper.restorePersistedAuth()
+    await gitAuthHelper.removeSafeDirectory()
     core.endGroup()
   }
 }

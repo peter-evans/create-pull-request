@@ -46,4 +46,25 @@ describe('git-auth-helper tests', () => {
 
     await gitAuthHelper.removeAuth()
   })
+
+  it('tests adding and removing the safe.directory config', async () => {
+    await git.config('safe.directory', '/another-value', true, true)
+
+    await gitAuthHelper.removeSafeDirectory()
+    await gitAuthHelper.addSafeDirectory()
+
+    expect(
+      await git.configExists('safe.directory', REPO_PATH, true)
+    ).toBeTruthy()
+
+    await gitAuthHelper.addSafeDirectory()
+    await gitAuthHelper.removeSafeDirectory()
+
+    expect(
+      await git.configExists('safe.directory', REPO_PATH, true)
+    ).toBeFalsy()
+    expect(
+      await git.configExists('safe.directory', '/another-value', true)
+    ).toBeTruthy()
+  })
 })
