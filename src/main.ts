@@ -29,7 +29,8 @@ async function run(): Promise<void> {
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 
-    await createPullRequest(inputs)
+    // disable action
+    // await createPullRequest(inputs)
   } catch (error) {
     core.setFailed(utils.getErrorMessage(error))
   }

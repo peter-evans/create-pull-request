@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
-import {Octokit, OctokitOptions} from './octokit-client'
+import {Octokit, OctokitOptions, throttleOptions} from './octokit-client'
 import * as utils from './utils'
 
 const ERROR_PR_REVIEW_FROM_AUTHOR =
@@ -25,6 +25,7 @@ export class GitHubHelper {
     if (token) {
       options.auth = `${token}`
     }
+    options.throttle = throttleOptions
     options.baseUrl = process.env['GITHUB_API_URL'] || 'https://api.github.com'
     this.octokit = new Octokit(options)
   }
