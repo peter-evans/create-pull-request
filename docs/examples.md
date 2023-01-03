@@ -19,6 +19,7 @@
   - [autopep8](#autopep8)
 - [Misc workflow tips](#misc-workflow-tips)
   - [Filtering push events](#filtering-push-events)
+  - [Bypassing git hooks](#bypassing-git-hooks)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
   - [Using a markdown template](#using-a-markdown-template)
@@ -282,8 +283,10 @@ jobs:
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         run: |
-          echo ::set-output name=release_tag::$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
-          echo ::set-output name=current_tag::$(<swagger-ui.version)
+          release_tag=$(curl -sL https://api.github.com/repos/swagger-api/swagger-ui/releases/latest | jq -r ".tag_name")
+          echo "release_tag=$release_tag" >> $GITHUB_OUTPUT
+          current_tag=$(<swagger-ui.version)
+          echo "current_tag=$current_tag" >> $GITHUB_OUTPUT
       - name: Update Swagger UI
         if: steps.swagger-ui.outputs.current_tag != steps.swagger-ui.outputs.release_tag
         env:
@@ -475,7 +478,9 @@ jobs:
           args: --exit-code --recursive --in-place --aggressive --aggressive .
       - name: Set autopep8 branch name
         id: vars
-        run: echo ::set-output name=branch-name::"autopep8-patches/${{ github.head_ref }}"
+        run: |
+          branch-name="autopep8-patches/${{ github.head_ref }}"
+          echo "branch-name=$branch-name" >> $GITHUB_OUTPUT
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
         uses: peter-evans/create-pull-request@v4
@@ -522,19 +527,32 @@ jobs:
       ...
 ```
 
+### Bypassing git hooks
+
+If you have git hooks that prevent the action from working correctly you can remove them before running the action.
+
+```yml
+      # Remove git hooks
+      - run: rm -rf .git/hooks
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+```
+
 ### Dynamic configuration using variables
 
 The following examples show how configuration for the action can be dynamically defined in a previous workflow step.
-
-The recommended method is to use [`set-output`](https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-output-parameter). Note that the step where output variables are defined must have an id.
+Note that the step where output variables are defined must have an id.
 
 ```yml
       - name: Set output variables
         id: vars
         run: |
-          echo ::set-output name=pr_title::"[Test] Add report file $(date +%d-%m-%Y)"
-          echo ::set-output name=pr_body::"This PR was auto-generated on $(date +%d-%m-%Y) \
+          pr_title="[Test] Add report file $(date +%d-%m-%Y)"
+          pr_body="This PR was auto-generated on $(date +%d-%m-%Y) \
             by [create-pull-request](https://github.com/peter-evans/create-pull-request)."
+          echo "pr_title=$pr_title" >> $GITHUB_OUTPUT
+          echo "pr_body=$pr_body" >> $GITHUB_OUTPUT
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         with:
@@ -545,16 +563,15 @@ The recommended method is to use [`set-output`](https://docs.github.com/en/actio
 ### Setting the pull request body from a file
 
 This example shows how file content can be read into a variable and passed to the action.
-The content must be [escaped to preserve newlines](https://github.community/t/set-output-truncates-multiline-strings/16852/3).
 
 ```yml
       - id: get-pr-body
         run: |
           body=$(cat pr-body.txt)
-          body="${body//'%'/'%25'}"
-          body="${body//$'\n'/'%0A'}"
-          body="${body//$'\r'/'%0D'}" 
-          echo ::set-output name=body::$body
+          delimiter="$(openssl rand -hex 8)"
+          echo "body<<$delimiter" >> $GITHUB_OUTPUT
+          echo "$body" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4

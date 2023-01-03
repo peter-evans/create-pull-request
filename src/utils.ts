@@ -32,6 +32,7 @@ export function getRepoPath(relativePath?: string): string {
 }
 
 interface RemoteDetail {
+  hostname: string
   protocol: string
   repository: string
 }
@@ -46,18 +47,18 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
     throw new Error('Could not parse GitHub Server name')
   }
 
+  const hostname = githubServerMatch[1]
+
   const httpsUrlPattern = new RegExp(
-    '^https?://.*@?' + githubServerMatch[1] + '/(.+/.+?)(.git)?$',
+    '^https?://.*@?' + hostname + '/(.+/.+?)(\\.git)?$',
     'i'
   )
-  const sshUrlPattern = new RegExp(
-    '^git@' + githubServerMatch[1] + ':(.+/.+).git$',
-    'i'
-  )
+  const sshUrlPattern = new RegExp('^git@' + hostname + ':(.+/.+)\\.git$', 'i')
 
   const httpsMatch = remoteUrl.match(httpsUrlPattern)
   if (httpsMatch) {
     return {
+      hostname,
       protocol: 'HTTPS',
       repository: httpsMatch[1]
     }
@@ -66,6 +67,7 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
   const sshMatch = remoteUrl.match(sshUrlPattern)
   if (sshMatch) {
     return {
+      hostname,
       protocol: 'SSH',
       repository: sshMatch[1]
     }
@@ -76,10 +78,14 @@ export function getRemoteDetail(remoteUrl: string): RemoteDetail {
   )
 }
 
-export function getRemoteUrl(protocol: string, repository: string): string {
+export function getRemoteUrl(
+  protocol: string,
+  hostname: string,
+  repository: string
+): string {
   return protocol == 'HTTPS'
-    ? `https://github.com/${repository}`
-    : `git@github.com:${repository}.git`
+    ? `https://${hostname}/${repository}`
+    : `git@${hostname}:${repository}.git`
 }
 
 export function secondsSinceEpoch(): number {
@@ -134,13 +140,15 @@ export function fileExistsSync(path: string): boolean {
   let stats: fs.Stats
   try {
     stats = fs.statSync(path)
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error) {
+    if (hasErrorCode(error) && error.code === 'ENOENT') {
       return false
     }
 
     throw new Error(
-      `Encountered an error when checking whether path '${path}' exists: ${error.message}`
+      `Encountered an error when checking whether path '${path}' exists: ${getErrorMessage(
+        error
+      )}`
     )
   }
 
@@ -149,4 +157,14 @@ export function fileExistsSync(path: string): boolean {
   }
 
   return false
+}
+
+/* eslint-disable  @typescript-eslint/no-explicit-any */
+function hasErrorCode(error: any): error is {code: string} {
+  return typeof (error && error.code) === 'string'
+}
+
+export function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message
+  return String(error)
 }

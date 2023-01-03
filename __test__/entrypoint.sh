@@ -6,6 +6,7 @@ WORKINGDIR=$PWD
 
 # Create and serve a remote repo
 mkdir -p /git/remote
+git config --global init.defaultBranch main
 git init --bare /git/remote/test-base.git
 git daemon --verbose --enable=receive-pack --base-path=/git/remote --export-all /git/remote &>/dev/null &
 

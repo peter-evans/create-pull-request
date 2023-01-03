@@ -35,6 +35,10 @@ export interface Inputs {
 export async function createPullRequest(inputs: Inputs): Promise<void> {
   let gitAuthHelper
   try {
+    if (!inputs.token) {
+      throw new Error(`Input 'token' not supplied. Unable to continue.`)
+    }
+
     // Get the repository path
     const repoPath = utils.getRepoPath(inputs.path)
     // Create a git command manager
@@ -60,6 +64,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       : baseRemote.repository
     if (inputs.pushToFork) {
       // Check if the supplied fork is really a fork of the base
+      core.info(
+        `Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`
+      )
       const parentRepository = await githubHelper.getRepositoryParent(
         branchRepository
       )
@@ -71,6 +78,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       // Add a remote for the fork
       const remoteUrl = utils.getRemoteUrl(
         baseRemote.protocol,
+        baseRemote.hostname,
         branchRepository
       )
       await git.exec(['remote', 'add', 'fork', remoteUrl])
@@ -240,8 +248,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         }
       }
     }
-  } catch (error: any) {
-    core.setFailed(error.message)
+  } catch (error) {
+    core.setFailed(utils.getErrorMessage(error))
   } finally {
     // Remove auth and restore persisted auth config if it existed
     core.startGroup('Restore persisted git credentials')

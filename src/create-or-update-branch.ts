@@ -4,6 +4,7 @@ import {v4 as uuidv4} from 'uuid'
 
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
+const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean'
 
 export enum WorkingBaseType {
   Branch = 'branch',
@@ -42,17 +43,39 @@ export async function tryFetch(
   }
 }
 
+// Return the number of commits that branch2 is ahead of branch1
+async function commitsAhead(
+  git: GitCommandManager,
+  branch1: string,
+  branch2: string
+): Promise<number> {
+  const result = await git.revList(
+    [`${branch1}...${branch2}`],
+    ['--right-only', '--count']
+  )
+  return Number(result)
+}
+
 // Return true if branch2 is ahead of branch1
 async function isAhead(
   git: GitCommandManager,
   branch1: string,
   branch2: string
 ): Promise<boolean> {
+  return (await commitsAhead(git, branch1, branch2)) > 0
+}
+
+// Return the number of commits that branch2 is behind branch1
+async function commitsBehind(
+  git: GitCommandManager,
+  branch1: string,
+  branch2: string
+): Promise<number> {
   const result = await git.revList(
     [`${branch1}...${branch2}`],
-    ['--right-only', '--count']
+    ['--left-only', '--count']
   )
-  return Number(result) > 0
+  return Number(result)
 }
 
 // Return true if branch2 is behind branch1
@@ -61,11 +84,7 @@ async function isBehind(
   branch1: string,
   branch2: string
 ): Promise<boolean> {
-  const result = await git.revList(
-    [`${branch1}...${branch2}`],
-    ['--left-only', '--count']
-  )
-  return Number(result) > 0
+  return (await commitsBehind(git, branch1, branch2)) > 0
 }
 
 // Return true if branch2 is even with branch1
@@ -134,7 +153,14 @@ export async function createOrUpdateBranch(
     if (signoff) {
       popts.push('--signoff')
     }
-    await git.commit(popts)
+    const commitResult = await git.commit(popts, true)
+    // 'nothing to commit' can occur when core.autocrlf is set to true
+    if (
+      commitResult.exitCode != 0 &&
+      !commitResult.stdout.includes(NOTHING_TO_COMMIT)
+    ) {
+      throw new Error(`Unexpected error: ${commitResult.stderr}`)
+    }
   }
 
   // Remove uncommitted tracked and untracked changes
@@ -218,10 +244,16 @@ export async function createOrUpdateBranch(
     //   branches after merging. In particular, it catches a case where the branch was
     //   squash merged but not deleted. We need to reset to make sure it doesn't appear
     //   to have a diff with the base due to different commits for the same changes.
+    // - If the number of commits ahead of the base branch differs between the branch and
+    //   temp branch. This catches a case where the base branch has been force pushed to
+    //   a new commit.
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
+    const tempBranchCommitsAhead = await commitsAhead(git, base, tempBranch)
+    const branchCommitsAhead = await commitsAhead(git, base, branch)
     if (
       (await git.hasDiff([`${branch}..${tempBranch}`])) ||
-      !(await isAhead(git, base, tempBranch))
+      branchCommitsAhead != tempBranchCommitsAhead ||
+      !(tempBranchCommitsAhead > 0) // !isAhead
     ) {
       core.info(`Resetting '${branch}'`)
       // Alternatively, git switch -C branch tempBranch
