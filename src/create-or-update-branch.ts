@@ -165,6 +165,7 @@ export async function createOrUpdateBranch(
 
   // Remove uncommitted tracked and untracked changes
   await git.exec(['reset', '--hard'])
+
   //await git.exec(['clean', '-f', '-d'])
 
   // Perform fetch and reset the working base
