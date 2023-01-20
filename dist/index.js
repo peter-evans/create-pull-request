@@ -551,6 +551,7 @@ const url_1 = __nccwpck_require__(7310);
 const utils = __importStar(__nccwpck_require__(918));
 class GitAuthHelper {
     constructor(git) {
+        this.gitConfigPath = '';
         this.safeDirectoryConfigKey = 'safe.directory';
         this.safeDirectoryAdded = false;
         this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
@@ -558,7 +559,6 @@ class GitAuthHelper {
         this.persistedExtraheaderConfigValue = '';
         this.git = git;
         this.workingDirectory = this.git.getWorkingDirectory();
-        this.gitConfigPath = path.join(this.workingDirectory, '.git', 'config');
         const serverUrl = this.getServerUrl();
         this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
     }
@@ -640,6 +640,10 @@ class GitAuthHelper {
     }
     gitConfigStringReplace(find, replace) {
         return __awaiter(this, void 0, void 0, function* () {
+            if (this.gitConfigPath.length === 0) {
+                const gitDir = yield this.git.getGitDirectory();
+                this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config');
+            }
             let content = (yield fs.promises.readFile(this.gitConfigPath)).toString();
             const index = content.indexOf(find);
             if (index < 0 || index != content.lastIndexOf(find)) {
@@ -817,6 +821,9 @@ class GitCommandManager {
             ]);
             return output.stdout.trim().split(`${configKey} `)[1];
         });
+    }
+    getGitDirectory() {
+        return this.revParse('--git-dir');
     }
     getWorkingDirectory() {
         return this.workingDirectory;

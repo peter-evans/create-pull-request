@@ -11,6 +11,7 @@
 - Any uncommitted tracked or untracked changes are now stashed and restored at the end of the action run. Currently, this can only occur when using the `add-paths` input, which allows for changes to not be committed. Previously, any uncommitted changes would be destroyed.
 - The proxy implementation has been revised but is not expected to have any change in behaviour. It continues to support the standard environment variables `http_proxy`, `https_proxy` and `no_proxy`.
 - The action now sets the git `safe.directory` configuration for the local repository path. The configuration is removed when the action completes. Fixes issue https://github.com/peter-evans/create-pull-request/issues/1170.
+- The action now determines the git directory path using the `git rev-parse --git-dir` command. This allows users with custom repository configurations to use the action.
 
 ## Updating from `v3` to `v4`
 

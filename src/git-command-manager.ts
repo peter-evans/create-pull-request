@@ -146,6 +146,10 @@ export class GitCommandManager {
     return output.stdout.trim().split(`${configKey} `)[1]
   }
 
+  getGitDirectory(): Promise<string> {
+    return this.revParse('--git-dir')
+  }
+
   getWorkingDirectory(): string {
     return this.workingDirectory
   }

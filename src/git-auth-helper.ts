@@ -7,7 +7,7 @@ import * as utils from './utils'
 
 export class GitAuthHelper {
   private git: GitCommandManager
-  private gitConfigPath: string
+  private gitConfigPath = ''
   private workingDirectory: string
   private safeDirectoryConfigKey = 'safe.directory'
   private safeDirectoryAdded = false
@@ -19,7 +19,6 @@ export class GitAuthHelper {
   constructor(git: GitCommandManager) {
     this.git = git
     this.workingDirectory = this.git.getWorkingDirectory()
-    this.gitConfigPath = path.join(this.workingDirectory, '.git', 'config')
     const serverUrl = this.getServerUrl()
     this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
   }
@@ -133,6 +132,10 @@ export class GitAuthHelper {
     find: string,
     replace: string
   ): Promise<void> {
+    if (this.gitConfigPath.length === 0) {
+      const gitDir = await this.git.getGitDirectory()
+      this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config')
+    }
     let content = (await fs.promises.readFile(this.gitConfigPath)).toString()
     const index = content.indexOf(find)
     if (index < 0 || index != content.lastIndexOf(find)) {
