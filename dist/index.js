@@ -5121,7 +5121,7 @@ var request = __nccwpck_require__(6234);
 var graphql = __nccwpck_require__(8467);
 var authToken = __nccwpck_require__(334);
 
-const VERSION = "4.1.0";
+const VERSION = "4.2.0";
 
 class Octokit {
   constructor(options = {}) {
@@ -6912,7 +6912,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "6.7.0";
+const VERSION = "6.8.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
