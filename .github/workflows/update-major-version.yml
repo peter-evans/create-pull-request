@@ -1,3 +1,4 @@
+#Test
 name: Update Major Version
 run-name: Update ${{ github.event.inputs.main_version }} to ${{ github.event.inputs.target }}
 
