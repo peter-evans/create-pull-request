@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - uses: peter-evans/enable-pull-request-automerge@v2
+      - uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.ACTIONS_BOT_TOKEN }}
           pull-request-number: ${{ github.event.pull_request.number }}
