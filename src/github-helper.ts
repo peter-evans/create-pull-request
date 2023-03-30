@@ -158,10 +158,10 @@ export class GitHubHelper {
       requestReviewersParams['reviewers'] = inputs.reviewers
       core.info(`Requesting reviewers '${inputs.reviewers}'`)
     }
-    if (inputs.teamReviewers.length > 0) {
-      requestReviewersParams['team_reviewers'] = inputs.teamReviewers
-      core.info(`Requesting team reviewers '${inputs.teamReviewers}'`)
-    }
+    // if (inputs.teamReviewers.length > 0) {
+    //   requestReviewersParams['team_reviewers'] = inputs.teamReviewers
+    //   core.info(`Requesting team reviewers '${inputs.teamReviewers}'`)
+    // }
     if (Object.keys(requestReviewersParams).length > 0) {
       try {
         await this.octokit.rest.pulls.requestReviewers({
@@ -178,6 +178,147 @@ export class GitHubHelper {
       }
     }
 
+    const orgs = inputs.teamReviewers.map(team => {
+      if (!team.includes('/')) {
+        throw new Error(
+          `Team ${team} is not in the correct format. It should be in the format org/team`
+        )
+      }
+      return team.split('/')[0]
+    })
+    const distinctOrgs = [...new Set(orgs)]
+    core.debug(`distinctOrgs: ${distinctOrgs}`)
+
+    const orgTeams = await Promise.all(
+      distinctOrgs.map(org => this.getOrgTeams(org))
+    )
+
+    const teamIds = inputs.teamReviewers.map(team => {
+      const [org, teamName] = team.split('/')
+      const orgTeam = orgTeams.find(
+        orgTeam => orgTeam.organization.login === org
+      )
+      if (!orgTeam) {
+        throw new Error(`Org ${org} not found`)
+      }
+      const teamId = orgTeam.organization.teams.edges.find(
+        team => team.node.slug === teamName
+      )?.node.id
+      if (!teamId) {
+        throw new Error(`Team ${teamName} not found in ${org}`)
+      }
+      return teamId
+    })
+    core.debug(`teamIds: ${teamIds}`)
+
+    if (teamIds.length > 0) {
+      const repository = this.parseRepository(baseRepository)
+      const pullNodeId = await this.getPullNodeId(
+        repository.owner,
+        repository.repo,
+        pull.number
+      )
+      core.debug(`pullNodeId: ${pullNodeId}`)
+
+      await this.requestReviewers(pullNodeId, teamIds)
+    }
+
     return pull
+  }
+
+  async getOrgTeams(orgName: string): Promise<OrgTeams> {
+    const query = `
+      query($orgName: String!, $teamCount: Int!) {
+        organization(login: $orgName) {
+          login
+          teams(first: $teamCount) {
+            edges {
+              node {
+                id
+                slug
+              }
+            }
+          }
+        }
+      }
+    `
+    const teamCount = 100
+    return this.octokit.graphql<OrgTeams>(query, {
+      orgName,
+      teamCount
+    })
+  }
+
+  async getPullNodeId(
+    owner: string,
+    repo: string,
+    pullNumber: number
+  ): Promise<string> {
+    const query = `
+      query($owner: String!, $repo: String!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequest(number: ${pullNumber}) {
+            id
+          }
+        }
+      }
+    `
+
+    return (
+      await this.octokit.graphql<PullRequestResponse>(query, {
+        owner,
+        repo
+      })
+    ).repository.pullRequest.id
+  }
+
+  async requestReviewers(
+    pullRequestId: string,
+    teamIds: string[]
+  ): Promise<void> {
+    const mutation = `
+      mutation($input: RequestReviewsInput!) {
+        requestReviews(input: $input) {
+          clientMutationId
+        }
+      }
+    `
+
+    await this.octokit
+      .graphql(mutation, {
+        input: {
+          pullRequestId,
+          teamIds: teamIds,
+          union: true
+        }
+      })
+      .then(response => {
+        core.info('Reviews requested successfully')
+      })
+      .catch(error => {
+        core.error(error)
+      })
+  }
+}
+
+interface OrgTeams {
+  organization: {
+    login: string
+    teams: {
+      edges: {
+        node: {
+          id: string
+          slug: string
+        }
+      }[]
+    }
+  }
+}
+
+interface PullRequestResponse {
+  repository: {
+    pullRequest: {
+      id: string
+    }
   }
 }
