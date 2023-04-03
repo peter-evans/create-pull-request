@@ -1034,7 +1034,7 @@ exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const octokit_client_1 = __nccwpck_require__(5040);
 const utils = __importStar(__nccwpck_require__(918));
-const ERROR_PR_REVIEW_FROM_AUTHOR = 'Review cannot be requested from pull request author';
+const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a node with the global id of';
 class GitHubHelper {
     constructor(token) {
         const options = {};
@@ -1123,20 +1123,19 @@ class GitHubHelper {
                 core.info(`Requesting reviewers '${inputs.reviewers}'`);
             }
             if (inputs.teamReviewers.length > 0) {
-                requestReviewersParams['team_reviewers'] = inputs.teamReviewers;
-                core.info(`Requesting team reviewers '${inputs.teamReviewers}'`);
+                const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers);
+                requestReviewersParams['team_reviewers'] = teams;
+                core.info(`Requesting team reviewers '${teams}'`);
             }
             if (Object.keys(requestReviewersParams).length > 0) {
                 try {
                     yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
                 }
                 catch (e) {
-                    if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
-                        core.warning(ERROR_PR_REVIEW_FROM_AUTHOR);
+                    if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+                        core.error(`Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`);
                     }
-                    else {
-                        throw e;
-                    }
+                    throw e;
                 }
             }
             return pull;
@@ -1283,7 +1282,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getErrorMessage = exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.getStringAsArray = exports.getInputAsArray = void 0;
+exports.getErrorMessage = exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.stripOrgPrefixFromTeams = exports.getStringAsArray = exports.getInputAsArray = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1298,6 +1297,16 @@ function getStringAsArray(str) {
         .filter(x => x !== '');
 }
 exports.getStringAsArray = getStringAsArray;
+function stripOrgPrefixFromTeams(teams) {
+    return teams.map(team => {
+        const slashIndex = team.lastIndexOf('/');
+        if (slashIndex > 0) {
+            return team.substring(slashIndex + 1);
+        }
+        return team;
+    });
+}
+exports.stripOrgPrefixFromTeams = stripOrgPrefixFromTeams;
 function getRepoPath(relativePath) {
     let githubWorkspacePath = process.env['GITHUB_WORKSPACE'];
     if (!githubWorkspacePath) {

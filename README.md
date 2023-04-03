@@ -68,7 +68,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `labels` | A comma or newline-separated list of labels. | |
 | `assignees` | A comma or newline-separated list of assignees (GitHub usernames). | |
 | `reviewers` | A comma or newline-separated list of reviewers (GitHub usernames) to request a review from. | |
-| `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). If using a GitHub App, refer to [Authenticating with GitHub App generated tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) for the proper permissions. | |
+| `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token), or equivalent [GitHub App permissions](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens), are required. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
 
@@ -252,8 +252,8 @@ jobs:
           assignees: peter-evans
           reviewers: peter-evans
           team-reviewers: |
-            owners
-            maintainers
+            developers
+            qa-team
           milestone: 1
           draft: false
 ```
