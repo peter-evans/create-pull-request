@@ -654,11 +654,7 @@ class GitAuthHelper {
         });
     }
     getServerUrl() {
-        // todo: remove GITHUB_URL after support for GHES Alpha is no longer needed
-        // See https://github.com/actions/checkout/blob/main/src/url-helper.ts#L22-L29
-        return new url_1.URL(process.env['GITHUB_SERVER_URL'] ||
-            process.env['GITHUB_URL'] ||
-            'https://github.com');
+        return new url_1.URL(process.env['GITHUB_SERVER_URL'] || 'https://github.com');
     }
 }
 exports.GitAuthHelper = GitAuthHelper;
