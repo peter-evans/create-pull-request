@@ -190,7 +190,7 @@ export async function createOrUpdateBranch(
     core.info(
       `Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`
     )
-    const compareBranches = `${base}..${tempBranch}`
+    const compareBranches = `main..${tempBranch}`
     // Checkout the actual base
     await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
     await git.checkout(base)
