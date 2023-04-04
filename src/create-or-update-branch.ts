@@ -190,12 +190,13 @@ export async function createOrUpdateBranch(
     core.info(
       `Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`
     )
+    const compareBranches = `${base}..${tempBranch}`
     // Checkout the actual base
     await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
     await git.checkout(base)
     // Cherrypick commits from the temporary branch starting from the working base
     const commits = await git.revList(
-      [`${base}..${tempBranch}`, '.'],
+      [compareBranches, '.'],
       ['--reverse']
     )
     for (const commit of splitLines(commits)) {
