@@ -195,7 +195,7 @@ export async function createOrUpdateBranch(
     await git.checkout(base)
     // Cherrypick commits from the temporary branch starting from the working base
     const commits = await git.revList(
-      [`${workingBase}..${tempBranch}`, '.'],
+      [`${base}..${tempBranch}`, '.'],
       ['--reverse']
     )
     for (const commit of splitLines(commits)) {

@@ -190,7 +190,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
             yield git.checkout(base);
             // Cherrypick commits from the temporary branch starting from the working base
-            const commits = yield git.revList([`${workingBase}..${tempBranch}`, '.'], ['--reverse']);
+            const commits = yield git.revList([`${base}..${tempBranch}`, '.'], ['--reverse']);
             for (const commit of splitLines(commits)) {
                 const result = yield git.cherryPick(['--strategy=recursive', '--strategy-option=theirs', commit], true);
                 if (result.exitCode != 0 && !result.stderr.includes(CHERRYPICK_EMPTY)) {
