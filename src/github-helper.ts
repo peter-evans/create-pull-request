@@ -3,8 +3,8 @@ import {Inputs} from './create-pull-request'
 import {Octokit, OctokitOptions} from './octokit-client'
 import * as utils from './utils'
 
-const ERROR_PR_REVIEW_FROM_AUTHOR =
-  'Review cannot be requested from pull request author'
+const ERROR_PR_REVIEW_TOKEN_SCOPE =
+  'Validation Failed: "Could not resolve to a node with the global id of'
 
 interface Repository {
   owner: string
@@ -159,8 +159,9 @@ export class GitHubHelper {
       core.info(`Requesting reviewers '${inputs.reviewers}'`)
     }
     if (inputs.teamReviewers.length > 0) {
-      requestReviewersParams['team_reviewers'] = inputs.teamReviewers
-      core.info(`Requesting team reviewers '${inputs.teamReviewers}'`)
+      const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers)
+      requestReviewersParams['team_reviewers'] = teams
+      core.info(`Requesting team reviewers '${teams}'`)
     }
     if (Object.keys(requestReviewersParams).length > 0) {
       try {
@@ -170,11 +171,12 @@ export class GitHubHelper {
           ...requestReviewersParams
         })
       } catch (e) {
-        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_FROM_AUTHOR)) {
-          core.warning(ERROR_PR_REVIEW_FROM_AUTHOR)
-        } else {
-          throw e
+        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+          core.error(
+            `Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`
+          )
         }
+        throw e
       }
     }
 

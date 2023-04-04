@@ -1,6 +1,6 @@
 {
   "name": "create-pull-request",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "description": "Creates a pull request for changes to your repository in the actions workspace",
   "main": "lib/main.js",
@@ -34,7 +34,8 @@
     "@octokit/core": "^4.2.0",
     "@octokit/plugin-paginate-rest": "^5.0.1",
     "@octokit/plugin-rest-endpoint-methods": "^6.8.1",
-    "proxy-agent": "^5.0.0",
+    "https-proxy-agent": "^5.0.1",
+    "proxy-from-env": "^1.1.0",
     "uuid": "^9.0.0"
   },
   "devDependencies": {

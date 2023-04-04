@@ -21,7 +21,6 @@
   - [Filtering push events](#filtering-push-events)
   - [Bypassing git hooks](#bypassing-git-hooks)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
-  - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
   - [Using a markdown template](#using-a-markdown-template)
   - [Debugging GitHub Actions](#debugging-github-actions)
 
@@ -51,7 +50,7 @@ jobs:
         run: |
           git log --format='%aN <%aE>%n%cN <%cE>' | sort -u > AUTHORS
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update authors
           title: Update AUTHORS
@@ -83,7 +82,7 @@ jobs:
           git fetch origin main:main
           git reset --hard main
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           branch: production-promotion
 ```
@@ -118,7 +117,7 @@ jobs:
           ./git-chglog -o CHANGELOG.md
           rm git-chglog
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update changelog
           title: Update Changelog
@@ -155,7 +154,7 @@ jobs:
           npx -p npm-check-updates ncu -u
           npm install
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -216,7 +215,7 @@ jobs:
       - name: Perform dependency resolution and write new lockfiles
         run: ./gradlew dependencies --write-locks
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -251,7 +250,7 @@ jobs:
           cargo update
           cargo upgrade --to-lockfile
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
             token: ${{ secrets.PAT }}
             commit-message: Update dependencies
@@ -309,7 +308,7 @@ jobs:
           # Update current release
           echo ${{ steps.swagger-ui.outputs.release_tag }} > swagger-ui.version
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: Update swagger-ui to ${{ steps.swagger-ui.outputs.release_tag }}
           title: Update SwaggerUI to ${{ steps.swagger-ui.outputs.release_tag }}
@@ -353,7 +352,7 @@ jobs:
           git fetch upstream main:upstream-main
           git reset --hard upstream-main
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.PAT }}
           branch: upstream-changes
@@ -386,7 +385,7 @@ jobs:
             --domains quotes.toscrape.com \
             http://quotes.toscrape.com/
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: update local website copy
           title: Automated Updates to Local Website Copy
@@ -483,7 +482,7 @@ jobs:
           echo "branch-name=$branch-name" >> $GITHUB_OUTPUT
       - name: Create Pull Request
         if: steps.autopep8.outputs.exit-code == 2
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           commit-message: autopep8 action fixes
           title: Fixes by autopep8 action
@@ -536,7 +535,7 @@ If you have git hooks that prevent the action from working correctly you can rem
       - run: rm -rf .git/hooks
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
 ```
 
 ### Dynamic configuration using variables
@@ -554,29 +553,10 @@ Note that the step where output variables are defined must have an id.
           echo "pr_title=$pr_title" >> $GITHUB_OUTPUT
           echo "pr_body=$pr_body" >> $GITHUB_OUTPUT
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           title: ${{ steps.vars.outputs.pr_title }}
           body: ${{ steps.vars.outputs.pr_body }}
-```
-
-### Setting the pull request body from a file
-
-This example shows how file content can be read into a variable and passed to the action.
-
-```yml
-      - id: get-pr-body
-        run: |
-          body=$(cat pr-body.txt)
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          body: ${{ steps.get-pr-body.outputs.body }}
 ```
 
 ### Using a markdown template
@@ -599,7 +579,7 @@ The template is rendered using the [render-template](https://github.com/chuhlomi
             bar: that
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           body: ${{ steps.template.outputs.result }}
 ```

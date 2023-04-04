@@ -25,6 +25,18 @@ describe('utils tests', () => {
     expect(array2.length).toEqual(0)
   })
 
+  test('stripOrgPrefixFromTeams strips org prefixes correctly', async () => {
+    const array = utils.stripOrgPrefixFromTeams([
+      'org/team1',
+      'org/team2',
+      'team3'
+    ])
+    expect(array.length).toEqual(3)
+    expect(array[0]).toEqual('team1')
+    expect(array[1]).toEqual('team2')
+    expect(array[2]).toEqual('team3')
+  })
+
   test('getRepoPath successfully returns the path to the repository', async () => {
     expect(utils.getRepoPath()).toEqual(process.env['GITHUB_WORKSPACE'])
     expect(utils.getRepoPath('foo')).toEqual(

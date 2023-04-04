@@ -16,6 +16,16 @@ export function getStringAsArray(str: string): string[] {
     .filter(x => x !== '')
 }
 
+export function stripOrgPrefixFromTeams(teams: string[]): string[] {
+  return teams.map(team => {
+    const slashIndex = team.lastIndexOf('/')
+    if (slashIndex > 0) {
+      return team.substring(slashIndex + 1)
+    }
+    return team
+  })
+}
+
 export function getRepoPath(relativePath?: string): string {
   let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
   if (!githubWorkspacePath) {
@@ -157,6 +167,10 @@ export function fileExistsSync(path: string): boolean {
   }
 
   return false
+}
+
+export function readFile(path: string): string {
+  return fs.readFileSync(path, 'utf-8')
 }
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */

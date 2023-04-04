@@ -7,7 +7,10 @@ import * as utils from './utils'
 
 export class GitAuthHelper {
   private git: GitCommandManager
-  private gitConfigPath: string
+  private gitConfigPath = ''
+  private workingDirectory: string
+  private safeDirectoryConfigKey = 'safe.directory'
+  private safeDirectoryAdded = false
   private extraheaderConfigKey: string
   private extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***'
   private extraheaderConfigValueRegex = '^AUTHORIZATION:'
@@ -15,13 +18,36 @@ export class GitAuthHelper {
 
   constructor(git: GitCommandManager) {
     this.git = git
-    this.gitConfigPath = path.join(
-      this.git.getWorkingDirectory(),
-      '.git',
-      'config'
-    )
+    this.workingDirectory = this.git.getWorkingDirectory()
     const serverUrl = this.getServerUrl()
     this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
+  }
+
+  async addSafeDirectory(): Promise<void> {
+    const exists = await this.git.configExists(
+      this.safeDirectoryConfigKey,
+      this.workingDirectory,
+      true
+    )
+    if (!exists) {
+      await this.git.config(
+        this.safeDirectoryConfigKey,
+        this.workingDirectory,
+        true,
+        true
+      )
+      this.safeDirectoryAdded = true
+    }
+  }
+
+  async removeSafeDirectory(): Promise<void> {
+    if (this.safeDirectoryAdded) {
+      await this.git.tryConfigUnset(
+        this.safeDirectoryConfigKey,
+        this.workingDirectory,
+        true
+      )
+    }
   }
 
   async savePersistedAuth(): Promise<void> {
@@ -106,6 +132,10 @@ export class GitAuthHelper {
     find: string,
     replace: string
   ): Promise<void> {
+    if (this.gitConfigPath.length === 0) {
+      const gitDir = await this.git.getGitDirectory()
+      this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config')
+    }
     let content = (await fs.promises.readFile(this.gitConfigPath)).toString()
     const index = content.indexOf(find)
     if (index < 0 || index != content.lastIndexOf(find)) {
@@ -116,12 +146,6 @@ export class GitAuthHelper {
   }
 
   private getServerUrl(): URL {
-    // todo: remove GITHUB_URL after support for GHES Alpha is no longer needed
-    // See https://github.com/actions/checkout/blob/main/src/url-helper.ts#L22-L29
-    return new URL(
-      process.env['GITHUB_SERVER_URL'] ||
-        process.env['GITHUB_URL'] ||
-        'https://github.com'
-    )
+    return new URL(process.env['GITHUB_SERVER_URL'] || 'https://github.com')
   }
 }

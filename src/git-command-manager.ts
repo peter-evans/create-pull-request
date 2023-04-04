@@ -72,14 +72,15 @@ export class GitCommandManager {
   async config(
     configKey: string,
     configValue: string,
-    globalConfig?: boolean
+    globalConfig?: boolean,
+    add?: boolean
   ): Promise<void> {
-    await this.exec([
-      'config',
-      globalConfig ? '--global' : '--local',
-      configKey,
-      configValue
-    ])
+    const args: string[] = ['config', globalConfig ? '--global' : '--local']
+    if (add) {
+      args.push('--add')
+    }
+    args.push(...[configKey, configValue])
+    await this.exec(args)
   }
 
   async configExists(
@@ -145,6 +146,10 @@ export class GitCommandManager {
     return output.stdout.trim().split(`${configKey} `)[1]
   }
 
+  getGitDirectory(): Promise<string> {
+    return this.revParse('--git-dir')
+  }
+
   getWorkingDirectory(): string {
     return this.workingDirectory
   }
@@ -208,6 +213,23 @@ export class GitCommandManager {
     args.push(ref)
     const output = await this.exec(args)
     return output.stdout.trim()
+  }
+
+  async stashPush(options?: string[]): Promise<boolean> {
+    const args = ['stash', 'push']
+    if (options) {
+      args.push(...options)
+    }
+    const output = await this.exec(args)
+    return output.stdout.trim() !== 'No local changes to save'
+  }
+
+  async stashPop(options?: string[]): Promise<void> {
+    const args = ['stash', 'pop']
+    if (options) {
+      args.push(...options)
+    }
+    await this.exec(args)
   }
 
   async status(options?: string[]): Promise<string> {

@@ -21,7 +21,7 @@ Create Pull Request action will:
 
 - [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
-- [Updating to v4](docs/updating.md)
+- [Updating to v5](docs/updating.md)
 
 ## Usage
 
@@ -31,10 +31,10 @@ Create Pull Request action will:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
 ```
 
-You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v4.x.x`
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v5.x.x`
 
 ### Workflow permissions
 
@@ -65,17 +65,18 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `push-to-fork` | A fork of the checked-out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
 | `body` | The body of the pull request. | `Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action` |
+| `body-path` | The path to a file containing the pull request body. Takes precedence over `body`. | |
 | `labels` | A comma or newline-separated list of labels. | |
 | `assignees` | A comma or newline-separated list of assignees (GitHub usernames). | |
 | `reviewers` | A comma or newline-separated list of reviewers (GitHub usernames) to request a review from. | |
-| `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) may be required. See [this issue](https://github.com/peter-evans/create-pull-request/issues/155). If using a GitHub App, refer to [Authenticating with GitHub App generated tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) for the proper permissions. | |
+| `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token), or equivalent [GitHub App permissions](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens), are required. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
 
 For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         env:
           https_proxy: http://<proxy_address>:<port>
 ```
@@ -95,7 +96,7 @@ Note that in order to read the step outputs the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
       - name: Check outputs
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
@@ -154,11 +155,11 @@ If there are files or directories you want to ignore you can simply add them to 
 
 You can control which files are committed with the `add-paths` input.
 Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax.
-All file changes that do not match one of the paths will be discarded.
+File changes that do not match one of the paths will be stashed and restored after the action has completed.
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           add-paths: |
             *.java
@@ -185,7 +186,7 @@ Note that the repository must be checked out on a branch with a remote, it won't
       - name: Uncommitted change
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
 ```
 
 ### Create a project card
@@ -195,7 +196,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
 
       - name: Create or Update Project Card
         if: ${{ steps.cpr.outputs.pull-request-number }}
@@ -230,7 +231,7 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v4
+        uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.PAT }}
           commit-message: Update report
@@ -252,8 +253,8 @@ jobs:
           assignees: peter-evans
           reviewers: peter-evans
           team-reviewers: |
-            owners
-            maintainers
+            developers
+            qa-team
           milestone: 1
           draft: false
 ```

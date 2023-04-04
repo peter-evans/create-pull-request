@@ -1,6 +1,23 @@
+## Updating from `v4` to `v5`
+
+### Behaviour changes
+
+- The action will no longer leave the local repository checked out on the pull request `branch`. Instead, it will leave the repository checked out on the branch or commit that it was when the action started.
+- When using `add-paths`, uncommitted changes will no longer be destroyed. They will be stashed and restored at the end of the action run.
+
+### What's new
+
+- Adds input `body-path`, the path to a file containing the pull request body.
+- At the end of the action run the local repository is now checked out on the branch or commit that it was when the action started.
+- Any uncommitted tracked or untracked changes are now stashed and restored at the end of the action run. Currently, this can only occur when using the `add-paths` input, which allows for changes to not be committed. Previously, any uncommitted changes would be destroyed.
+- The proxy implementation has been revised but is not expected to have any change in behaviour. It continues to support the standard environment variables `http_proxy`, `https_proxy` and `no_proxy`.
+- Now sets the git `safe.directory` configuration for the local repository path. The configuration is removed when the action completes. Fixes issue https://github.com/peter-evans/create-pull-request/issues/1170.
+- Now determines the git directory path using the `git rev-parse --git-dir` command. This allows users with custom repository configurations to use the action.
+- Improved handling of the `team-reviewers` input and associated errors.
+
 ## Updating from `v3` to `v4`
 
-### Breaking changes
+### Behaviour changes
 
 - The `add-paths` input no longer accepts `-A` as a valid value. When committing all new and modified files the `add-paths` input should be omitted.
 
@@ -14,7 +31,7 @@
 
 ## Updating from `v2` to `v3`
 
-### Breaking changes
+### Behaviour changes
 
 - The `author` input now defaults to the user who triggered the workflow run. This default is set via [action.yml](../action.yml) as `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>`, where `github.actor` is the GitHub user account associated with the run. For example, `peter-evans <peter-evans@users.noreply.github.com>`.
 
@@ -62,7 +79,7 @@
 
 ## Updating from `v1` to `v2`
 
-### Breaking changes
+### Behaviour changes
 
 - `v2` now expects repositories to be checked out with `actions/checkout@v2`
 
