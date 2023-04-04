@@ -169,6 +169,10 @@ export function fileExistsSync(path: string): boolean {
   return false
 }
 
+export function readFile(path: string): string {
+  return fs.readFileSync(path, 'utf-8')
+}
+
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 function hasErrorCode(error: any): error is {code: string} {
   return typeof (error && error.code) === 'string'

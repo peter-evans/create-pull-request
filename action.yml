@@ -54,6 +54,8 @@ inputs:
   body:
     description: 'The body of the pull request.'
     default: 'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
+  body-path:
+    description: 'The path to a file containing the pull request body. Takes precedence over `body`.'
   labels:
     description: 'A comma or newline separated list of labels.'
   assignees:

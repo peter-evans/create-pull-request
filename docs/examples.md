@@ -21,7 +21,6 @@
   - [Filtering push events](#filtering-push-events)
   - [Bypassing git hooks](#bypassing-git-hooks)
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
-  - [Setting the pull request body from a file](#setting-the-pull-request-body-from-a-file)
   - [Using a markdown template](#using-a-markdown-template)
   - [Debugging GitHub Actions](#debugging-github-actions)
 
@@ -558,25 +557,6 @@ Note that the step where output variables are defined must have an id.
         with:
           title: ${{ steps.vars.outputs.pr_title }}
           body: ${{ steps.vars.outputs.pr_body }}
-```
-
-### Setting the pull request body from a file
-
-This example shows how file content can be read into a variable and passed to the action.
-
-```yml
-      - id: get-pr-body
-        run: |
-          body=$(cat pr-body.txt)
-          delimiter="$(openssl rand -hex 8)"
-          echo "body<<$delimiter" >> $GITHUB_OUTPUT
-          echo "$body" >> $GITHUB_OUTPUT
-          echo "$delimiter" >> $GITHUB_OUTPUT
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          body: ${{ steps.get-pr-body.outputs.body }}
 ```
 
 ### Using a markdown template

@@ -327,6 +327,13 @@ function createPullRequest(inputs) {
             if (!inputs.token) {
                 throw new Error(`Input 'token' not supplied. Unable to continue.`);
             }
+            if (inputs.bodyPath) {
+                if (!utils.fileExistsSync(inputs.bodyPath)) {
+                    throw new Error(`File '${inputs.bodyPath}' does not exist.`);
+                }
+                // Update the body input with the contents of the file
+                inputs.body = utils.readFile(inputs.bodyPath);
+            }
             // Get the repository path
             const repoPath = utils.getRepoPath(inputs.path);
             // Create a git command manager
@@ -1207,6 +1214,7 @@ function run() {
                 pushToFork: core.getInput('push-to-fork'),
                 title: core.getInput('title'),
                 body: core.getInput('body'),
+                bodyPath: core.getInput('body-path'),
                 labels: utils.getInputAsArray('labels'),
                 assignees: utils.getInputAsArray('assignees'),
                 reviewers: utils.getInputAsArray('reviewers'),
@@ -1282,7 +1290,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getErrorMessage = exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.stripOrgPrefixFromTeams = exports.getStringAsArray = exports.getInputAsArray = void 0;
+exports.getErrorMessage = exports.readFile = exports.fileExistsSync = exports.parseDisplayNameEmail = exports.randomString = exports.secondsSinceEpoch = exports.getRemoteUrl = exports.getRemoteDetail = exports.getRepoPath = exports.stripOrgPrefixFromTeams = exports.getStringAsArray = exports.getInputAsArray = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
@@ -1407,6 +1415,10 @@ function fileExistsSync(path) {
     return false;
 }
 exports.fileExistsSync = fileExistsSync;
+function readFile(path) {
+    return fs.readFileSync(path, 'utf-8');
+}
+exports.readFile = readFile;
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 function hasErrorCode(error) {
     return typeof (error && error.code) === 'string';

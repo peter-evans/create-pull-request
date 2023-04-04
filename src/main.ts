@@ -20,6 +20,7 @@ async function run(): Promise<void> {
       pushToFork: core.getInput('push-to-fork'),
       title: core.getInput('title'),
       body: core.getInput('body'),
+      bodyPath: core.getInput('body-path'),
       labels: utils.getInputAsArray('labels'),
       assignees: utils.getInputAsArray('assignees'),
       reviewers: utils.getInputAsArray('reviewers'),

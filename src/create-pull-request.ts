@@ -24,6 +24,7 @@ export interface Inputs {
   pushToFork: string
   title: string
   body: string
+  bodyPath: string
   labels: string[]
   assignees: string[]
   reviewers: string[]
@@ -37,6 +38,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
   try {
     if (!inputs.token) {
       throw new Error(`Input 'token' not supplied. Unable to continue.`)
+    }
+    if (inputs.bodyPath) {
+      if (!utils.fileExistsSync(inputs.bodyPath)) {
+        throw new Error(`File '${inputs.bodyPath}' does not exist.`)
+      }
+      // Update the body input with the contents of the file
+      inputs.body = utils.readFile(inputs.bodyPath)
     }
 
     // Get the repository path
