@@ -68,8 +68,8 @@ jobs:
         uses: ./
         with:
           commit-message: '[CI] test ${{ matrix.target }}'
-          committer: GitHub <noreply@github.com>
           author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>
+          committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           title: '[CI] test ${{ matrix.target }}'
           body: |
             - CI test case for target '${{ matrix.target }}'

@@ -20,7 +20,7 @@ inputs:
     description: >
       The committer name and email address in the format `Display Name <email@address.com>`.
       Defaults to the GitHub Actions bot user.
-    default: 'GitHub <noreply@github.com>'
+    default: 'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
   author:
     description: >
       The author name and email address in the format `Display Name <email@address.com>`.
