@@ -25,7 +25,7 @@ inputs:
     description: >
       The author name and email address in the format `Display Name <email@address.com>`.
       Defaults to the user who triggered the workflow run.
-    default: '${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>'
+    default: '${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>'
   signoff:
     description: 'Add `Signed-off-by` line by the committer at the end of the commit log message.'
     default: false
