@@ -80,7 +80,7 @@ jobs:
           branch: ci-test-${{ matrix.target }}-${{ github.sha }}
 
       - name: Close Pull
-        uses: peter-evans/close-pull@v2
+        uses: peter-evans/close-pull@v3
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           comment: '[CI] test ${{ matrix.target }}'
