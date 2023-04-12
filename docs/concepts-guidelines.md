@@ -236,6 +236,8 @@ Note that if you choose to use this method (not give the machine account `write`
           push-to-fork: machine-user/fork-of-repository
 ```
 
+Note: You can also combine `push-to-fork` with [creating pull requests in a remote repository](#creating-pull-requests-in-a-remote-repository).
+
 ### Authenticating with GitHub App generated tokens
 
 A GitHub App can be created for the sole purpose of generating tokens for use with GitHub actions.
