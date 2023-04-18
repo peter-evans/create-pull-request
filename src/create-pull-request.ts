@@ -31,6 +31,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  noVerify: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -192,7 +193,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths
+      inputs.addPaths,
+      inputs.noVerify
     )
     core.endGroup()
 

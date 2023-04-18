@@ -120,7 +120,8 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[]
+  addPaths: string[],
+  noVerify: boolean
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -159,6 +160,9 @@ export async function createOrUpdateBranch(
     const popts = ['-m', commitMessage]
     if (signoff) {
       popts.push('--signoff')
+    }
+    if (noVerify) {
+      popts.push('--no-verify')
     }
     const commitResult = await git.commit(popts, true)
     // 'nothing to commit' can occur when core.autocrlf is set to true
