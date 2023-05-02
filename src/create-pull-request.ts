@@ -46,6 +46,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       // Update the body input with the contents of the file
       inputs.body = utils.readFile(inputs.bodyPath)
     }
+    // 65536 characters is the maximum allowed for the pull request body.
+    if (inputs.body.length > 65536) {
+      core.warning(
+        `Pull request body is too long. Truncating to 65536 characters.`
+      )
+      inputs.body = inputs.body.substring(0, 65536)
+    }
 
     // Get the repository path
     const repoPath = utils.getRepoPath(inputs.path)
