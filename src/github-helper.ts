@@ -53,6 +53,7 @@ export class GitHubHelper {
         ...this.parseRepository(baseRepository),
         title: inputs.title,
         head: headBranch,
+        head_repo: headRepository,
         base: inputs.base,
         body: inputs.body,
         draft: inputs.draft
