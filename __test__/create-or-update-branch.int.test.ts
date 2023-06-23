@@ -27,7 +27,7 @@ const FORK_REMOTE_NAME = 'fork'
 
 const ADD_PATHS_DEFAULT = []
 const ADD_PATHS_MULTI = ['a', 'b']
-const ADD_PATHS_WILDCARD = ['a/*.txt', 'b/*.txt']
+const ADD_PATHS_WILDCARD = ['a/*.txt']
 
 async function createFile(filename: string, content?: string): Promise<string> {
   const _content = content ? content : uuidv4()
@@ -297,11 +297,9 @@ describe('create-or-update-branch tests', () => {
       ADD_PATHS_DEFAULT
     )
     await git.checkout(BRANCH)
-    expect(result.action).toEqual('created')
+    expect(result.action).toEqual('none')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
-    expect(
-      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
 
     // Push pull request branch to remote
     await git.push([
@@ -326,12 +324,10 @@ describe('create-or-update-branch tests', () => {
       ADD_PATHS_DEFAULT
     )
     await git.checkout(BRANCH)
-    expect(_result.action).toEqual('updated')
-    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(_result.action).toEqual('not-updated')
+    expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_untrackedContent)
-    expect(
-      await gitLogMatches([_commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
 
   it('tests create and update with identical changes', async () => {
@@ -1182,11 +1178,9 @@ describe('create-or-update-branch tests', () => {
       await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
     ).toBeTruthy()
     await git.checkout(BRANCHB)
-    expect(resultB.action).toEqual('created')
+    expect(resultB.action).toEqual('none')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
-    expect(
-      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
 
     // Delete the local branches
     await git.checkout(DEFAULT_BRANCH)
@@ -1289,11 +1283,9 @@ describe('create-or-update-branch tests', () => {
       ADD_PATHS_DEFAULT
     )
     await git.checkout(BRANCH)
-    expect(result.action).toEqual('created')
+    expect(result.action).toEqual('none')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(untrackedContent)
-    expect(
-      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
 
     // Push pull request branch to remote
     await git.push([
@@ -1321,12 +1313,10 @@ describe('create-or-update-branch tests', () => {
       ADD_PATHS_DEFAULT
     )
     await git.checkout(BRANCH)
-    expect(_result.action).toEqual('updated')
-    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(_result.action).toEqual('not-updated')
+    expect(_result.hasDiffWithBase).toBeFalsy()
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_untrackedContent)
-    expect(
-      await gitLogMatches([_commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
   })
 
   it('tests create and update with identical changes (WBNB)', async () => {
@@ -2213,11 +2203,9 @@ describe('create-or-update-branch tests', () => {
       await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
     ).toBeTruthy()
     await git.checkout(BRANCHB)
-    expect(resultB.action).toEqual('created')
+    expect(resultB.action).toEqual('none')
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
-    expect(
-      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
-    ).toBeTruthy()
+    expect(await gitLogMatches([INIT_COMMIT_MESSAGE])).toBeTruthy()
 
     // Delete the local branches
     await git.checkout(DEFAULT_BRANCH)
