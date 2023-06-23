@@ -20,6 +20,7 @@ cd /git/local/test-base
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 echo "#test-base" > README.md
+echo "b/" > .gitignore
 git add .
 git commit -m "initial commit"
 git push -u
