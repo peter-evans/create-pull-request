@@ -53,7 +53,7 @@
     "jest-environment-jsdom": "^29.5.0",
     "js-yaml": "^4.1.0",
     "prettier": "^2.8.8",
-    "ts-jest": "^29.1.0",
+    "ts-jest": "^29.1.1",
     "typescript": "^4.9.5"
   }
 }
