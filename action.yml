@@ -71,6 +71,12 @@ inputs:
   draft:
     description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
+  retry-attempts:
+    description: 'Number of times throttled attempts should be retried before failing'
+    default: 10
+  minimum-retry-after:
+    description: 'Minimum time in seconds to wait before retry'
+    default: 60
 outputs:
   pull-request-number:
     description: 'The pull request number'

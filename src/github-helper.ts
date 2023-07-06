@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Octokit, OctokitOptions} from './octokit-client'
@@ -20,12 +21,38 @@ interface Pull {
 export class GitHubHelper {
   private octokit: InstanceType<typeof Octokit>
 
-  constructor(token: string) {
-    const options: OctokitOptions = {}
-    if (token) {
-      options.auth = `${token}`
+  constructor(inputs: Inputs) {
+    const options: OctokitOptions = {
+      throttle: {
+        onRateLimit: (retryAfter, options, octokit, retryCount) => {
+          octokit.log.warn(
+            // @ts-ignore
+            `Request quota exhausted for request ${options.method} ${options.url}`
+          )
+          if (retryCount < inputs.retryAttempts) {
+            octokit.log.info(
+              // @ts-ignore
+              `retrying request ${options.method} ${options.url} after ${retryAfter} seconds`
+            )
+            return true
+          }
+        },
+        onSecondaryRateLimit: (retryAfter, options, octokit, retryCount) => {
+          if (retryCount < 3) {
+            octokit.log.info(
+              // @ts-ignore
+              `retrying request ${options.method} ${options.url} after ${retryAfter} seconds`
+            )
+            return true
+          }
+        }
+      }
+    }
+    if (inputs.token) {
+      options.auth = `${inputs.token}`
     }
     options.baseUrl = process.env['GITHUB_API_URL'] || 'https://api.github.com'
+
     this.octokit = new Octokit(options)
   }
 

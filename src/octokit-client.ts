@@ -1,4 +1,5 @@
 import {Octokit as Core} from '@octokit/core'
+import {throttling} from '@octokit/plugin-throttling'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
 import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods'
 import {HttpsProxyAgent} from 'https-proxy-agent'
@@ -9,7 +10,8 @@ export {OctokitOptions} from '@octokit/core/dist-types/types'
 export const Octokit = Core.plugin(
   paginateRest,
   restEndpointMethods,
-  autoProxyAgent
+  autoProxyAgent,
+  throttling
 )
 
 // Octokit plugin to support the standard environment variables http_proxy, https_proxy and no_proxy
