@@ -306,12 +306,12 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
     steps:
       - uses: actions/checkout@v3
 
-      - uses: crazy-max/ghaction-import-gpg@v3
+      - uses: crazy-max/ghaction-import-gpg@v5
         with:
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
-          git-user-signingkey: true
-          git-commit-gpgsign: true
+          git_user_signingkey: true
+          git_commit_gpgsign: true
 
       # Make changes to pull request here
 
