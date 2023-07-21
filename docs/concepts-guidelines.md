@@ -306,7 +306,7 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
     steps:
       - uses: actions/checkout@v3
 
-      - uses: crazy-max/ghaction-import-gpg@v3
+      - uses: crazy-max/ghaction-import-gpg@v5
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
