@@ -654,9 +654,7 @@ class GitAuthHelper {
             if (this.gitConfigPath.length === 0) {
                 this.gitConfigPath = yield this.git.getGitPath('config');
             }
-            console.log(this.gitConfigPath);
             let content = (yield fs.promises.readFile(this.gitConfigPath)).toString();
-            console.log(content);
             const index = content.indexOf(find);
             if (index < 0 || index != content.lastIndexOf(find)) {
                 throw new Error(`Unable to replace '${find}' in ${this.gitConfigPath}`);
@@ -1413,15 +1411,19 @@ function fileExistsSync(path) {
     if (!path) {
         throw new Error("Arg 'path' must not be empty");
     }
+    const fd = fs.openSync(path, 'r');
     let stats;
     try {
-        stats = fs.statSync(path);
+        stats = fs.fstatSync(fd);
     }
     catch (error) {
         if (hasErrorCode(error) && error.code === 'ENOENT') {
             return false;
         }
         throw new Error(`Encountered an error when checking whether path '${path}' exists: ${getErrorMessage(error)}`);
+    }
+    finally {
+        fs.closeSync(fd);
     }
     if (!stats.isDirectory()) {
         return true;
