@@ -558,7 +558,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitAuthHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
-const path = __importStar(__nccwpck_require__(1017));
 const url_1 = __nccwpck_require__(7310);
 const utils = __importStar(__nccwpck_require__(918));
 class GitAuthHelper {
@@ -653,10 +652,11 @@ class GitAuthHelper {
     gitConfigStringReplace(find, replace) {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.gitConfigPath.length === 0) {
-                const gitDir = yield this.git.getGitDirectory();
-                this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config');
+                this.gitConfigPath = yield this.git.getGitPath('config');
             }
+            console.log(this.gitConfigPath);
             let content = (yield fs.promises.readFile(this.gitConfigPath)).toString();
+            console.log(content);
             const index = content.indexOf(find);
             if (index < 0 || index != content.lastIndexOf(find)) {
                 throw new Error(`Unable to replace '${find}' in ${this.gitConfigPath}`);
@@ -832,6 +832,15 @@ class GitCommandManager {
     }
     getGitDirectory() {
         return this.revParse('--git-dir');
+    }
+    getGitPath(path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['rev-parse', '--git-path'];
+            if (path)
+                args.push(path);
+            const output = yield this.exec(args);
+            return output.stdout.trim();
+        });
     }
     getWorkingDirectory() {
         return this.workingDirectory;

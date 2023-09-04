@@ -150,6 +150,13 @@ export class GitCommandManager {
     return this.revParse('--git-dir')
   }
 
+  async getGitPath(path?: string): Promise<string> {
+    const args = ['rev-parse', '--git-path']
+    if (path) args.push(path)
+    const output = await this.exec(args)
+    return output.stdout.trim()
+  }
+
   getWorkingDirectory(): string {
     return this.workingDirectory
   }

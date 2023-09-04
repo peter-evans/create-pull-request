@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
 import {GitCommandManager} from './git-command-manager'
-import * as path from 'path'
 import {URL} from 'url'
 import * as utils from './utils'
 
@@ -133,8 +132,7 @@ export class GitAuthHelper {
     replace: string
   ): Promise<void> {
     if (this.gitConfigPath.length === 0) {
-      const gitDir = await this.git.getGitDirectory()
-      this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config')
+      this.gitConfigPath = await this.git.getGitPath('config')
     }
     let content = (await fs.promises.readFile(this.gitConfigPath)).toString()
     const index = content.indexOf(find)
