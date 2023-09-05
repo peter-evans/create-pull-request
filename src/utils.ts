@@ -147,10 +147,9 @@ export function fileExistsSync(path: string): boolean {
     throw new Error("Arg 'path' must not be empty")
   }
 
-  const fd = fs.openSync(path, 'r')
   let stats: fs.Stats
   try {
-    stats = fs.fstatSync(fd)
+    stats = fs.statSync(fs.realpathSync(path))
   } catch (error) {
     if (hasErrorCode(error) && error.code === 'ENOENT') {
       return false
@@ -161,8 +160,6 @@ export function fileExistsSync(path: string): boolean {
         error
       )}`
     )
-  } finally {
-    fs.closeSync(fd)
   }
 
   if (!stats.isDirectory()) {
