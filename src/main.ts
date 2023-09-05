@@ -32,6 +32,7 @@ async function run(): Promise<void> {
 
     await createPullRequest(inputs)
   } catch (error) {
+    console.error(error)
     core.setFailed(utils.getErrorMessage(error))
   }
 }
