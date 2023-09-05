@@ -83,9 +83,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.info(
         `Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`
       )
-      const parentRepository = await githubHelper.getRepositoryParent(
-        branchRepository
-      )
+      const parentRepository =
+        await githubHelper.getRepositoryParent(branchRepository)
       if (parentRepository != baseRemote.repository) {
         throw new Error(
           `Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`
