@@ -500,6 +500,11 @@ function createPullRequest(inputs) {
             }
         }
         catch (error) {
+            if (error instanceof Error) {
+                core.error(error);
+                if (error.stack)
+                    core.error(error.stack);
+            }
             core.setFailed(utils.getErrorMessage(error));
         }
         finally {
@@ -713,8 +718,6 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitCommandManager = void 0;
 const exec = __importStar(__nccwpck_require__(1514));
 const io = __importStar(__nccwpck_require__(7436));
-const utils = __importStar(__nccwpck_require__(918));
-const path = __importStar(__nccwpck_require__(1017));
 const tagsRefSpec = '+refs/tags/*:refs/tags/*';
 class GitCommandManager {
     constructor(workingDirectory, gitPath) {
@@ -798,7 +801,7 @@ class GitCommandManager {
                 args.push('--no-tags');
             }
             args.push('--progress', '--no-recurse-submodules');
-            if (utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
+            if (yield this.isShallow()) {
                 args.push('--unshallow');
             }
             if (options) {
@@ -842,6 +845,12 @@ class GitCommandManager {
     }
     getWorkingDirectory() {
         return this.workingDirectory;
+    }
+    isShallow() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield this.exec(['rev-parse', '--is-shallow-repository']);
+            return result.stdout.trim() === 'true';
+        });
     }
     hasDiff(options) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -1238,6 +1247,11 @@ function run() {
             yield (0, create_pull_request_1.createPullRequest)(inputs);
         }
         catch (error) {
+            if (error instanceof Error) {
+                core.error(error);
+                if (error.stack)
+                    core.error(error.stack);
+            }
             core.setFailed(utils.getErrorMessage(error));
         }
     });
@@ -1411,19 +1425,17 @@ function fileExistsSync(path) {
     if (!path) {
         throw new Error("Arg 'path' must not be empty");
     }
-    const fd = fs.openSync(path, 'r');
+    core.info(path);
+    core.info(fs.realpathSync(path));
     let stats;
     try {
-        stats = fs.fstatSync(fd);
+        stats = fs.statSync(fs.realpathSync(path));
     }
     catch (error) {
         if (hasErrorCode(error) && error.code === 'ENOENT') {
             return false;
         }
         throw new Error(`Encountered an error when checking whether path '${path}' exists: ${getErrorMessage(error)}`);
-    }
-    finally {
-        fs.closeSync(fd);
     }
     if (!stats.isDirectory()) {
         return true;

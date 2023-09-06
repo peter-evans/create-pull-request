@@ -161,8 +161,8 @@ export class GitCommandManager {
   }
 
   async isShallow(): Promise<boolean> {
-    const result = await this.revParse('', ['--is-shallow-repository'])
-    return result === 'true'
+    const result = await this.exec(['rev-parse', '--is-shallow-repository'])
+    return result.stdout.trim() === 'true'
   }
 
   async hasDiff(options?: string[]): Promise<boolean> {
