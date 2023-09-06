@@ -147,8 +147,8 @@ export function fileExistsSync(path: string): boolean {
     throw new Error("Arg 'path' must not be empty")
   }
 
-  console.log(path)
-  console.log(fs.realpathSync(path))
+  core.info(path)
+  core.info(fs.realpathSync(path))
 
   let stats: fs.Stats
   try {
