@@ -32,10 +32,6 @@ async function run(): Promise<void> {
 
     await createPullRequest(inputs)
   } catch (error) {
-    if (error instanceof Error) {
-      core.error(error)
-      if (error.stack) core.error(error.stack)
-    }
     core.setFailed(utils.getErrorMessage(error))
   }
 }
