@@ -1,8 +1,5 @@
 import * as exec from '@actions/exec'
 import * as io from '@actions/io'
-import * as utils from './utils'
-import * as path from 'path'
-import { realpathSync } from 'fs'
 
 const tagsRefSpec = '+refs/tags/*:refs/tags/*'
 
