@@ -114,11 +114,7 @@ export class GitCommandManager {
     }
 
     args.push('--progress', '--no-recurse-submodules')
-    if (
-      utils.fileExistsSync(
-        realpathSync(path.join(this.workingDirectory, '.git', 'shallow'))
-      )
-    ) {
+    if (await this.isShallow()) {
       args.push('--unshallow')
     }
 
@@ -162,6 +158,11 @@ export class GitCommandManager {
 
   getWorkingDirectory(): string {
     return this.workingDirectory
+  }
+
+  async isShallow(): Promise<boolean> {
+    const result = await this.revParse('', ['--is-shallow-repository'])
+    return result === 'true'
   }
 
   async hasDiff(options?: string[]): Promise<boolean> {
