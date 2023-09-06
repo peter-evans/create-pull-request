@@ -2,6 +2,7 @@ import * as exec from '@actions/exec'
 import * as io from '@actions/io'
 import * as utils from './utils'
 import * as path from 'path'
+import { realpathSync } from 'fs'
 
 const tagsRefSpec = '+refs/tags/*:refs/tags/*'
 
@@ -114,7 +115,9 @@ export class GitCommandManager {
 
     args.push('--progress', '--no-recurse-submodules')
     if (
-      utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))
+      utils.fileExistsSync(
+        realpathSync(path.join(this.workingDirectory, '.git', 'shallow'))
+      )
     ) {
       args.push('--unshallow')
     }
