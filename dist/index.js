@@ -500,11 +500,6 @@ function createPullRequest(inputs) {
             }
         }
         catch (error) {
-            if (error instanceof Error) {
-                core.error(error);
-                if (error.stack)
-                    core.error(error.stack);
-            }
             core.setFailed(utils.getErrorMessage(error));
         }
         finally {
@@ -1247,11 +1242,6 @@ function run() {
             yield (0, create_pull_request_1.createPullRequest)(inputs);
         }
         catch (error) {
-            if (error instanceof Error) {
-                core.error(error);
-                if (error.stack)
-                    core.error(error.stack);
-            }
             core.setFailed(utils.getErrorMessage(error));
         }
     });
@@ -1425,8 +1415,6 @@ function fileExistsSync(path) {
     if (!path) {
         throw new Error("Arg 'path' must not be empty");
     }
-    core.info(path);
-    core.info(fs.realpathSync(path));
     let stats;
     try {
         stats = fs.statSync(fs.realpathSync(path));
