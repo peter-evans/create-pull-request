@@ -147,7 +147,7 @@ export class GitCommandManager {
   }
 
   async getGitPath(path?: string): Promise<string> {
-    const args = ['rev-parse', '--git-path']
+    const args = ['rev-parse', '--path-format=absolute', '--git-path']
     if (path) args.push(path)
     const output = await this.exec(args)
     return output.stdout.trim()

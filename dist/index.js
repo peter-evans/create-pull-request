@@ -831,7 +831,7 @@ class GitCommandManager {
     }
     getGitPath(path) {
         return __awaiter(this, void 0, void 0, function* () {
-            const args = ['rev-parse', '--git-path'];
+            const args = ['rev-parse', '--path-format=absolute', '--git-path'];
             if (path)
                 args.push(path);
             const output = yield this.exec(args);
