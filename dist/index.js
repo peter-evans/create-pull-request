@@ -376,7 +376,7 @@ function createPullRequest(inputs) {
             // Configure auth
             if (baseRemote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
-                yield gitAuthHelper.configureToken(inputs.token);
+                yield gitAuthHelper.configureToken(inputs.gitToken);
                 core.endGroup();
             }
             core.startGroup('Checking the base repository state');
@@ -1206,6 +1206,7 @@ function run() {
         try {
             const inputs = {
                 token: core.getInput('token'),
+                gitToken: core.getInput('git-token'),
                 path: core.getInput('path'),
                 addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
@@ -1228,6 +1229,9 @@ function run() {
                 draft: core.getBooleanInput('draft')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
+            if (!inputs.gitToken) {
+                inputs.gitToken = inputs.token;
+            }
             yield (0, create_pull_request_1.createPullRequest)(inputs);
         }
         catch (error) {

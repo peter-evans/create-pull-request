@@ -4,6 +4,10 @@ inputs:
   token:
     description: 'GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)'
     default: ${{ github.token }}
+  git-token:
+    description: >
+      The Personal Access Token (PAT) that the action will use for git operations.
+      Defaults to the value of `token`.
   path:
     description: >
       Relative path under $GITHUB_WORKSPACE to the repository.

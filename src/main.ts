@@ -7,6 +7,7 @@ async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
       token: core.getInput('token'),
+      gitToken: core.getInput('git-token'),
       path: core.getInput('path'),
       addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),
@@ -29,6 +30,10 @@ async function run(): Promise<void> {
       draft: core.getBooleanInput('draft')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
+
+    if (!inputs.gitToken) {
+      inputs.gitToken = inputs.token
+    }
 
     await createPullRequest(inputs)
   } catch (error) {

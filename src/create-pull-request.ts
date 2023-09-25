@@ -11,6 +11,7 @@ import * as utils from './utils'
 
 export interface Inputs {
   token: string
+  gitToken: string
   path: string
   addPaths: string[]
   commitMessage: string
@@ -106,7 +107,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Configure auth
     if (baseRemote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
-      await gitAuthHelper.configureToken(inputs.token)
+      await gitAuthHelper.configureToken(inputs.gitToken)
       core.endGroup()
     }
 
