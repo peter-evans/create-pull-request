@@ -84,11 +84,22 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.info(
         `Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`
       )
-      const parentRepository =
+      const baseParentRepository = await githubHelper.getRepositoryParent(
+        baseRemote.repository
+      )
+      const branchParentRepository =
         await githubHelper.getRepositoryParent(branchRepository)
-      if (parentRepository != baseRemote.repository) {
+      if (branchParentRepository == null) {
         throw new Error(
-          `Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`
+          `Repository '${branchRepository}' is not a fork. Unable to continue.`
+        )
+      }
+      if (
+        branchParentRepository != baseRemote.repository &&
+        baseParentRepository != branchParentRepository
+      ) {
+        throw new Error(
+          `Repository '${branchRepository}' is not a fork of '${baseRemote.repository}', nor are they siblings. Unable to continue.`
         )
       }
       // Add a remote for the fork
