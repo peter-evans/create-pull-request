@@ -101,14 +101,12 @@ export class GitHubHelper {
     }
   }
 
-  async getRepositoryParent(headRepository: string): Promise<string> {
+  async getRepositoryParent(headRepository: string): Promise<string | null> {
     const {data: headRepo} = await this.octokit.rest.repos.get({
       ...this.parseRepository(headRepository)
     })
     if (!headRepo.parent) {
-      throw new Error(
-        `Repository '${headRepository}' is not a fork. Unable to continue.`
-      )
+      return null
     }
     return headRepo.parent.full_name
   }
