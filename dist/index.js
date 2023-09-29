@@ -363,9 +363,14 @@ function createPullRequest(inputs) {
             if (inputs.pushToFork) {
                 // Check if the supplied fork is really a fork of the base
                 core.info(`Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`);
-                const parentRepository = yield githubHelper.getRepositoryParent(branchRepository);
-                if (parentRepository != baseRemote.repository) {
-                    throw new Error(`Repository '${branchRepository}' is not a fork of '${baseRemote.repository}'. Unable to continue.`);
+                const baseParentRepository = yield githubHelper.getRepositoryParent(baseRemote.repository);
+                const branchParentRepository = yield githubHelper.getRepositoryParent(branchRepository);
+                if (branchParentRepository == null) {
+                    throw new Error(`Repository '${branchRepository}' is not a fork. Unable to continue.`);
+                }
+                if (branchParentRepository != baseRemote.repository &&
+                    baseParentRepository != branchParentRepository) {
+                    throw new Error(`Repository '${branchRepository}' is not a fork of '${baseRemote.repository}', nor are they siblings. Unable to continue.`);
                 }
                 // Add a remote for the fork
                 const remoteUrl = utils.getRemoteUrl(baseRemote.protocol, baseRemote.hostname, branchRepository);
@@ -1104,7 +1109,7 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             const { data: headRepo } = yield this.octokit.rest.repos.get(Object.assign({}, this.parseRepository(headRepository)));
             if (!headRepo.parent) {
-                throw new Error(`Repository '${headRepository}' is not a fork. Unable to continue.`);
+                return null;
             }
             return headRepo.parent.full_name;
         });
