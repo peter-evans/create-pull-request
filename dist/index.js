@@ -337,7 +337,10 @@ function createPullRequest(inputs) {
             // 65536 characters is the maximum allowed for the pull request body.
             if (inputs.body.length > 65536) {
                 core.warning(`Pull request body is too long. Truncating to 65536 characters.`);
-                inputs.body = inputs.body.substring(0, 65536);
+                const truncateWarning = '...*[Pull request body truncated]*';
+                inputs.body =
+                    inputs.body.substring(0, 65536 - truncateWarning.length) +
+                        truncateWarning;
             }
             // Get the repository path
             const repoPath = utils.getRepoPath(inputs.path);

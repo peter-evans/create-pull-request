@@ -52,7 +52,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.warning(
         `Pull request body is too long. Truncating to 65536 characters.`
       )
-      inputs.body = inputs.body.substring(0, 65536)
+      const truncateWarning = '...*[Pull request body truncated]*'
+      inputs.body =
+        inputs.body.substring(0, 65536 - truncateWarning.length) +
+        truncateWarning
     }
 
     // Get the repository path
