@@ -4,6 +4,7 @@
   - [Create using an existing branch as the PR branch](#create-using-an-existing-branch-as-the-pr-branch)
 - [Frequently requested features](#use-case-create-a-pull-request-to-update-x-on-release)
   - [Disable force updates to existing PR branches](#disable-force-updates-to-existing-pr-branches)
+  - [Add a no-verify option to bypass git hooks](#add-a-no-verify-option-to-bypass-git-hooks)
 
 ## Troubleshooting
 
@@ -25,3 +26,23 @@ If you want to avoid this behaviour there are some things that might work depend
 - Check if the pull request branch exists in a separate step before the action runs and act accordingly.
 - Use the [alternative strategy](https://github.com/peter-evans/create-pull-request#alternative-strategy---always-create-a-new-pull-request-branch) of always creating a new PR that won't be updated by the action.
 - [Create your own commits](https://github.com/peter-evans/create-pull-request#create-your-own-commits) each time the action is created/updated.
+
+### Add a no-verify option to bypass git hooks
+
+Presently, there is no plan to add this feature to the action.
+The reason is that I'm trying very hard to keep the interface for this action to a minimum to prevent it becoming bloated and complicated.
+
+Git hooks must be installed after a repository is checked out in order for them to work.
+So the straightforward solution is to just not install them during the workflow where this action is used.
+
+- If hooks are automatically enabled by a framework, use an option provided by the framework to disable them. For example, for Husky users, they can be disabled with the `--ignore-scripts` flag.
+- If hooks are installed in a script, then add a condition checking if the `CI` environment variable exists.
+   ```sh
+   #!/bin/sh
+
+   [ -n "$CI" ] && exit 0
+   ```
+- If preventing the hooks installing is problematic, just delete them in a workflow step before the action runs.
+   ```yml
+   - run: rm .git/hooks -rf
+   ```
