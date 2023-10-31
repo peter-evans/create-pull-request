@@ -36,7 +36,7 @@ For each [event type](https://docs.github.com/en/actions/reference/events-that-t
 The default can be overridden by specifying a `ref` on checkout.
 
 ```yml
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: develop
 ```
@@ -73,7 +73,7 @@ jobs:
   example:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 ```
 
 There may be use cases where it makes sense to execute the workflow on a branch that is not the base of the pull request. In these cases, the base branch can be specified with the `base` action input. The action will attempt to rebase changes made during the workflow on to the actual base.
@@ -173,7 +173,7 @@ This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js cod
 Checking out a branch from a different repository from where the workflow is executing will make *that repository* the target for the created pull request. In this case, a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) is required.
 
 ```yml
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.PAT }}
           repository: owner/repo
@@ -200,7 +200,7 @@ How to use SSH (deploy keys) with create-pull-request action:
 
 ```yml
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
@@ -226,7 +226,7 @@ Note that if you choose to use this method (not give the machine account `write`
 6. As shown in the following example workflow, set the `push-to-fork` input to the full repository name of the fork.
 
 ```yaml
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Make changes to pull request here
 
@@ -264,7 +264,7 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 
 ```yaml
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: tibdex/github-app-token@v1
         id: generate-token
@@ -304,7 +304,7 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
 
 ```yaml
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: crazy-max/ghaction-import-gpg@v5
         with:
@@ -341,7 +341,7 @@ jobs:
       - name: Install dependencies
         run: apk --no-cache add git
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Make changes to pull request here
 
@@ -364,7 +364,7 @@ jobs:
           add-apt-repository -y ppa:git-core/ppa
           apt-get install -y git
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       # Make changes to pull request here
 
