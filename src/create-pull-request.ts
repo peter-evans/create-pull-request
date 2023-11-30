@@ -35,7 +35,7 @@ export interface Inputs {
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
-  let gitAuthHelper
+  let gitAuthHelper, git
   try {
     if (!inputs.token) {
       throw new Error(`Input 'token' not supplied. Unable to continue.`)
@@ -61,7 +61,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Get the repository path
     const repoPath = utils.getRepoPath(inputs.path)
     // Create a git command manager
-    const git = await GitCommandManager.create(repoPath)
+    git = await GitCommandManager.create(repoPath)
 
     // Save and unset the extraheader auth config if it exists
     core.startGroup('Prepare git configuration')
@@ -283,6 +283,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
   } finally {
     // Remove auth and restore persisted auth config if it existed
     core.startGroup('Restore git configuration')
+    if (inputs.pushToFork) {
+      await git.exec(['remote', 'rm', 'fork'])
+    }
     await gitAuthHelper.removeAuth()
     await gitAuthHelper.restorePersistedAuth()
     await gitAuthHelper.removeSafeDirectory()
