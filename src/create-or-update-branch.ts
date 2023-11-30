@@ -180,9 +180,12 @@ export async function createOrUpdateBranch(
     if (branchRemoteName == 'fork') {
       // If pushing to a fork we must fetch with 'unshallow' to avoid the following error on git push
       // ! [remote rejected] HEAD -> tests/push-branch-to-fork (shallow update not allowed)
-      await git.fetch([`${workingBase}:${workingBase}`], baseRemote, [
-        '--force'
-      ])
+      await git.fetch(
+        [`${workingBase}:${workingBase}`],
+        baseRemote,
+        ['--force'],
+        true
+      )
     } else {
       // If the remote is 'origin' we can git reset
       await git.checkout(workingBase)
