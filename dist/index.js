@@ -171,9 +171,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             if (branchRemoteName == 'fork') {
                 // If pushing to a fork we must fetch with 'unshallow' to avoid the following error on git push
                 // ! [remote rejected] HEAD -> tests/push-branch-to-fork (shallow update not allowed)
-                yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, [
-                    '--force'
-                ]);
+                yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force'], true);
             }
             else {
                 // If the remote is 'origin' we can git reset
@@ -801,14 +799,15 @@ class GitCommandManager {
             return output.exitCode === 0;
         });
     }
-    fetch(refSpec, remoteName, options) {
+    fetch(refSpec, remoteName, options, unshallow = false) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['-c', 'protocol.version=2', 'fetch'];
             if (!refSpec.some(x => x === tagsRefSpec)) {
                 args.push('--no-tags');
             }
             args.push('--progress', '--no-recurse-submodules');
-            if (utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
+            if (unshallow &&
+                utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))) {
                 args.push('--unshallow');
             }
             if (options) {

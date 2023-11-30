@@ -105,7 +105,8 @@ export class GitCommandManager {
   async fetch(
     refSpec: string[],
     remoteName?: string,
-    options?: string[]
+    options?: string[],
+    unshallow = false
   ): Promise<void> {
     const args = ['-c', 'protocol.version=2', 'fetch']
     if (!refSpec.some(x => x === tagsRefSpec)) {
@@ -113,7 +114,9 @@ export class GitCommandManager {
     }
 
     args.push('--progress', '--no-recurse-submodules')
+
     if (
+      unshallow &&
       utils.fileExistsSync(path.join(this.workingDirectory, '.git', 'shallow'))
     ) {
       args.push('--unshallow')
