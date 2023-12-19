@@ -83,8 +83,6 @@ export class GitConfigHelper {
       '^(https?)://(?:.+@)?(.+?)/(.+/.+?)(\\.git)?$',
       'i'
     )
-    const sshUrlPattern = new RegExp('^git@(.+?):(.+/.+)\\.git$', 'i')
-
     const httpsMatch = remoteUrl.match(httpsUrlPattern)
     if (httpsMatch) {
       return {
@@ -94,12 +92,24 @@ export class GitConfigHelper {
       }
     }
 
+    const sshUrlPattern = new RegExp('^git@(.+?):(.+/.+)\\.git$', 'i')
     const sshMatch = remoteUrl.match(sshUrlPattern)
     if (sshMatch) {
       return {
         hostname: sshMatch[1],
         protocol: 'SSH',
         repository: sshMatch[2]
+      }
+    }
+
+    // Unauthenticated git protocol for integration tests only
+    const gitUrlPattern = new RegExp('^git://(.+?)/(.+/.+)\\.git$', 'i')
+    const gitMatch = remoteUrl.match(gitUrlPattern)
+    if (gitMatch) {
+      return {
+        hostname: gitMatch[1],
+        protocol: 'GIT',
+        repository: gitMatch[2]
       }
     }
 

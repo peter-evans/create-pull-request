@@ -68,6 +68,16 @@ describe('git-config-helper unit tests', () => {
     expect(remote3.repository).toEqual('peter-evans/create-pull-request')
   })
 
+  test('parseGitRemote successfully parses GIT remote URLs', async () => {
+    // Unauthenticated git protocol for integration tests only
+    const remote1 = GitConfigHelper.parseGitRemote(
+      'git://127.0.0.1/repos/test-base.git'
+    )
+    expect(remote1.hostname).toEqual('127.0.0.1')
+    expect(remote1.protocol).toEqual('GIT')
+    expect(remote1.repository).toEqual('repos/test-base')
+  })
+
   test('parseGitRemote fails to parse a remote URL', async () => {
     const remoteUrl = 'https://github.com/peter-evans'
     try {

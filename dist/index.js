@@ -929,7 +929,6 @@ class GitConfigHelper {
     }
     static parseGitRemote(remoteUrl) {
         const httpsUrlPattern = new RegExp('^(https?)://(?:.+@)?(.+?)/(.+/.+?)(\\.git)?$', 'i');
-        const sshUrlPattern = new RegExp('^git@(.+?):(.+/.+)\\.git$', 'i');
         const httpsMatch = remoteUrl.match(httpsUrlPattern);
         if (httpsMatch) {
             return {
@@ -938,12 +937,23 @@ class GitConfigHelper {
                 repository: httpsMatch[3]
             };
         }
+        const sshUrlPattern = new RegExp('^git@(.+?):(.+/.+)\\.git$', 'i');
         const sshMatch = remoteUrl.match(sshUrlPattern);
         if (sshMatch) {
             return {
                 hostname: sshMatch[1],
                 protocol: 'SSH',
                 repository: sshMatch[2]
+            };
+        }
+        // Unauthenticated git protocol for integration tests only
+        const gitUrlPattern = new RegExp('^git://(.+?)/(.+/.+)\\.git$', 'i');
+        const gitMatch = remoteUrl.match(gitUrlPattern);
+        if (gitMatch) {
+            return {
+                hostname: gitMatch[1],
+                protocol: 'GIT',
+                repository: gitMatch[2]
             };
         }
         throw new Error(`The format of '${remoteUrl}' is not a valid GitHub repository URL`);
