@@ -1,9 +1,9 @@
 import {GitCommandManager} from '../lib/git-command-manager'
 import {GitConfigHelper} from '../lib/git-config-helper'
 
-const REPO_PATH = '/git/local/test-base'
+const REPO_PATH = '/git/local/repos/test-base'
 
-const extraheaderConfigKey = 'http.https://github.com/.extraheader'
+const extraheaderConfigKey = 'http.https://127.0.0.1/.extraheader'
 
 describe('git-config-helper integration tests', () => {
   let git: GitCommandManager
@@ -11,22 +11,22 @@ describe('git-config-helper integration tests', () => {
 
   beforeAll(async () => {
     git = await GitCommandManager.create(REPO_PATH)
-    gitConfigHelper = await GitConfigHelper.create(git)
   })
 
   it('tests save and restore with no persisted auth', async () => {
-    await gitConfigHelper.savePersistedAuth()
-    await gitConfigHelper.restorePersistedAuth()
+    const gitConfigHelper = await GitConfigHelper.create(git)
+    await gitConfigHelper.close()
   })
 
   it('tests configure and removal of auth', async () => {
+    const gitConfigHelper = await GitConfigHelper.create(git)
     await gitConfigHelper.configureToken('github-token')
     expect(await git.configExists(extraheaderConfigKey)).toBeTruthy()
     expect(await git.getConfigValue(extraheaderConfigKey)).toEqual(
       'AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46Z2l0aHViLXRva2Vu'
     )
 
-    await gitConfigHelper.removeAuth()
+    await gitConfigHelper.close()
     expect(await git.configExists(extraheaderConfigKey)).toBeFalsy()
   })
 
@@ -34,37 +34,53 @@ describe('git-config-helper integration tests', () => {
     const extraheaderConfigValue = 'AUTHORIZATION: basic ***persisted-auth***'
     await git.config(extraheaderConfigKey, extraheaderConfigValue)
 
-    await gitConfigHelper.savePersistedAuth()
+    const gitConfigHelper = await GitConfigHelper.create(git)
 
     const exists = await git.configExists(extraheaderConfigKey)
     expect(exists).toBeFalsy()
 
-    await gitConfigHelper.restorePersistedAuth()
+    await gitConfigHelper.close()
 
     const configValue = await git.getConfigValue(extraheaderConfigKey)
     expect(configValue).toEqual(extraheaderConfigValue)
 
-    await gitConfigHelper.removeAuth()
+    const unset = await git.tryConfigUnset(
+      extraheaderConfigKey,
+      '^AUTHORIZATION:'
+    )
+    expect(unset).toBeTruthy()
+  })
+
+  it('tests not adding/removing the safe.directory config when it already exists', async () => {
+    await git.config('safe.directory', '/another-value', true, true)
+
+    const gitConfigHelper = await GitConfigHelper.create(git)
+
+    expect(
+      await git.configExists('safe.directory', '/another-value', true)
+    ).toBeTruthy()
+
+    await gitConfigHelper.close()
+
+    const unset = await git.tryConfigUnset(
+      'safe.directory',
+      '/another-value',
+      true
+    )
+    expect(unset).toBeTruthy()
   })
 
   it('tests adding and removing the safe.directory config', async () => {
-    await git.config('safe.directory', '/another-value', true, true)
-
-    await gitConfigHelper.removeSafeDirectory()
-    await gitConfigHelper.addSafeDirectory()
+    const gitConfigHelper = await GitConfigHelper.create(git)
 
     expect(
       await git.configExists('safe.directory', REPO_PATH, true)
     ).toBeTruthy()
 
-    await gitConfigHelper.addSafeDirectory()
-    await gitConfigHelper.removeSafeDirectory()
+    await gitConfigHelper.close()
 
     expect(
       await git.configExists('safe.directory', REPO_PATH, true)
     ).toBeFalsy()
-    expect(
-      await git.configExists('safe.directory', '/another-value', true)
-    ).toBeTruthy()
   })
 })
