@@ -6,7 +6,7 @@ import {
 } from './create-or-update-branch'
 import {GitHubHelper} from './github-helper'
 import {GitCommandManager} from './git-command-manager'
-import {GitAuthHelper} from './git-auth-helper'
+import {GitConfigHelper} from './git-config-helper'
 import * as utils from './utils'
 
 export interface Inputs {
@@ -35,48 +35,18 @@ export interface Inputs {
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
-  let gitAuthHelper, git
+  let gitConfigHelper, git
   try {
-    if (!inputs.token) {
-      throw new Error(`Input 'token' not supplied. Unable to continue.`)
-    }
-    if (inputs.bodyPath) {
-      if (!utils.fileExistsSync(inputs.bodyPath)) {
-        throw new Error(`File '${inputs.bodyPath}' does not exist.`)
-      }
-      // Update the body input with the contents of the file
-      inputs.body = utils.readFile(inputs.bodyPath)
-    }
-    // 65536 characters is the maximum allowed for the pull request body.
-    if (inputs.body.length > 65536) {
-      core.warning(
-        `Pull request body is too long. Truncating to 65536 characters.`
-      )
-      const truncateWarning = '...*[Pull request body truncated]*'
-      inputs.body =
-        inputs.body.substring(0, 65536 - truncateWarning.length) +
-        truncateWarning
-    }
-
-    // Get the repository path
-    const repoPath = utils.getRepoPath(inputs.path)
-    // Create a git command manager
-    git = await GitCommandManager.create(repoPath)
-
-    // Save and unset the extraheader auth config if it exists
     core.startGroup('Prepare git configuration')
-    gitAuthHelper = new GitAuthHelper(git)
-    await gitAuthHelper.addSafeDirectory()
-    await gitAuthHelper.savePersistedAuth()
+    const repoPath = utils.getRepoPath(inputs.path)
+    git = await GitCommandManager.create(repoPath)
+    gitConfigHelper = await GitConfigHelper.create(git)
     core.endGroup()
 
-    // Init the GitHub client
-    const githubHelper = new GitHubHelper(inputs.token)
-
     core.startGroup('Determining the base and head repositories')
-    // Determine the base repository from git config
-    const remoteUrl = await git.tryGetRemoteUrl()
-    const baseRemote = utils.getRemoteDetail(remoteUrl)
+    const baseRemote = gitConfigHelper.getGitRemote()
+    // Init the GitHub client
+    const githubHelper = new GitHubHelper(baseRemote.hostname, inputs.token)
     // Determine the head repository; the target for the pull request branch
     const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin'
     const branchRepository = inputs.pushToFork
@@ -121,7 +91,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Configure auth
     if (baseRemote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
-      await gitAuthHelper.configureToken(inputs.gitToken)
+      await gitConfigHelper.configureToken(inputs.gitToken)
       core.endGroup()
     }
 
@@ -281,14 +251,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
   } catch (error) {
     core.setFailed(utils.getErrorMessage(error))
   } finally {
-    // Remove auth and restore persisted auth config if it existed
     core.startGroup('Restore git configuration')
     if (inputs.pushToFork) {
       await git.exec(['remote', 'rm', 'fork'])
     }
-    await gitAuthHelper.removeAuth()
-    await gitAuthHelper.restorePersistedAuth()
-    await gitAuthHelper.removeSafeDirectory()
+    await gitConfigHelper.close()
     core.endGroup()
   }
 }

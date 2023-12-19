@@ -20,12 +20,16 @@ interface Pull {
 export class GitHubHelper {
   private octokit: InstanceType<typeof Octokit>
 
-  constructor(token: string) {
+  constructor(githubServerHostname: string, token: string) {
     const options: OctokitOptions = {}
     if (token) {
       options.auth = `${token}`
     }
-    options.baseUrl = process.env['GITHUB_API_URL'] || 'https://api.github.com'
+    if (githubServerHostname !== 'github.com') {
+      options.baseUrl = `https://${githubServerHostname}/api/v3`
+    } else {
+      options.baseUrl = 'https://api.github.com'
+    }
     this.octokit = new Octokit(options)
   }
 
