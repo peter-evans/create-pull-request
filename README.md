@@ -60,7 +60,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>` |
 | `signoff` | Add [`Signed-off-by`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff) line by the committer at the end of the commit log message. | `false` |
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
-| `delete-branch` | Delete the `branch` when closing pull requests, and when undeleted after merging. | `false` |
+| `delete-branch` | Delete the `branch` when closing pull requests, and when undeleted after merging. See [`delete-branch`](#delete-branch---on-next-run-after-delete) | `false` |
 | `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `push-to-fork` | A fork of the checked-out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
@@ -116,7 +116,7 @@ How the action behaves:
 - If there are changes (i.e. a diff exists with the checked-out base branch), the changes will be pushed to a new `branch` and a pull request created.
 - If there are no changes (i.e. no diff exists with the checked-out base branch), no pull request will be created and the action exits silently.
 - If a pull request already exists it will be updated if necessary. Local changes in the Actions workspace, or changes on the base branch, can cause an update. If no update is required the action exits silently.
-- If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the pull request branch and the base), the pull request is automatically closed. Additionally, if `delete-branch` is set to `true` the `branch` will be deleted.
+- If a pull request exists and new changes on the base branch make the pull request unnecessary (i.e. there is no longer a diff between the pull request branch and the base), the pull request is automatically closed. Additionally, if `delete-branch` is set to `true` the `branch` will be deleted. See [`delete-branch`](#delete-branch---on-next-run-after-delete)
 
 For further details about how the action works and usage guidelines, see [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md).
 
@@ -132,6 +132,16 @@ To use this strategy, set input `branch-suffix` with one of the following option
 - `timestamp` - Commits will be made to a branch suffixed by a timestamp. e.g. `create-pull-request/patch-1569322532`, `create-pull-request/patch-1569322552`
 
 - `short-commit-hash` - Commits will be made to a branch suffixed with the short SHA1 commit hash. e.g. `create-pull-request/patch-fcdfb59`, `create-pull-request/patch-394710b`
+
+#### delete-branch - On next run after delete
+
+The delete-branch feature doesn't delete branches immediately on merge.
+
+(It can't do that because it would require the merge to somehow trigger the action.)
+
+The intention of the feature is that when the action next runs it will delete branches that don't have an active pull request associated with it.
+
+If you want branches to be deleted immediately on merge then you should use GitHub's Automatically delete head branches feature in your repository settings.
 
 ### Controlling committed files
 
