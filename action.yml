@@ -34,8 +34,7 @@ inputs:
     default: 'create-pull-request/patch'
   delete-branch:
     description: >
-      Delete the `branch` when closing pull requests, and when undeleted after merging.
-      Recommend `true`.
+      Delete the `branch` if it doesn't have an active pull request associated with it.
     default: false
   branch-suffix:
     description: 'The branch suffix type when using the alternative branching strategy.'
