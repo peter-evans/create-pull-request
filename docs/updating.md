@@ -1,3 +1,23 @@
+## Updating from `v5` to `v6`
+
+### Behaviour changes
+
+- The default values for `author` and `committer` have changed. See "What's new" below for details. If you are overriding the default values you will not be affected by this change.
+- On completion, the action now removes the temporary git remote configuration it adds when using `push-to-fork`. This should not affect you unless you were using the temporary configuration for some other purpose after the action completes.
+
+### What's new
+
+- Updated runtime to Node.js 20
+  - The action now requires a minimum version of [v2.308.0](https://github.com/actions/runner/releases/tag/v2.308.0) for the Actions runner. Update self-hosted runners to v2.308.0 or later to ensure compatibility.
+- The default value for `author` has been changed to `${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>`. The change adds the `${{ github.actor_id }}+` prefix to the email address to align with GitHub's standard format for the author email address.
+- The default value for `committer` has been changed to `github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>`. This is to align with the default GitHub Actions bot user account.
+- Adds input `git-token`, the [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) that the action will use for git operations. This input defaults to the value of `token`. Use this input if you would like the action to use a different token for git operations than the one used for the GitHub API.
+- `push-to-fork` now supports pushing to sibling repositories in the same network.
+- Previously, when using `push-to-fork`, the action did not remove temporary git remote configuration it adds during execution. This has been fixed and the configuration is now removed when the action completes.
+- If the pull request body is truncated due to exceeding the maximum length, the action will now suffix the body with the message "...*[Pull request body truncated]*" to indicate that the body has been truncated.
+- The action now uses `--unshallow` only when necessary, rather than as a default argument of `git fetch`. This should improve performance, particularly for large git repositories with extensive commit history.
+- The action can now be executed on one GitHub server and create pull requests on a *different* GitHub server. Server products include GitHub hosted (github.com), GitHub Enterprise Server (GHES), and GitHub Enterprise Cloud (GHEC). For example, the action can be executed on GitHub hosted and create pull requests on a GHES or GHEC instance.
+
 ## Updating from `v4` to `v5`
 
 ### Behaviour changes
