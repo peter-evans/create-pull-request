@@ -8,7 +8,7 @@ if [[ "$(docker images -q $IMAGE 2> /dev/null)" == "" || $ARG1 == "build" ]]; th
     echo "Building Docker image $IMAGE ..."
 
     cat > Dockerfile << EOF
-FROM node:16-alpine
+FROM node:20-alpine
 RUN apk --no-cache add git git-daemon
 RUN npm install jest jest-environment-jsdom --global
 WORKDIR /cpr

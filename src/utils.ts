@@ -41,53 +41,6 @@ export function getRepoPath(relativePath?: string): string {
   return repoPath
 }
 
-interface RemoteDetail {
-  hostname: string
-  protocol: string
-  repository: string
-}
-
-export function getRemoteDetail(remoteUrl: string): RemoteDetail {
-  // Parse the protocol and github repository from a URL
-  // e.g. HTTPS, peter-evans/create-pull-request
-  const githubUrl = process.env['GITHUB_SERVER_URL'] || 'https://github.com'
-
-  const githubServerMatch = githubUrl.match(/^https?:\/\/(.+)$/i)
-  if (!githubServerMatch) {
-    throw new Error('Could not parse GitHub Server name')
-  }
-
-  const hostname = githubServerMatch[1]
-
-  const httpsUrlPattern = new RegExp(
-    '^https?://.*@?' + hostname + '/(.+/.+?)(\\.git)?$',
-    'i'
-  )
-  const sshUrlPattern = new RegExp('^git@' + hostname + ':(.+/.+)\\.git$', 'i')
-
-  const httpsMatch = remoteUrl.match(httpsUrlPattern)
-  if (httpsMatch) {
-    return {
-      hostname,
-      protocol: 'HTTPS',
-      repository: httpsMatch[1]
-    }
-  }
-
-  const sshMatch = remoteUrl.match(sshUrlPattern)
-  if (sshMatch) {
-    return {
-      hostname,
-      protocol: 'SSH',
-      repository: sshMatch[1]
-    }
-  }
-
-  throw new Error(
-    `The format of '${remoteUrl}' is not a valid GitHub repository URL`
-  )
-}
-
 export function getRemoteUrl(
   protocol: string,
   hostname: string,

@@ -5,22 +5,42 @@ import * as path from 'path'
 import {URL} from 'url'
 import * as utils from './utils'
 
-export class GitAuthHelper {
+interface GitRemote {
+  hostname: string
+  protocol: string
+  repository: string
+}
+
+export class GitConfigHelper {
   private git: GitCommandManager
   private gitConfigPath = ''
   private workingDirectory: string
   private safeDirectoryConfigKey = 'safe.directory'
   private safeDirectoryAdded = false
-  private extraheaderConfigKey: string
+  private remoteUrl = ''
+  private extraheaderConfigKey = ''
   private extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***'
   private extraheaderConfigValueRegex = '^AUTHORIZATION:'
   private persistedExtraheaderConfigValue = ''
 
-  constructor(git: GitCommandManager) {
+  private constructor(git: GitCommandManager) {
     this.git = git
     this.workingDirectory = this.git.getWorkingDirectory()
-    const serverUrl = this.getServerUrl()
-    this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
+  }
+
+  static async create(git: GitCommandManager): Promise<GitConfigHelper> {
+    const gitConfigHelper = new GitConfigHelper(git)
+    await gitConfigHelper.addSafeDirectory()
+    await gitConfigHelper.fetchRemoteDetail()
+    await gitConfigHelper.savePersistedAuth()
+    return gitConfigHelper
+  }
+
+  async close(): Promise<void> {
+    // Remove auth and restore persisted auth config if it existed
+    await this.removeAuth()
+    await this.restorePersistedAuth()
+    await this.removeSafeDirectory()
   }
 
   async addSafeDirectory(): Promise<void> {
@@ -50,7 +70,57 @@ export class GitAuthHelper {
     }
   }
 
+  async fetchRemoteDetail(): Promise<void> {
+    this.remoteUrl = await this.git.tryGetRemoteUrl()
+  }
+
+  getGitRemote(): GitRemote {
+    return GitConfigHelper.parseGitRemote(this.remoteUrl)
+  }
+
+  static parseGitRemote(remoteUrl: string): GitRemote {
+    const httpsUrlPattern = new RegExp(
+      '^(https?)://(?:.+@)?(.+?)/(.+/.+?)(\\.git)?$',
+      'i'
+    )
+    const httpsMatch = remoteUrl.match(httpsUrlPattern)
+    if (httpsMatch) {
+      return {
+        hostname: httpsMatch[2],
+        protocol: 'HTTPS',
+        repository: httpsMatch[3]
+      }
+    }
+
+    const sshUrlPattern = new RegExp('^git@(.+?):(.+/.+)\\.git$', 'i')
+    const sshMatch = remoteUrl.match(sshUrlPattern)
+    if (sshMatch) {
+      return {
+        hostname: sshMatch[1],
+        protocol: 'SSH',
+        repository: sshMatch[2]
+      }
+    }
+
+    // Unauthenticated git protocol for integration tests only
+    const gitUrlPattern = new RegExp('^git://(.+?)/(.+/.+)\\.git$', 'i')
+    const gitMatch = remoteUrl.match(gitUrlPattern)
+    if (gitMatch) {
+      return {
+        hostname: gitMatch[1],
+        protocol: 'GIT',
+        repository: gitMatch[2]
+      }
+    }
+
+    throw new Error(
+      `The format of '${remoteUrl}' is not a valid GitHub repository URL`
+    )
+  }
+
   async savePersistedAuth(): Promise<void> {
+    const serverUrl = new URL(`https://${this.getGitRemote().hostname}`)
+    this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
     // Save and unset persisted extraheader credential in git config if it exists
     this.persistedExtraheaderConfigValue = await this.getAndUnset()
   }
@@ -143,9 +213,5 @@ export class GitAuthHelper {
     }
     content = content.replace(find, replace)
     await fs.promises.writeFile(this.gitConfigPath, content)
-  }
-
-  private getServerUrl(): URL {
-    return new URL(process.env['GITHUB_SERVER_URL'] || 'https://github.com')
   }
 }

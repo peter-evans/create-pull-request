@@ -8,7 +8,7 @@ import {GitCommandManager} from '../lib/git-command-manager'
 import * as path from 'path'
 import {v4 as uuidv4} from 'uuid'
 
-const REPO_PATH = '/git/local/test-base'
+const REPO_PATH = '/git/local/repos/test-base'
 const REMOTE_NAME = 'origin'
 
 const TRACKED_FILE = 'a/tracked-file.txt'
@@ -22,7 +22,7 @@ const INIT_COMMIT_MESSAGE = 'Add file to be a tracked file for tests'
 const BRANCH = 'tests/create-pull-request/patch'
 const BASE = DEFAULT_BRANCH
 
-const FORK_REMOTE_URL = 'git://127.0.0.1/test-fork.git'
+const FORK_REMOTE_URL = 'git://127.0.0.1/repos/test-fork.git'
 const FORK_REMOTE_NAME = 'fork'
 
 const ADD_PATHS_DEFAULT = []

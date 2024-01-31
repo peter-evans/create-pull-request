@@ -7,6 +7,7 @@ async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
       token: core.getInput('token'),
+      gitToken: core.getInput('git-token'),
       path: core.getInput('path'),
       addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),
@@ -29,6 +30,27 @@ async function run(): Promise<void> {
       draft: core.getBooleanInput('draft')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
+
+    if (!inputs.token) {
+      throw new Error(`Input 'token' not supplied. Unable to continue.`)
+    }
+    if (!inputs.gitToken) {
+      inputs.gitToken = inputs.token
+    }
+    if (inputs.bodyPath) {
+      if (!utils.fileExistsSync(inputs.bodyPath)) {
+        throw new Error(`File '${inputs.bodyPath}' does not exist.`)
+      }
+      // Update the body input with the contents of the file
+      inputs.body = utils.readFile(inputs.bodyPath)
+    }
+    // 65536 characters is the maximum allowed for the pull request body.
+    if (inputs.body.length > 65536) {
+      core.warning(
+        `Pull request body is too long. Truncating to 65536 characters.`
+      )
+      inputs.body = inputs.body.substring(0, 65536)
+    }
 
     await createPullRequest(inputs)
   } catch (error) {
