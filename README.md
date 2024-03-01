@@ -91,7 +91,11 @@ In addition to a message, the `commit-message` input can also be used to populat
 #### delete-branch
 
 The `delete-branch` feature doesn't delete branches immediately on merge. (It can't do that because it would require the merge to somehow trigger the action.)
-The intention of the feature is that when the action next runs it will delete the `branch` if it doesn't have an active pull request associated with it.
+The intention of the feature is that when the action next runs it will delete the `branch` if there is no diff.
+
+Enabling this feature leads to the following behaviour:
+1. If a pull request was merged and the branch is left undeleted, when the action next runs it will delete the branch if there is no further diff.
+2. If a pull request is open, but there is now no longer a diff and the PR is unnecessary, the action will delete the branch causing the PR to close.
 
 If you want branches to be deleted immediately on merge then you should use GitHub's `Automatically delete head branches` feature in your repository settings.
 
