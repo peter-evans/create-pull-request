@@ -68,7 +68,8 @@ function tryFetch(git, remote, branch) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
-                '--force'
+                '--force',
+                '--depth=1'
             ]);
             return true;
         }
@@ -184,7 +185,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (workingBase != base) {
             core.info(`Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`);
             // Checkout the actual base
-            yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
+            yield git.fetch([`${base}:${base}`], baseRemote, ['--force', '--depth=1']);
             yield git.checkout(base);
             // Cherrypick commits from the temporary branch starting from the working base
             const commits = yield git.revList([`${workingBase}..${tempBranch}`, '.'], ['--reverse']);
@@ -197,7 +198,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Reset the temp branch to the working index
             yield git.checkout(tempBranch, 'HEAD');
             // Reset the base
-            yield git.fetch([`${base}:${base}`], baseRemote, ['--force']);
+            yield git.fetch([`${base}:${base}`], baseRemote, ['--force', '--depth=1']);
         }
         // Try to fetch the pull request branch
         if (!(yield tryFetch(git, branchRemoteName, branch))) {
