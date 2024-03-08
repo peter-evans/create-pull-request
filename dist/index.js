@@ -68,8 +68,7 @@ function tryFetch(git, remote, branch) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
-                '--force',
-                '--depth=1'
+                '--force'
             ]);
             return true;
         }

@@ -35,8 +35,7 @@ export async function tryFetch(
 ): Promise<boolean> {
   try {
     await git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
-      '--force',
-      '--depth=1'
+      '--force'
     ])
     return true
   } catch {
