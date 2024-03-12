@@ -183,8 +183,13 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // This will also be true if the working base type is a commit
         if (workingBase != base) {
             core.info(`Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`);
+            const fetchArgs = ['--force'];
+            if (branchRemoteName != 'fork') {
+                // If pushing to a fork we cannot shallow fetch otherwise the 'shallow update not allowed' error occurs
+                fetchArgs.push('--depth=1');
+            }
             // Checkout the actual base
-            yield git.fetch([`${base}:${base}`], baseRemote, ['--force', '--depth=1']);
+            yield git.fetch([`${base}:${base}`], baseRemote, fetchArgs);
             yield git.checkout(base);
             // Cherrypick commits from the temporary branch starting from the working base
             const commits = yield git.revList([`${workingBase}..${tempBranch}`, '.'], ['--reverse']);
@@ -197,7 +202,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Reset the temp branch to the working index
             yield git.checkout(tempBranch, 'HEAD');
             // Reset the base
-            yield git.fetch([`${base}:${base}`], baseRemote, ['--force', '--depth=1']);
+            yield git.fetch([`${base}:${base}`], baseRemote, fetchArgs);
         }
         // Try to fetch the pull request branch
         if (!(yield tryFetch(git, branchRemoteName, branch))) {
