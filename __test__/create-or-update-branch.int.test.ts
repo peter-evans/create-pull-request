@@ -140,10 +140,22 @@ describe('create-or-update-branch tests', () => {
   })
 
   async function beforeTest(): Promise<void> {
+    await git.fetch(
+      [`${DEFAULT_BRANCH}:${DEFAULT_BRANCH}`],
+      REMOTE_NAME,
+      ['--force', '--update-head-ok'],
+      true
+    )
     await git.checkout(DEFAULT_BRANCH)
   }
 
   async function afterTest(deleteRemote = true): Promise<void> {
+    await git.fetch(
+      [`${DEFAULT_BRANCH}:${DEFAULT_BRANCH}`],
+      REMOTE_NAME,
+      ['--force', '--update-head-ok'],
+      true
+    )
     await git.checkout(DEFAULT_BRANCH)
     try {
       // Get the upstream branch if it exists
@@ -1454,8 +1466,7 @@ describe('create-or-update-branch tests', () => {
     expect(
       await gitLogMatches([
         _commitMessage,
-        ...commits.commitMsgs,
-        INIT_COMMIT_MESSAGE
+        commits.commitMsgs[0] // fetch depth of base is 1
       ])
     ).toBeTruthy()
   })
@@ -1590,7 +1601,9 @@ describe('create-or-update-branch tests', () => {
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
     expect(
-      await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+      await gitLogMatches([
+        commits.commitMsgs[0] // fetch depth of base is 1
+      ])
     ).toBeTruthy()
   })
 
@@ -1668,7 +1681,9 @@ describe('create-or-update-branch tests', () => {
     expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
     expect(
-      await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+      await gitLogMatches([
+        commits.commitMsgs[0] // fetch depth of base is 1
+      ])
     ).toBeTruthy()
   })
 
@@ -1951,8 +1966,7 @@ describe('create-or-update-branch tests', () => {
       await gitLogMatches([
         _commitMessage,
         ..._commits.commitMsgs,
-        ...commitsOnBase.commitMsgs,
-        INIT_COMMIT_MESSAGE
+        commitsOnBase.commitMsgs[0] // fetch depth of base is 1
       ])
     ).toBeTruthy()
   })
@@ -2147,8 +2161,7 @@ describe('create-or-update-branch tests', () => {
     expect(
       await gitLogMatches([
         _commitMessage,
-        ...commitsOnBase.commitMsgs,
-        INIT_COMMIT_MESSAGE
+        commitsOnBase.commitMsgs[0] // fetch depth of base is 1
       ])
     ).toBeTruthy()
   })

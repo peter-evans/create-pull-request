@@ -199,8 +199,13 @@ export async function createOrUpdateBranch(
     core.info(
       `Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`
     )
+    const fetchArgs = ['--force']
+    if (branchRemoteName != 'fork') {
+      // If pushing to a fork we cannot shallow fetch otherwise the 'shallow update not allowed' error occurs
+      fetchArgs.push('--depth=1')
+    }
     // Checkout the actual base
-    await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
+    await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
     await git.checkout(base)
     // Cherrypick commits from the temporary branch starting from the working base
     const commits = await git.revList(
@@ -219,7 +224,7 @@ export async function createOrUpdateBranch(
     // Reset the temp branch to the working index
     await git.checkout(tempBranch, 'HEAD')
     // Reset the base
-    await git.fetch([`${base}:${base}`], baseRemote, ['--force'])
+    await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
   }
 
   // Try to fetch the pull request branch
