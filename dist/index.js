@@ -164,20 +164,12 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         }
         // Stash any uncommitted tracked and untracked changes
         const stashed = yield git.stashPush(['--include-untracked']);
-        // Perform fetch and reset the working base
+        // Reset the working base
         // Commits made during the workflow will be removed
         if (workingBaseType == WorkingBaseType.Branch) {
             core.info(`Resetting working base branch '${workingBase}'`);
-            if (branchRemoteName == 'fork') {
-                // If pushing to a fork we must fetch with 'unshallow' to avoid the following error on git push
-                // ! [remote rejected] HEAD -> tests/push-branch-to-fork (shallow update not allowed)
-                yield git.fetch([`${workingBase}:${workingBase}`], baseRemote, ['--force'], true);
-            }
-            else {
-                // If the remote is 'origin' we can git reset
-                yield git.checkout(workingBase);
-                yield git.exec(['reset', '--hard', `${baseRemote}/${workingBase}`]);
-            }
+            yield git.checkout(workingBase);
+            yield git.exec(['reset', '--hard', `${baseRemote}/${workingBase}`]);
         }
         // If the working base is not the base, rebase the temp branch commits
         // This will also be true if the working base type is a commit
