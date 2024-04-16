@@ -6,6 +6,8 @@ const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
 const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean'
 
+const FETCH_DEPTH_MARGIN = 10
+
 export enum WorkingBaseType {
   Branch = 'branch',
   Commit = 'commit'
@@ -31,11 +33,13 @@ export async function getWorkingBaseAndType(
 export async function tryFetch(
   git: GitCommandManager,
   remote: string,
-  branch: string
+  branch: string,
+  depth: number
 ): Promise<boolean> {
   try {
     await git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
-      '--force'
+      '--force',
+      `--depth=${depth}`
     ])
     return true
   } catch {
@@ -215,8 +219,15 @@ export async function createOrUpdateBranch(
     await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
   }
 
+  // Determine the fetch depth for the pull request branch (best effort)
+  const tempBranchCommitsAhead = await commitsAhead(git, base, tempBranch)
+  const fetchDepth =
+    tempBranchCommitsAhead > 0
+      ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
+      : FETCH_DEPTH_MARGIN
+
   // Try to fetch the pull request branch
-  if (!(await tryFetch(git, branchRemoteName, branch))) {
+  if (!(await tryFetch(git, branchRemoteName, branch, fetchDepth))) {
     // The pull request branch does not exist
     core.info(`Pull request branch '${branch}' does not exist yet.`)
     // Create the pull request branch
@@ -250,7 +261,6 @@ export async function createOrUpdateBranch(
     //   temp branch. This catches a case where the base branch has been force pushed to
     //   a new commit.
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
-    const tempBranchCommitsAhead = await commitsAhead(git, base, tempBranch)
     const branchCommitsAhead = await commitsAhead(git, base, branch)
     if (
       (await git.hasDiff([`${branch}..${tempBranch}`])) ||

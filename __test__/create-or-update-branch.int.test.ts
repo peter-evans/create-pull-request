@@ -210,8 +210,8 @@ describe('create-or-update-branch tests', () => {
   }
 
   it('tests if a branch exists and can be fetched', async () => {
-    expect(await tryFetch(git, REMOTE_NAME, NOT_BASE_BRANCH)).toBeTruthy()
-    expect(await tryFetch(git, REMOTE_NAME, NOT_EXIST_BRANCH)).toBeFalsy()
+    expect(await tryFetch(git, REMOTE_NAME, NOT_BASE_BRANCH, 1)).toBeTruthy()
+    expect(await tryFetch(git, REMOTE_NAME, NOT_EXIST_BRANCH, 1)).toBeFalsy()
   })
 
   it('tests getWorkingBaseAndType on a checked out ref', async () => {
