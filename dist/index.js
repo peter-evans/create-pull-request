@@ -44,6 +44,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
 const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean';
+const FETCH_DEPTH_MARGIN = 10;
 var WorkingBaseType;
 (function (WorkingBaseType) {
     WorkingBaseType["Branch"] = "branch";
@@ -64,11 +65,12 @@ function getWorkingBaseAndType(git) {
     });
 }
 exports.getWorkingBaseAndType = getWorkingBaseAndType;
-function tryFetch(git, remote, branch) {
+function tryFetch(git, remote, branch, depth) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield git.fetch([`${branch}:refs/remotes/${remote}/${branch}`], remote, [
-                '--force'
+                '--force',
+                `--depth=${depth}`
             ]);
             return true;
         }
@@ -196,8 +198,13 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Reset the base
             yield git.fetch([`${base}:${base}`], baseRemote, fetchArgs);
         }
+        // Determine the fetch depth for the pull request branch (best effort)
+        const tempBranchCommitsAhead = yield commitsAhead(git, base, tempBranch);
+        const fetchDepth = tempBranchCommitsAhead > 0
+            ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
+            : FETCH_DEPTH_MARGIN;
         // Try to fetch the pull request branch
-        if (!(yield tryFetch(git, branchRemoteName, branch))) {
+        if (!(yield tryFetch(git, branchRemoteName, branch, fetchDepth))) {
             // The pull request branch does not exist
             core.info(`Pull request branch '${branch}' does not exist yet.`);
             // Create the pull request branch
@@ -228,7 +235,6 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             //   temp branch. This catches a case where the base branch has been force pushed to
             //   a new commit.
             // For changes on base this reset is equivalent to a rebase of the pull request branch.
-            const tempBranchCommitsAhead = yield commitsAhead(git, base, tempBranch);
             const branchCommitsAhead = yield commitsAhead(git, base, branch);
             if ((yield git.hasDiff([`${branch}..${tempBranch}`])) ||
                 branchCommitsAhead != tempBranchCommitsAhead ||
