@@ -5,6 +5,39 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "Invoke Lambda with API Gateway",
+            "invokeTarget": {
+                "target": "api",
+                "templatePath": "Template Location",
+                "logicalId": "Function Logical ID"
+            },
+            "api": {
+                "path": "Path",
+                "httpMethod": "Method",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "Invoke Lambda",
+            "invokeTarget": {
+                "target": "code",
+                "lambdaHandler": "Function Handler",
+                "projectRoot": "${workspaceFolder}"
+            },
+            "lambda": {
+                "runtime": "Lambda Runtime",
+                "payload": {
+                    "json": {}
+                }
+            }
+        },
+        {
             "type": "cobol",
             "request": "launch",
             "name": "COBOL (native): Launch",
