@@ -35,7 +35,12 @@ The reason is that I'm trying very hard to keep the interface for this action to
 Git hooks must be installed after a repository is checked out in order for them to work.
 So the straightforward solution is to just not install them during the workflow where this action is used.
 
-- If hooks are automatically enabled by a framework, use an option provided by the framework to disable them. For example, for Husky users, they can be disabled with the `--ignore-scripts` flag.
+- If hooks are automatically enabled by a framework, use an option provided by the framework to disable them. For example, for Husky users, they can be disabled with the `--ignore-scripts` flag, or by setting the `HUSKY` environment variable when the action runs.
+  ```yml
+  uses: peter-evans/create-pull-request@v6
+  env:
+    HUSKY: '0'
+  ```
 - If hooks are installed in a script, then add a condition checking if the `CI` environment variable exists.
    ```sh
    #!/bin/sh
