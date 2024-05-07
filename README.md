@@ -57,7 +57,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `add-paths` | A comma or newline-separated list of file paths to commit. Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax. If no paths are specified, all new and modified files are added. See [Add specific paths](#add-specific-paths). | |
 | `commit-message` | The message to use when committing changes. See [commit-message](#commit-message). | `[create-pull-request] automated change` |
-| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user. | `github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>` |
+| `committer` | The committer name and email address in the format `Display Name <email@address.com>`. Defaults to the GitHub Actions bot user on github.com. | `github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>` |
 | `author` | The author name and email address in the format `Display Name <email@address.com>`. Defaults to the user who triggered the workflow run. | `${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>` |
 | `signoff` | Add [`Signed-off-by`](https://git-scm.com/docs/git-commit#Documentation/git-commit.txt---signoff) line by the committer at the end of the commit log message. | `false` |
 | `branch` | The pull request branch name. | `create-pull-request/patch` |
