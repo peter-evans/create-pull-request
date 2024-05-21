@@ -12002,7 +12002,8 @@ module.exports.RedirectHandler = RedirectHandler
 module.exports.createRedirectInterceptor = createRedirectInterceptor
 module.exports.interceptors = {
   redirect: __nccwpck_require__(7773),
-  retry: __nccwpck_require__(5558)
+  retry: __nccwpck_require__(5558),
+  dump: __nccwpck_require__(6090)
 }
 
 module.exports.buildConnector = buildConnector
@@ -12070,7 +12071,7 @@ module.exports.fetch = async function fetch (init, options = undefined) {
     return await fetchImpl(init, options)
   } catch (err) {
     if (err && typeof err === 'object') {
-      Error.captureStackTrace(err, this)
+      Error.captureStackTrace(err)
     }
 
     throw err
@@ -12578,11 +12579,10 @@ module.exports = pipeline
 
 const assert = __nccwpck_require__(8061)
 const { Readable } = __nccwpck_require__(3858)
-const { InvalidArgumentError } = __nccwpck_require__(8045)
+const { InvalidArgumentError, RequestAbortedError } = __nccwpck_require__(8045)
 const util = __nccwpck_require__(3983)
 const { getResolveErrorBodyCallback } = __nccwpck_require__(7474)
 const { AsyncResource } = __nccwpck_require__(2761)
-const { addSignal, removeSignal } = __nccwpck_require__(7032)
 
 class RequestHandler extends AsyncResource {
   constructor (opts, callback) {
@@ -12621,6 +12621,7 @@ class RequestHandler extends AsyncResource {
       throw err
     }
 
+    this.method = method
     this.responseHeaders = responseHeaders || null
     this.opaque = opaque || null
     this.callback = callback
@@ -12632,6 +12633,9 @@ class RequestHandler extends AsyncResource {
     this.onInfo = onInfo || null
     this.throwOnError = throwOnError
     this.highWaterMark = highWaterMark
+    this.signal = signal
+    this.reason = null
+    this.removeAbortListener = null
 
     if (util.isStream(body)) {
       body.on('error', (err) => {
@@ -12639,7 +12643,26 @@ class RequestHandler extends AsyncResource {
       })
     }
 
-    addSignal(this, signal)
+    if (this.signal) {
+      if (this.signal.aborted) {
+        this.reason = this.signal.reason ?? new RequestAbortedError()
+      } else {
+        this.removeAbortListener = util.addAbortListener(this.signal, () => {
+          this.reason = this.signal.reason ?? new RequestAbortedError()
+          if (this.res) {
+            util.destroy(this.res, this.reason)
+          } else if (this.abort) {
+            this.abort(this.reason)
+          }
+
+          if (this.removeAbortListener) {
+            this.res?.off('close', this.removeAbortListener)
+            this.removeAbortListener()
+            this.removeAbortListener = null
+          }
+        })
+      }
+    }
   }
 
   onConnect (abort, context) {
@@ -12669,14 +12692,26 @@ class RequestHandler extends AsyncResource {
     const parsedHeaders = responseHeaders === 'raw' ? util.parseHeaders(rawHeaders) : headers
     const contentType = parsedHeaders['content-type']
     const contentLength = parsedHeaders['content-length']
-    const body = new Readable({ resume, abort, contentType, contentLength, highWaterMark })
+    const res = new Readable({
+      resume,
+      abort,
+      contentType,
+      contentLength: this.method !== 'HEAD' && contentLength
+        ? Number(contentLength)
+        : null,
+      highWaterMark
+    })
+
+    if (this.removeAbortListener) {
+      res.on('close', this.removeAbortListener)
+    }
 
     this.callback = null
-    this.res = body
+    this.res = res
     if (callback !== null) {
       if (this.throwOnError && statusCode >= 400) {
         this.runInAsyncScope(getResolveErrorBodyCallback, null,
-          { callback, body, contentType, statusCode, statusMessage, headers }
+          { callback, body: res, contentType, statusCode, statusMessage, headers }
         )
       } else {
         this.runInAsyncScope(callback, null, null, {
@@ -12684,7 +12719,7 @@ class RequestHandler extends AsyncResource {
           headers,
           trailers: this.trailers,
           opaque,
-          body,
+          body: res,
           context
         })
       }
@@ -12692,24 +12727,16 @@ class RequestHandler extends AsyncResource {
   }
 
   onData (chunk) {
-    const { res } = this
-    return res.push(chunk)
+    return this.res.push(chunk)
   }
 
   onComplete (trailers) {
-    const { res } = this
-
-    removeSignal(this)
-
     util.parseHeaders(trailers, this.trailers)
-
-    res.push(null)
+    this.res.push(null)
   }
 
   onError (err) {
     const { res, callback, body, opaque } = this
-
-    removeSignal(this)
 
     if (callback) {
       // TODO: Does this need queueMicrotask?
@@ -12730,6 +12757,12 @@ class RequestHandler extends AsyncResource {
     if (body) {
       this.body = null
       util.destroy(body, err)
+    }
+
+    if (this.removeAbortListener) {
+      res?.off('close', this.removeAbortListener)
+      this.removeAbortListener()
+      this.removeAbortListener = null
     }
   }
 }
@@ -13188,9 +13221,13 @@ class BodyReadable extends Readable {
     // tick as it is created, then a user who is waiting for a
     // promise (i.e micro tick) for installing a 'error' listener will
     // never get a chance and will always encounter an unhandled exception.
-    setImmediate(() => {
+    if (!this[kReading]) {
+      setImmediate(() => {
+        callback(err)
+      })
+    } else {
       callback(err)
-    })
+    }
   }
 
   on (ev, ...args) {
@@ -13755,7 +13792,7 @@ function setupTimeout (onConnectTimeout, timeout) {
   let s1 = null
   let s2 = null
   const timeoutId = setTimeout(() => {
-    // setImmediate is added to make sure that we priotorise socket error events over timeouts
+    // setImmediate is added to make sure that we prioritize socket error events over timeouts
     s1 = setImmediate(() => {
       if (process.platform === 'win32') {
         // Windows needs an extra setImmediate probably due to implementation differences in the socket logic
@@ -14775,7 +14812,6 @@ module.exports = {
   kQueue: Symbol('queue'),
   kConnect: Symbol('connect'),
   kConnecting: Symbol('connecting'),
-  kHeadersList: Symbol('headers list'),
   kKeepAliveDefaultTimeout: Symbol('default keep alive timeout'),
   kKeepAliveMaxTimeout: Symbol('max keep alive timeout'),
   kKeepAliveTimeoutThreshold: Symbol('keep alive timeout threshold'),
@@ -17084,7 +17120,7 @@ function writeStream ({ abort, body, client, request, socket, contentLength, hea
   }
 }
 
-async function writeBuffer ({ abort, body, client, request, socket, contentLength, header, expectsPayload }) {
+function writeBuffer ({ abort, body, client, request, socket, contentLength, header, expectsPayload }) {
   try {
     if (!body) {
       if (contentLength === 0) {
@@ -17862,6 +17898,7 @@ function writeH2 (client, request) {
       }
     } else if (util.isStream(body)) {
       writeStream({
+        abort,
         body,
         client,
         request,
@@ -17873,6 +17910,7 @@ function writeH2 (client, request) {
       })
     } else if (util.isIterable(body)) {
       writeIterable({
+        abort,
         body,
         client,
         request,
@@ -20499,6 +20537,137 @@ class RetryHandler {
 }
 
 module.exports = RetryHandler
+
+
+/***/ }),
+
+/***/ 6090:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const util = __nccwpck_require__(3983)
+const { InvalidArgumentError, RequestAbortedError } = __nccwpck_require__(8045)
+const DecoratorHandler = __nccwpck_require__(4117)
+
+class DumpHandler extends DecoratorHandler {
+  #maxSize = 1024 * 1024
+  #abort = null
+  #dumped = false
+  #aborted = false
+  #size = 0
+  #reason = null
+  #handler = null
+
+  constructor ({ maxSize }, handler) {
+    super(handler)
+
+    if (maxSize != null && (!Number.isFinite(maxSize) || maxSize < 1)) {
+      throw new InvalidArgumentError('maxSize must be a number greater than 0')
+    }
+
+    this.#maxSize = maxSize ?? this.#maxSize
+    this.#handler = handler
+  }
+
+  onConnect (abort) {
+    this.#abort = abort
+
+    this.#handler.onConnect(this.#customAbort.bind(this))
+  }
+
+  #customAbort (reason) {
+    this.#aborted = true
+    this.#reason = reason
+  }
+
+  // TODO: will require adjustment after new hooks are out
+  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
+    const headers = util.parseHeaders(rawHeaders)
+    const contentLength = headers['content-length']
+
+    if (contentLength != null && contentLength > this.#maxSize) {
+      throw new RequestAbortedError(
+        `Response size (${contentLength}) larger than maxSize (${
+          this.#maxSize
+        })`
+      )
+    }
+
+    if (this.#aborted) {
+      return true
+    }
+
+    return this.#handler.onHeaders(
+      statusCode,
+      rawHeaders,
+      resume,
+      statusMessage
+    )
+  }
+
+  onError (err) {
+    if (this.#dumped) {
+      return
+    }
+
+    err = this.#reason ?? err
+
+    this.#handler.onError(err)
+  }
+
+  onData (chunk) {
+    this.#size = this.#size + chunk.length
+
+    if (this.#size >= this.#maxSize) {
+      this.#dumped = true
+
+      if (this.#aborted) {
+        this.#handler.onError(this.#reason)
+      } else {
+        this.#handler.onComplete([])
+      }
+    }
+
+    return true
+  }
+
+  onComplete (trailers) {
+    if (this.#dumped) {
+      return
+    }
+
+    if (this.#aborted) {
+      this.#handler.onError(this.reason)
+      return
+    }
+
+    this.#handler.onComplete(trailers)
+  }
+}
+
+function createDumpInterceptor (
+  { maxSize: defaultMaxSize } = {
+    maxSize: 1024 * 1024
+  }
+) {
+  return dispatch => {
+    return function Intercept (opts, handler) {
+      const { dumpMaxSize = defaultMaxSize } =
+        opts
+
+      const dumpHandler = new DumpHandler(
+        { maxSize: dumpMaxSize },
+        handler
+      )
+
+      return dispatch(opts, dumpHandler)
+    }
+  }
+}
+
+module.exports = createDumpInterceptor
 
 
 /***/ }),
@@ -23698,7 +23867,7 @@ module.exports = {
 
 
 const assert = __nccwpck_require__(8061)
-const { kHeadersList } = __nccwpck_require__(2785)
+const { getHeadersList: internalGetHeadersList } = __nccwpck_require__(2991)
 
 /**
  * @param {string} value
@@ -23975,8 +24144,10 @@ function stringify (cookie) {
 let kHeadersListNode
 
 function getHeadersList (headers) {
-  if (headers[kHeadersList]) {
-    return headers[kHeadersList]
+  try {
+    return internalGetHeadersList(headers)
+  } catch {
+    // fall-through
   }
 
   if (!kHeadersListNode) {
@@ -25334,6 +25505,15 @@ function bodyMixinMethods (instance) {
           'Content-Type was not one of "multipart/form-data" or "application/x-www-form-urlencoded".'
         )
       }, instance, false)
+    },
+
+    bytes () {
+      // The bytes() method steps are to return the result of running consume body
+      // with this and the following step given a byte sequence bytes: return the
+      // result of creating a Uint8Array from bytes in this’s relevant realm.
+      return consumeBody(this, (bytes) => {
+        return new Uint8Array(bytes.buffer, 0, bytes.byteLength)
+      }, instance, true)
     }
   }
 
@@ -25580,13 +25760,13 @@ const encoder = new TextEncoder()
 /**
  * @see https://mimesniff.spec.whatwg.org/#http-token-code-point
  */
-const HTTP_TOKEN_CODEPOINTS = /^[!#$%&'*+-.^_|~A-Za-z0-9]+$/
+const HTTP_TOKEN_CODEPOINTS = /^[!#$%&'*+\-.^_|~A-Za-z0-9]+$/
 const HTTP_WHITESPACE_REGEX = /[\u000A\u000D\u0009\u0020]/ // eslint-disable-line
 const ASCII_WHITESPACE_REPLACE_REGEX = /[\u0009\u000A\u000C\u000D\u0020]/g // eslint-disable-line
 /**
  * @see https://mimesniff.spec.whatwg.org/#http-quoted-string-token-code-point
  */
-const HTTP_QUOTED_STRING_TOKENS = /[\u0009\u0020-\u007E\u0080-\u00FF]/ // eslint-disable-line
+const HTTP_QUOTED_STRING_TOKENS = /^[\u0009\u0020-\u007E\u0080-\u00FF]+$/ // eslint-disable-line
 
 // https://fetch.spec.whatwg.org/#data-url-processor
 /** @param {URL} dataURL */
@@ -26310,6 +26490,7 @@ module.exports = {
   collectAnHTTPQuotedString,
   serializeAMimeType,
   removeChars,
+  removeHTTPWhitespace,
   minimizeSupportedMimeType,
   HTTP_TOKEN_CODEPOINTS,
   isomorphicDecode
@@ -27292,8 +27473,7 @@ module.exports = {
 
 
 
-const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
-const { kGuard } = __nccwpck_require__(749)
+const { kConstruct } = __nccwpck_require__(2785)
 const { kEnumerableProperty } = __nccwpck_require__(3983)
 const {
   iteratorMixin,
@@ -27393,19 +27573,18 @@ function appendHeader (headers, name, value) {
   // 3. If headers’s guard is "immutable", then throw a TypeError.
   // 4. Otherwise, if headers’s guard is "request" and name is a
   //    forbidden header name, return.
+  // 5. Otherwise, if headers’s guard is "request-no-cors":
+  //    TODO
   // Note: undici does not implement forbidden header names
-  if (headers[kGuard] === 'immutable') {
+  if (getHeadersGuard(headers) === 'immutable') {
     throw new TypeError('immutable')
-  } else if (headers[kGuard] === 'request-no-cors') {
-    // 5. Otherwise, if headers’s guard is "request-no-cors":
-    // TODO
   }
 
   // 6. Otherwise, if headers’s guard is "response" and name is a
   //    forbidden response-header name, return.
 
   // 7. Append (name, value) to headers’s header list.
-  return headers[kHeadersList].append(name, value, false)
+  return getHeadersList(headers).append(name, value, false)
 
   // 8. If headers’s guard is "request-no-cors", then remove
   //    privileged no-CORS request headers from headers
@@ -27540,13 +27719,17 @@ class HeadersList {
   get entries () {
     const headers = {}
 
-    if (this[kHeadersMap].size) {
+    if (this[kHeadersMap].size !== 0) {
       for (const { name, value } of this[kHeadersMap].values()) {
         headers[name] = value
       }
     }
 
     return headers
+  }
+
+  rawValues () {
+    return this[kHeadersMap].values()
   }
 
   get entriesList () {
@@ -27643,16 +27826,20 @@ class HeadersList {
 
 // https://fetch.spec.whatwg.org/#headers-class
 class Headers {
+  #guard
+  #headersList
+
   constructor (init = undefined) {
     if (init === kConstruct) {
       return
     }
-    this[kHeadersList] = new HeadersList()
+
+    this.#headersList = new HeadersList()
 
     // The new Headers(init) constructor steps are:
 
     // 1. Set this’s guard to "none".
-    this[kGuard] = 'none'
+    this.#guard = 'none'
 
     // 2. If init is given, then fill this with init.
     if (init !== undefined) {
@@ -27702,22 +27889,20 @@ class Headers {
     // 5. Otherwise, if this’s guard is "response" and name is
     //    a forbidden response-header name, return.
     // Note: undici does not implement forbidden header names
-    if (this[kGuard] === 'immutable') {
+    if (this.#guard === 'immutable') {
       throw new TypeError('immutable')
-    } else if (this[kGuard] === 'request-no-cors') {
-      // TODO
     }
 
     // 6. If this’s header list does not contain name, then
     //    return.
-    if (!this[kHeadersList].contains(name, false)) {
+    if (!this.#headersList.contains(name, false)) {
       return
     }
 
     // 7. Delete name from this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this.
-    this[kHeadersList].delete(name, false)
+    this.#headersList.delete(name, false)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-get
@@ -27740,7 +27925,7 @@ class Headers {
 
     // 2. Return the result of getting name from this’s header
     //    list.
-    return this[kHeadersList].get(name, false)
+    return this.#headersList.get(name, false)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-has
@@ -27763,7 +27948,7 @@ class Headers {
 
     // 2. Return true if this’s header list contains name;
     //    otherwise false.
-    return this[kHeadersList].contains(name, false)
+    return this.#headersList.contains(name, false)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-set
@@ -27804,16 +27989,14 @@ class Headers {
     // 6. Otherwise, if this’s guard is "response" and name is a
     //    forbidden response-header name, return.
     // Note: undici does not implement forbidden header names
-    if (this[kGuard] === 'immutable') {
+    if (this.#guard === 'immutable') {
       throw new TypeError('immutable')
-    } else if (this[kGuard] === 'request-no-cors') {
-      // TODO
     }
 
     // 7. Set (name, value) in this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this
-    this[kHeadersList].set(name, value, false)
+    this.#headersList.set(name, value, false)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-getsetcookie
@@ -27824,7 +28007,7 @@ class Headers {
     // 2. Return the values of all headers in this’s header list whose name is
     //    a byte-case-insensitive match for `Set-Cookie`, in order.
 
-    const list = this[kHeadersList].cookies
+    const list = this.#headersList.cookies
 
     if (list) {
       return [...list]
@@ -27835,8 +28018,8 @@ class Headers {
 
   // https://fetch.spec.whatwg.org/#concept-header-list-sort-and-combine
   get [kHeadersSortedMap] () {
-    if (this[kHeadersList][kHeadersSortedMap]) {
-      return this[kHeadersList][kHeadersSortedMap]
+    if (this.#headersList[kHeadersSortedMap]) {
+      return this.#headersList[kHeadersSortedMap]
     }
 
     // 1. Let headers be an empty list of headers with the key being the name
@@ -27845,14 +28028,14 @@ class Headers {
 
     // 2. Let names be the result of convert header names to a sorted-lowercase
     //    set with all the names of the headers in list.
-    const names = this[kHeadersList].toSortedArray()
+    const names = this.#headersList.toSortedArray()
 
-    const cookies = this[kHeadersList].cookies
+    const cookies = this.#headersList.cookies
 
     // fast-path
     if (cookies === null || cookies.length === 1) {
       // Note: The non-null assertion of value has already been done by `HeadersList#toSortedArray`
-      return (this[kHeadersList][kHeadersSortedMap] = names)
+      return (this.#headersList[kHeadersSortedMap] = names)
     }
 
     // 3. For each name of names:
@@ -27882,15 +28065,37 @@ class Headers {
     }
 
     // 4. Return headers.
-    return (this[kHeadersList][kHeadersSortedMap] = headers)
+    return (this.#headersList[kHeadersSortedMap] = headers)
   }
 
   [util.inspect.custom] (depth, options) {
     options.depth ??= depth
 
-    return `Headers ${util.formatWithOptions(options, this[kHeadersList].entries)}`
+    return `Headers ${util.formatWithOptions(options, this.#headersList.entries)}`
+  }
+
+  static getHeadersGuard (o) {
+    return o.#guard
+  }
+
+  static setHeadersGuard (o, guard) {
+    o.#guard = guard
+  }
+
+  static getHeadersList (o) {
+    return o.#headersList
+  }
+
+  static setHeadersList (o, list) {
+    o.#headersList = list
   }
 }
+
+const { getHeadersGuard, setHeadersGuard, getHeadersList, setHeadersList } = Headers
+Reflect.deleteProperty(Headers, 'getHeadersGuard')
+Reflect.deleteProperty(Headers, 'setHeadersGuard')
+Reflect.deleteProperty(Headers, 'getHeadersList')
+Reflect.deleteProperty(Headers, 'setHeadersList')
 
 Object.defineProperty(Headers.prototype, util.inspect.custom, {
   enumerable: false
@@ -27917,8 +28122,12 @@ webidl.converters.HeadersInit = function (V, prefix, argument) {
 
     // A work-around to ensure we send the properly-cased Headers when V is a Headers object.
     // Read https://github.com/nodejs/undici/pull/3159#issuecomment-2075537226 before touching, please.
-    if (!util.types.isProxy(V) && kHeadersList in V && iterator === Headers.prototype.entries) { // Headers object
-      return V[kHeadersList].entriesList
+    if (!util.types.isProxy(V) && iterator === Headers.prototype.entries) { // Headers object
+      try {
+        return getHeadersList(V).entriesList
+      } catch {
+        // fall-through
+      }
     }
 
     if (typeof iterator === 'function') {
@@ -27940,7 +28149,11 @@ module.exports = {
   // for test.
   compareHeaderName,
   Headers,
-  HeadersList
+  HeadersList,
+  getHeadersGuard,
+  setHeadersGuard,
+  setHeadersList,
+  getHeadersList
 }
 
 
@@ -28072,12 +28285,16 @@ class Fetch extends EE {
   }
 }
 
+function handleFetchDone (response) {
+  finalizeAndReportTiming(response, 'fetch')
+}
+
 // https://fetch.spec.whatwg.org/#fetch-method
 function fetch (input, init = undefined) {
   webidl.argumentLengthCheck(arguments, 1, 'globalThis.fetch')
 
   // 1. Let p be a new promise.
-  const p = createDeferredPromise()
+  let p = createDeferredPromise()
 
   // 2. Let requestObject be the result of invoking the initial value of
   // Request as constructor with input and init as arguments. If this throws
@@ -28137,16 +28354,17 @@ function fetch (input, init = undefined) {
       // 3. Abort controller with requestObject’s signal’s abort reason.
       controller.abort(requestObject.signal.reason)
 
+      const realResponse = responseObject?.deref()
+
       // 4. Abort the fetch() call with p, request, responseObject,
       //    and requestObject’s signal’s abort reason.
-      abortFetch(p, request, responseObject, requestObject.signal.reason)
+      abortFetch(p, request, realResponse, requestObject.signal.reason)
     }
   )
 
   // 12. Let handleFetchDone given response response be to finalize and
   // report timing with response, globalObject, and "fetch".
-  const handleFetchDone = (response) =>
-    finalizeAndReportTiming(response, 'fetch')
+  // see function handleFetchDone
 
   // 13. Set controller to the result of calling fetch given request,
   // with processResponseEndOfBody set to handleFetchDone, and processResponse
@@ -28180,10 +28398,11 @@ function fetch (input, init = undefined) {
 
     // 4. Set responseObject to the result of creating a Response object,
     // given response, "immutable", and relevantRealm.
-    responseObject = fromInnerResponse(response, 'immutable')
+    responseObject = new WeakRef(fromInnerResponse(response, 'immutable'))
 
     // 5. Resolve p with responseObject.
-    p.resolve(responseObject)
+    p.resolve(responseObject.deref())
+    p = null
   }
 
   controller = fetching({
@@ -28266,7 +28485,10 @@ const markResourceTiming = performance.markResourceTiming
 // https://fetch.spec.whatwg.org/#abort-fetch
 function abortFetch (p, request, responseObject, error) {
   // 1. Reject promise with error.
-  p.reject(error)
+  if (p) {
+    // We might have already resolved the promise at this stage
+    p.reject(error)
+  }
 
   // 2. If request’s body is not null and is readable, then cancel request’s
   // body with error.
@@ -28387,8 +28609,7 @@ function fetching ({
   // 9. If request’s origin is "client", then set request’s origin to request’s
   // client’s origin.
   if (request.origin === 'client') {
-    // TODO: What if request.client is null?
-    request.origin = request.client?.origin
+    request.origin = request.client.origin
   }
 
   // 10. If all of the following conditions are true:
@@ -29018,7 +29239,10 @@ function fetchFinale (fetchParams, response) {
   // 4. If fetchParams’s process response is non-null, then queue a fetch task to run fetchParams’s
   //    process response given response, with fetchParams’s task destination.
   if (fetchParams.processResponse != null) {
-    queueMicrotask(() => fetchParams.processResponse(response))
+    queueMicrotask(() => {
+      fetchParams.processResponse(response)
+      fetchParams.processResponse = null
+    })
   }
 
   // 5. Let internalResponse be response, if response is a network error; otherwise response’s internal response.
@@ -29836,7 +30060,11 @@ async function httpNetworkFetch (
   // 12. Let cancelAlgorithm be an algorithm that aborts fetchParams’s
   // controller with reason, given reason.
   const cancelAlgorithm = (reason) => {
-    fetchParams.controller.abort(reason)
+    // If the aborted fetch was already terminated, then we do not
+    // need to do anything.
+    if (!isCancelled(fetchParams)) {
+      fetchParams.controller.abort(reason)
+    }
   }
 
   // 13. Let highWaterMark be a non-negative, non-NaN number, chosen by
@@ -30054,20 +30282,16 @@ async function httpNetworkFetch (
 
           const headersList = new HeadersList()
 
-          // For H2, the rawHeaders are a plain JS object
-          // We distinguish between them and iterate accordingly
-          if (Array.isArray(rawHeaders)) {
-            for (let i = 0; i < rawHeaders.length; i += 2) {
-              headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString('latin1'), true)
-            }
-            const contentEncoding = headersList.get('content-encoding', true)
-            if (contentEncoding) {
-              // https://www.rfc-editor.org/rfc/rfc7231#section-3.1.2.1
-              // "All content-coding values are case-insensitive..."
-              codings = contentEncoding.toLowerCase().split(',').map((x) => x.trim())
-            }
-            location = headersList.get('location', true)
+          for (let i = 0; i < rawHeaders.length; i += 2) {
+            headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString('latin1'), true)
           }
+          const contentEncoding = headersList.get('content-encoding', true)
+          if (contentEncoding) {
+            // https://www.rfc-editor.org/rfc/rfc7231#section-3.1.2.1
+            // "All content-coding values are case-insensitive..."
+            codings = contentEncoding.toLowerCase().split(',').map((x) => x.trim())
+          }
+          location = headersList.get('location', true)
 
           this.body = new Readable({ read: resume })
 
@@ -30077,7 +30301,7 @@ async function httpNetworkFetch (
             redirectStatusSet.has(status)
 
           // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Encoding
-          if (request.method !== 'HEAD' && request.method !== 'CONNECT' && !nullBodyStatus.includes(status) && !willFollow) {
+          if (codings.length !== 0 && request.method !== 'HEAD' && request.method !== 'CONNECT' && !nullBodyStatus.includes(status) && !willFollow) {
             for (let i = 0; i < codings.length; ++i) {
               const coding = codings[i]
               // https://www.rfc-editor.org/rfc/rfc9112.html#section-7.2
@@ -30206,7 +30430,7 @@ module.exports = {
 
 
 const { extractBody, mixinBody, cloneBody } = __nccwpck_require__(6682)
-const { Headers, fill: fillHeaders, HeadersList } = __nccwpck_require__(2991)
+const { Headers, fill: fillHeaders, HeadersList, setHeadersGuard, getHeadersGuard, setHeadersList, getHeadersList } = __nccwpck_require__(2991)
 const { FinalizationRegistry } = __nccwpck_require__(1922)()
 const util = __nccwpck_require__(3983)
 const nodeUtil = __nccwpck_require__(7261)
@@ -30228,10 +30452,10 @@ const {
   requestDuplex
 } = __nccwpck_require__(8160)
 const { kEnumerableProperty } = util
-const { kHeaders, kSignal, kState, kGuard, kDispatcher } = __nccwpck_require__(749)
+const { kHeaders, kSignal, kState, kDispatcher } = __nccwpck_require__(749)
 const { webidl } = __nccwpck_require__(4890)
 const { URLSerializer } = __nccwpck_require__(7704)
-const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
+const { kConstruct } = __nccwpck_require__(2785)
 const assert = __nccwpck_require__(8061)
 const { getMaxListeners, setMaxListeners, getEventListeners, defaultMaxListeners } = __nccwpck_require__(5673)
 
@@ -30648,8 +30872,8 @@ class Request {
     // Realm, whose header list is request’s header list and guard is
     // "request".
     this[kHeaders] = new Headers(kConstruct)
-    this[kHeaders][kHeadersList] = request.headersList
-    this[kHeaders][kGuard] = 'request'
+    setHeadersList(this[kHeaders], request.headersList)
+    setHeadersGuard(this[kHeaders], 'request')
 
     // 31. If this’s request’s mode is "no-cors", then:
     if (mode === 'no-cors') {
@@ -30662,13 +30886,13 @@ class Request {
       }
 
       // 2. Set this’s headers’s guard to "request-no-cors".
-      this[kHeaders][kGuard] = 'request-no-cors'
+      setHeadersGuard(this[kHeaders], 'request-no-cors')
     }
 
     // 32. If init is not empty, then:
     if (initHasKey) {
       /** @type {HeadersList} */
-      const headersList = this[kHeaders][kHeadersList]
+      const headersList = getHeadersList(this[kHeaders])
       // 1. Let headers be a copy of this’s headers and its associated header
       // list.
       // 2. If init["headers"] exists, then set headers to init["headers"].
@@ -30680,9 +30904,8 @@ class Request {
       // 4. If headers is a Headers object, then for each header in its header
       // list, append header’s name/header’s value to this’s headers.
       if (headers instanceof HeadersList) {
-        for (const { 0: key, 1: val } of headers) {
-          // Note: The header names are already in lowercase.
-          headersList.append(key, val, true)
+        for (const { name, value } of headers.rawValues()) {
+          headersList.append(name, value, false)
         }
         // Note: Copy the `set-cookie` meta-data.
         headersList.cookies = headers.cookies
@@ -30723,7 +30946,7 @@ class Request {
       // 3, If Content-Type is non-null and this’s headers’s header list does
       // not contain `Content-Type`, then append `Content-Type`/Content-Type to
       // this’s headers.
-      if (contentType && !this[kHeaders][kHeadersList].contains('content-type', true)) {
+      if (contentType && !getHeadersList(this[kHeaders]).contains('content-type', true)) {
         this[kHeaders].append('content-type', contentType)
       }
     }
@@ -30989,7 +31212,7 @@ class Request {
     }
 
     // 4. Return clonedRequestObject.
-    return fromInnerRequest(clonedRequest, ac.signal, this[kHeaders][kGuard])
+    return fromInnerRequest(clonedRequest, ac.signal, getHeadersGuard(this[kHeaders]))
   }
 
   [nodeUtil.inspect.custom] (depth, options) {
@@ -31023,51 +31246,50 @@ class Request {
 
 mixinBody(Request)
 
+// https://fetch.spec.whatwg.org/#requests
 function makeRequest (init) {
-  // https://fetch.spec.whatwg.org/#requests
-  const request = {
-    method: 'GET',
-    localURLsOnly: false,
-    unsafeRequest: false,
-    body: null,
-    client: null,
-    reservedClient: null,
-    replacesClientId: '',
-    window: 'client',
-    keepalive: false,
-    serviceWorkers: 'all',
-    initiator: '',
-    destination: '',
-    priority: null,
-    origin: 'client',
-    policyContainer: 'client',
-    referrer: 'client',
-    referrerPolicy: '',
-    mode: 'no-cors',
-    useCORSPreflightFlag: false,
-    credentials: 'same-origin',
-    useCredentials: false,
-    cache: 'default',
-    redirect: 'follow',
-    integrity: '',
-    cryptoGraphicsNonceMetadata: '',
-    parserMetadata: '',
-    reloadNavigation: false,
-    historyNavigation: false,
-    userActivation: false,
-    taintedOrigin: false,
-    redirectCount: 0,
-    responseTainting: 'basic',
-    preventNoCacheCacheControlHeaderModification: false,
-    done: false,
-    timingAllowFailed: false,
-    ...init,
+  return {
+    method: init.method ?? 'GET',
+    localURLsOnly: init.localURLsOnly ?? false,
+    unsafeRequest: init.unsafeRequest ?? false,
+    body: init.body ?? null,
+    client: init.client ?? null,
+    reservedClient: init.reservedClient ?? null,
+    replacesClientId: init.replacesClientId ?? '',
+    window: init.window ?? 'client',
+    keepalive: init.keepalive ?? false,
+    serviceWorkers: init.serviceWorkers ?? 'all',
+    initiator: init.initiator ?? '',
+    destination: init.destination ?? '',
+    priority: init.priority ?? null,
+    origin: init.origin ?? 'client',
+    policyContainer: init.policyContainer ?? 'client',
+    referrer: init.referrer ?? 'client',
+    referrerPolicy: init.referrerPolicy ?? '',
+    mode: init.mode ?? 'no-cors',
+    useCORSPreflightFlag: init.useCORSPreflightFlag ?? false,
+    credentials: init.credentials ?? 'same-origin',
+    useCredentials: init.useCredentials ?? false,
+    cache: init.cache ?? 'default',
+    redirect: init.redirect ?? 'follow',
+    integrity: init.integrity ?? '',
+    cryptoGraphicsNonceMetadata: init.cryptoGraphicsNonceMetadata ?? '',
+    parserMetadata: init.parserMetadata ?? '',
+    reloadNavigation: init.reloadNavigation ?? false,
+    historyNavigation: init.historyNavigation ?? false,
+    userActivation: init.userActivation ?? false,
+    taintedOrigin: init.taintedOrigin ?? false,
+    redirectCount: init.redirectCount ?? 0,
+    responseTainting: init.responseTainting ?? 'basic',
+    preventNoCacheCacheControlHeaderModification: init.preventNoCacheCacheControlHeaderModification ?? false,
+    done: init.done ?? false,
+    timingAllowFailed: init.timingAllowFailed ?? false,
+    urlList: init.urlList,
+    url: init.urlList[0],
     headersList: init.headersList
       ? new HeadersList(init.headersList)
       : new HeadersList()
   }
-  request.url = request.urlList[0]
-  return request
 }
 
 // https://fetch.spec.whatwg.org/#concept-request-clone
@@ -31099,8 +31321,8 @@ function fromInnerRequest (innerRequest, signal, guard) {
   request[kState] = innerRequest
   request[kSignal] = signal
   request[kHeaders] = new Headers(kConstruct)
-  request[kHeaders][kHeadersList] = innerRequest.headersList
-  request[kHeaders][kGuard] = guard
+  setHeadersList(request[kHeaders], innerRequest.headersList)
+  setHeadersGuard(request[kHeaders], guard)
   return request
 }
 
@@ -31247,7 +31469,7 @@ module.exports = { Request, makeRequest, fromInnerRequest, cloneRequest }
 "use strict";
 
 
-const { Headers, HeadersList, fill } = __nccwpck_require__(2991)
+const { Headers, HeadersList, fill, getHeadersGuard, setHeadersGuard, setHeadersList } = __nccwpck_require__(2991)
 const { extractBody, cloneBody, mixinBody } = __nccwpck_require__(6682)
 const util = __nccwpck_require__(3983)
 const nodeUtil = __nccwpck_require__(7261)
@@ -31266,15 +31488,29 @@ const {
   redirectStatusSet,
   nullBodyStatus
 } = __nccwpck_require__(8160)
-const { kState, kHeaders, kGuard } = __nccwpck_require__(749)
+const { kState, kHeaders } = __nccwpck_require__(749)
 const { webidl } = __nccwpck_require__(4890)
 const { FormData } = __nccwpck_require__(3162)
 const { URLSerializer } = __nccwpck_require__(7704)
-const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
+const { kConstruct } = __nccwpck_require__(2785)
 const assert = __nccwpck_require__(8061)
 const { types } = __nccwpck_require__(7261)
+const { isDisturbed, isErrored } = __nccwpck_require__(4492)
 
 const textEncoder = new TextEncoder('utf-8')
+
+const hasFinalizationRegistry = globalThis.FinalizationRegistry && process.version.indexOf('v18') !== 0
+let registry
+
+if (hasFinalizationRegistry) {
+  registry = new FinalizationRegistry((stream) => {
+    if (!stream.locked && !isDisturbed(stream) && !isErrored(stream)) {
+      stream.cancel('Response object has been garbage collected').catch(noop)
+    }
+  })
+}
+
+function noop () {}
 
 // https://fetch.spec.whatwg.org/#response-class
 class Response {
@@ -31374,8 +31610,8 @@ class Response {
     // Realm, whose header list is this’s response’s header list and guard
     // is "response".
     this[kHeaders] = new Headers(kConstruct)
-    this[kHeaders][kGuard] = 'response'
-    this[kHeaders][kHeadersList] = this[kState].headersList
+    setHeadersGuard(this[kHeaders], 'response')
+    setHeadersList(this[kHeaders], this[kState].headersList)
 
     // 3. Let bodyWithType be null.
     let bodyWithType = null
@@ -31488,7 +31724,7 @@ class Response {
 
     // 3. Return the result of creating a Response object, given
     // clonedResponse, this’s headers’s guard, and this’s relevant Realm.
-    return fromInnerResponse(clonedResponse, this[kHeaders][kGuard])
+    return fromInnerResponse(clonedResponse, getHeadersGuard(this[kHeaders]))
   }
 
   [nodeUtil.inspect.custom] (depth, options) {
@@ -31755,8 +31991,13 @@ function fromInnerResponse (innerResponse, guard) {
   const response = new Response(kConstruct)
   response[kState] = innerResponse
   response[kHeaders] = new Headers(kConstruct)
-  response[kHeaders][kHeadersList] = innerResponse.headersList
-  response[kHeaders][kGuard] = guard
+  setHeadersList(response[kHeaders], innerResponse.headersList)
+  setHeadersGuard(response[kHeaders], guard)
+
+  if (hasFinalizationRegistry && innerResponse.body?.stream) {
+    registry.register(response, innerResponse.body.stream)
+  }
+
   return response
 }
 
@@ -31854,7 +32095,6 @@ module.exports = {
   kHeaders: Symbol('headers'),
   kSignal: Symbol('signal'),
   kState: Symbol('state'),
-  kGuard: Symbol('guard'),
   kDispatcher: Symbol('dispatcher')
 }
 
@@ -32122,16 +32362,23 @@ function appendFetchMetadata (httpRequest) {
 
 // https://fetch.spec.whatwg.org/#append-a-request-origin-header
 function appendRequestOriginHeader (request) {
-  // 1. Let serializedOrigin be the result of byte-serializing a request origin with request.
+  // 1. Let serializedOrigin be the result of byte-serializing a request origin
+  //    with request.
+  // TODO: implement "byte-serializing a request origin"
   let serializedOrigin = request.origin
 
-  // 2. If request’s response tainting is "cors" or request’s mode is "websocket", then append (`Origin`, serializedOrigin) to request’s header list.
-  if (request.responseTainting === 'cors' || request.mode === 'websocket') {
-    if (serializedOrigin) {
-      request.headersList.append('origin', serializedOrigin, true)
-    }
+  // "'client' is changed to an origin during fetching."
+  // This doesn't happen in undici (in most cases) because undici, by default,
+  // has no concept of origin.
+  if (serializedOrigin === 'client') {
+    return
+  }
 
+  // 2. If request’s response tainting is "cors" or request’s mode is "websocket",
+  //    then append (`Origin`, serializedOrigin) to request’s header list.
   // 3. Otherwise, if request’s method is neither `GET` nor `HEAD`, then:
+  if (request.responseTainting === 'cors' || request.mode === 'websocket') {
+    request.headersList.append('origin', serializedOrigin, true)
   } else if (request.method !== 'GET' && request.method !== 'HEAD') {
     // 1. Switch on request’s referrer policy:
     switch (request.referrerPolicy) {
@@ -32142,13 +32389,16 @@ function appendRequestOriginHeader (request) {
       case 'no-referrer-when-downgrade':
       case 'strict-origin':
       case 'strict-origin-when-cross-origin':
-        // If request’s origin is a tuple origin, its scheme is "https", and request’s current URL’s scheme is not "https", then set serializedOrigin to `null`.
+        // If request’s origin is a tuple origin, its scheme is "https", and
+        // request’s current URL’s scheme is not "https", then set
+        // serializedOrigin to `null`.
         if (request.origin && urlHasHttpsScheme(request.origin) && !urlHasHttpsScheme(requestCurrentURL(request))) {
           serializedOrigin = null
         }
         break
       case 'same-origin':
-        // If request’s origin is not same origin with request’s current URL’s origin, then set serializedOrigin to `null`.
+        // If request’s origin is not same origin with request’s current URL’s
+        // origin, then set serializedOrigin to `null`.
         if (!sameOrigin(request, requestCurrentURL(request))) {
           serializedOrigin = null
         }
@@ -32157,10 +32407,8 @@ function appendRequestOriginHeader (request) {
         // Do nothing.
     }
 
-    if (serializedOrigin) {
-      // 2. Append (`Origin`, serializedOrigin) to request’s header list.
-      request.headersList.append('origin', serializedOrigin, true)
-    }
+    // 2. Append (`Origin`, serializedOrigin) to request’s header list.
+    request.headersList.append('origin', serializedOrigin, true)
   }
 }
 
@@ -33768,6 +34016,7 @@ webidl.sequenceConverter = function (converter) {
     /** @type {Generator} */
     const method = typeof Iterable === 'function' ? Iterable() : V?.[Symbol.iterator]?.()
     const seq = []
+    let index = 0
 
     // 3. If method is undefined, throw a TypeError.
     if (
@@ -33788,7 +34037,7 @@ webidl.sequenceConverter = function (converter) {
         break
       }
 
-      seq.push(converter(value, prefix, argument))
+      seq.push(converter(value, prefix, `${argument}[${index++}]`))
     }
 
     return seq
@@ -35371,21 +35620,22 @@ module.exports = {
 "use strict";
 
 
-const { uid, states, sentCloseFrameState } = __nccwpck_require__(3587)
+const { uid, states, sentCloseFrameState, emptyBuffer, opcodes } = __nccwpck_require__(3587)
 const {
   kReadyState,
   kSentClose,
   kByteParser,
-  kReceivedClose
+  kReceivedClose,
+  kResponse
 } = __nccwpck_require__(9769)
-const { fireEvent, failWebsocketConnection } = __nccwpck_require__(9902)
+const { fireEvent, failWebsocketConnection, isClosing, isClosed, isEstablished, parseExtensions } = __nccwpck_require__(9902)
 const { channels } = __nccwpck_require__(8438)
 const { CloseEvent } = __nccwpck_require__(5033)
 const { makeRequest } = __nccwpck_require__(610)
 const { fetching } = __nccwpck_require__(5170)
-const { Headers } = __nccwpck_require__(2991)
+const { Headers, getHeadersList } = __nccwpck_require__(2991)
 const { getDecodeSplit } = __nccwpck_require__(1310)
-const { kHeadersList } = __nccwpck_require__(2785)
+const { WebsocketFrameSend } = __nccwpck_require__(2391)
 
 /** @type {import('crypto')} */
 let crypto
@@ -35401,10 +35651,10 @@ try {
  * @param {URL} url
  * @param {string|string[]} protocols
  * @param {import('./websocket').WebSocket} ws
- * @param {(response: any) => void} onEstablish
+ * @param {(response: any, extensions: string[] | undefined) => void} onEstablish
  * @param {Partial<import('../../types/websocket').WebSocketInit>} options
  */
-function establishWebSocketConnection (url, protocols, ws, onEstablish, options) {
+function establishWebSocketConnection (url, protocols, client, ws, onEstablish, options) {
   // 1. Let requestURL be a copy of url, with its scheme set to "http", if url’s
   //    scheme is "ws", and to "https" otherwise.
   const requestURL = url
@@ -35417,6 +35667,7 @@ function establishWebSocketConnection (url, protocols, ws, onEstablish, options)
   //    and redirect mode is "error".
   const request = makeRequest({
     urlList: [requestURL],
+    client,
     serviceWorkers: 'none',
     referrer: 'no-referrer',
     mode: 'websocket',
@@ -35427,7 +35678,7 @@ function establishWebSocketConnection (url, protocols, ws, onEstablish, options)
 
   // Note: undici extension, allow setting custom headers.
   if (options.headers) {
-    const headersList = new Headers(options.headers)[kHeadersList]
+    const headersList = getHeadersList(new Headers(options.headers))
 
     request.headersList = headersList
   }
@@ -35460,12 +35711,11 @@ function establishWebSocketConnection (url, protocols, ws, onEstablish, options)
   // 9. Let permessageDeflate be a user-agent defined
   //    "permessage-deflate" extension header value.
   // https://github.com/mozilla/gecko-dev/blob/ce78234f5e653a5d3916813ff990f053510227bc/netwerk/protocol/websocket/WebSocketChannel.cpp#L2673
-  // TODO: enable once permessage-deflate is supported
-  const permessageDeflate = '' // 'permessage-deflate; 15'
+  const permessageDeflate = 'permessage-deflate; client_max_window_bits'
 
   // 10. Append (`Sec-WebSocket-Extensions`, permessageDeflate) to
   //     request’s header list.
-  // request.headersList.append('sec-websocket-extensions', permessageDeflate)
+  request.headersList.append('sec-websocket-extensions', permessageDeflate)
 
   // 11. Fetch request with useParallelQueue set to true, and
   //     processResponse given response being these steps:
@@ -35536,10 +35786,15 @@ function establishWebSocketConnection (url, protocols, ws, onEstablish, options)
       //    header field to determine which extensions are requested is
       //    discussed in Section 9.1.)
       const secExtension = response.headersList.get('Sec-WebSocket-Extensions')
+      let extensions
 
-      if (secExtension !== null && secExtension !== permessageDeflate) {
-        failWebsocketConnection(ws, 'Received different permessage-deflate than the one set.')
-        return
+      if (secExtension !== null) {
+        extensions = parseExtensions(secExtension)
+
+        if (!extensions.has('permessage-deflate')) {
+          failWebsocketConnection(ws, 'Sec-WebSocket-Extensions header does not match.')
+          return
+        }
       }
 
       // 6. If the response includes a |Sec-WebSocket-Protocol| header field
@@ -35575,11 +35830,73 @@ function establishWebSocketConnection (url, protocols, ws, onEstablish, options)
         })
       }
 
-      onEstablish(response)
+      onEstablish(response, extensions)
     }
   })
 
   return controller
+}
+
+function closeWebSocketConnection (ws, code, reason, reasonByteLength) {
+  if (isClosing(ws) || isClosed(ws)) {
+    // If this's ready state is CLOSING (2) or CLOSED (3)
+    // Do nothing.
+  } else if (!isEstablished(ws)) {
+    // If the WebSocket connection is not yet established
+    // Fail the WebSocket connection and set this's ready state
+    // to CLOSING (2).
+    failWebsocketConnection(ws, 'Connection was closed before it was established.')
+    ws[kReadyState] = states.CLOSING
+  } else if (ws[kSentClose] === sentCloseFrameState.NOT_SENT) {
+    // If the WebSocket closing handshake has not yet been started
+    // Start the WebSocket closing handshake and set this's ready
+    // state to CLOSING (2).
+    // - If neither code nor reason is present, the WebSocket Close
+    //   message must not have a body.
+    // - If code is present, then the status code to use in the
+    //   WebSocket Close message must be the integer given by code.
+    // - If reason is also present, then reasonBytes must be
+    //   provided in the Close message after the status code.
+
+    ws[kSentClose] = sentCloseFrameState.PROCESSING
+
+    const frame = new WebsocketFrameSend()
+
+    // If neither code nor reason is present, the WebSocket Close
+    // message must not have a body.
+
+    // If code is present, then the status code to use in the
+    // WebSocket Close message must be the integer given by code.
+    if (code !== undefined && reason === undefined) {
+      frame.frameData = Buffer.allocUnsafe(2)
+      frame.frameData.writeUInt16BE(code, 0)
+    } else if (code !== undefined && reason !== undefined) {
+      // If reason is also present, then reasonBytes must be
+      // provided in the Close message after the status code.
+      frame.frameData = Buffer.allocUnsafe(2 + reasonByteLength)
+      frame.frameData.writeUInt16BE(code, 0)
+      // the body MAY contain UTF-8-encoded data with value /reason/
+      frame.frameData.write(reason, 2, 'utf-8')
+    } else {
+      frame.frameData = emptyBuffer
+    }
+
+    /** @type {import('stream').Duplex} */
+    const socket = ws[kResponse].socket
+
+    socket.write(frame.createFrame(opcodes.CLOSE))
+
+    ws[kSentClose] = sentCloseFrameState.SENT
+
+    // Upon either sending or receiving a Close control frame, it is said
+    // that _The WebSocket Closing Handshake is Started_ and that the
+    // WebSocket connection is in the CLOSING state.
+    ws[kReadyState] = states.CLOSING
+  } else {
+    // Otherwise
+    // Set this's ready state to CLOSING (2).
+    ws[kReadyState] = states.CLOSING
+  }
 }
 
 /**
@@ -35597,6 +35914,11 @@ function onSocketData (chunk) {
  */
 function onSocketClose () {
   const { ws } = this
+  const { [kResponse]: response } = ws
+
+  response.socket.off('data', onSocketData)
+  response.socket.off('close', onSocketClose)
+  response.socket.off('error', onSocketError)
 
   // If the TCP connection was closed after the
   // WebSocket closing handshake was completed, the WebSocket connection
@@ -35608,10 +35930,10 @@ function onSocketClose () {
 
   const result = ws[kByteParser].closingInfo
 
-  if (result) {
+  if (result && !result.error) {
     code = result.code ?? 1005
     reason = result.reason
-  } else if (ws[kSentClose] !== sentCloseFrameState.SENT) {
+  } else if (!ws[kReceivedClose]) {
     // If _The WebSocket
     // Connection is Closed_ and no Close control frame was received by the
     // endpoint (such as could occur if the underlying transport connection
@@ -35664,7 +35986,8 @@ function onSocketError (error) {
 }
 
 module.exports = {
-  establishWebSocketConnection
+  establishWebSocketConnection,
+  closeWebSocketConnection
 }
 
 
@@ -35722,6 +36045,13 @@ const parserStates = {
 
 const emptyBuffer = Buffer.allocUnsafe(0)
 
+const sendHints = {
+  string: 1,
+  typedArray: 2,
+  arrayBuffer: 3,
+  blob: 4
+}
+
 module.exports = {
   uid,
   sentCloseFrameState,
@@ -35730,7 +36060,8 @@ module.exports = {
   opcodes,
   maxUnsigned16Bit,
   parserStates,
-  emptyBuffer
+  emptyBuffer,
+  sendHints
 }
 
 
@@ -36077,13 +36408,34 @@ module.exports = {
 
 const { maxUnsigned16Bit } = __nccwpck_require__(3587)
 
+const BUFFER_SIZE = 16386
+
 /** @type {import('crypto')} */
 let crypto
+let buffer = null
+let bufIdx = BUFFER_SIZE
+
 try {
   crypto = __nccwpck_require__(6005)
 /* c8 ignore next 3 */
 } catch {
+  crypto = {
+    // not full compatibility, but minimum.
+    randomFillSync: function randomFillSync (buffer, _offset, _size) {
+      for (let i = 0; i < buffer.length; ++i) {
+        buffer[i] = Math.random() * 255 | 0
+      }
+      return buffer
+    }
+  }
+}
 
+function generateMask () {
+  if (bufIdx === BUFFER_SIZE) {
+    bufIdx = 0
+    crypto.randomFillSync((buffer ??= Buffer.allocUnsafe(BUFFER_SIZE)), 0, BUFFER_SIZE)
+  }
+  return [buffer[bufIdx++], buffer[bufIdx++], buffer[bufIdx++], buffer[bufIdx++]]
 }
 
 class WebsocketFrameSend {
@@ -36092,11 +36444,12 @@ class WebsocketFrameSend {
    */
   constructor (data) {
     this.frameData = data
-    this.maskKey = crypto.randomBytes(4)
   }
 
   createFrame (opcode) {
-    const bodyLength = this.frameData?.byteLength ?? 0
+    const frameData = this.frameData
+    const maskKey = generateMask()
+    const bodyLength = frameData?.byteLength ?? 0
 
     /** @type {number} */
     let payloadLength = bodyLength // 0-125
@@ -36118,10 +36471,10 @@ class WebsocketFrameSend {
     buffer[0] = (buffer[0] & 0xF0) + opcode // opcode
 
     /*! ws. MIT License. Einar Otto Stangvik <einaros@gmail.com> */
-    buffer[offset - 4] = this.maskKey[0]
-    buffer[offset - 3] = this.maskKey[1]
-    buffer[offset - 2] = this.maskKey[2]
-    buffer[offset - 1] = this.maskKey[3]
+    buffer[offset - 4] = maskKey[0]
+    buffer[offset - 3] = maskKey[1]
+    buffer[offset - 2] = maskKey[2]
+    buffer[offset - 1] = maskKey[3]
 
     buffer[1] = payloadLength
 
@@ -36136,8 +36489,8 @@ class WebsocketFrameSend {
     buffer[1] |= 0x80 // MASK
 
     // mask body
-    for (let i = 0; i < bodyLength; i++) {
-      buffer[offset + i] = this.frameData[i] ^ this.maskKey[i % 4]
+    for (let i = 0; i < bodyLength; ++i) {
+      buffer[offset + i] = frameData[i] ^ maskKey[i & 3]
     }
 
     return buffer
@@ -36151,6 +36504,84 @@ module.exports = {
 
 /***/ }),
 
+/***/ 8236:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { createInflateRaw, Z_DEFAULT_WINDOWBITS } = __nccwpck_require__(5628)
+const { isValidClientWindowBits } = __nccwpck_require__(9902)
+
+const tail = Buffer.from([0x00, 0x00, 0xff, 0xff])
+const kBuffer = Symbol('kBuffer')
+const kLength = Symbol('kLength')
+
+class PerMessageDeflate {
+  /** @type {import('node:zlib').InflateRaw} */
+  #inflate
+
+  #options = {}
+
+  constructor (extensions) {
+    this.#options.serverNoContextTakeover = extensions.has('server_no_context_takeover')
+    this.#options.serverMaxWindowBits = extensions.get('server_max_window_bits')
+  }
+
+  decompress (chunk, fin, callback) {
+    // An endpoint uses the following algorithm to decompress a message.
+    // 1.  Append 4 octets of 0x00 0x00 0xff 0xff to the tail end of the
+    //     payload of the message.
+    // 2.  Decompress the resulting data using DEFLATE.
+
+    if (!this.#inflate) {
+      let windowBits = Z_DEFAULT_WINDOWBITS
+
+      if (this.#options.serverMaxWindowBits) { // empty values default to Z_DEFAULT_WINDOWBITS
+        if (!isValidClientWindowBits(this.#options.serverMaxWindowBits)) {
+          callback(new Error('Invalid server_max_window_bits'))
+          return
+        }
+
+        windowBits = Number.parseInt(this.#options.serverMaxWindowBits)
+      }
+
+      this.#inflate = createInflateRaw({ windowBits })
+      this.#inflate[kBuffer] = []
+      this.#inflate[kLength] = 0
+
+      this.#inflate.on('data', (data) => {
+        this.#inflate[kBuffer].push(data)
+        this.#inflate[kLength] += data.length
+      })
+
+      this.#inflate.on('error', (err) => {
+        this.#inflate = null
+        callback(err)
+      })
+    }
+
+    this.#inflate.write(chunk)
+    if (fin) {
+      this.#inflate.write(tail)
+    }
+
+    this.#inflate.flush(() => {
+      const full = Buffer.concat(this.#inflate[kBuffer], this.#inflate[kLength])
+
+      this.#inflate[kBuffer].length = 0
+      this.#inflate[kLength] = 0
+
+      callback(null, full)
+    })
+  }
+}
+
+module.exports = { PerMessageDeflate }
+
+
+/***/ }),
+
 /***/ 5442:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -36158,11 +36589,23 @@ module.exports = {
 
 
 const { Writable } = __nccwpck_require__(4492)
+const assert = __nccwpck_require__(8061)
 const { parserStates, opcodes, states, emptyBuffer, sentCloseFrameState } = __nccwpck_require__(3587)
 const { kReadyState, kSentClose, kResponse, kReceivedClose } = __nccwpck_require__(9769)
 const { channels } = __nccwpck_require__(8438)
-const { isValidStatusCode, failWebsocketConnection, websocketMessageReceived, utf8Decode } = __nccwpck_require__(9902)
+const {
+  isValidStatusCode,
+  isValidOpcode,
+  failWebsocketConnection,
+  websocketMessageReceived,
+  utf8Decode,
+  isControlFrame,
+  isTextBinaryFrame,
+  isContinuationFrame
+} = __nccwpck_require__(9902)
 const { WebsocketFrameSend } = __nccwpck_require__(2391)
+const { closeWebSocketConnection } = __nccwpck_require__(8380)
+const { PerMessageDeflate } = __nccwpck_require__(8236)
 
 // This code was influenced by ws released under the MIT license.
 // Copyright (c) 2011 Einar Otto Stangvik <einaros@gmail.com>
@@ -36172,16 +36615,25 @@ const { WebsocketFrameSend } = __nccwpck_require__(2391)
 class ByteParser extends Writable {
   #buffers = []
   #byteOffset = 0
+  #loop = false
 
   #state = parserStates.INFO
 
   #info = {}
   #fragments = []
 
-  constructor (ws) {
+  /** @type {Map<string, PerMessageDeflate>} */
+  #extensions
+
+  constructor (ws, extensions) {
     super()
 
     this.ws = ws
+    this.#extensions = extensions == null ? new Map() : extensions
+
+    if (this.#extensions.has('permessage-deflate')) {
+      this.#extensions.set('permessage-deflate', new PerMessageDeflate(extensions))
+    }
   }
 
   /**
@@ -36191,6 +36643,7 @@ class ByteParser extends Writable {
   _write (chunk, _, callback) {
     this.#buffers.push(chunk)
     this.#byteOffset += chunk.length
+    this.#loop = true
 
     this.run(callback)
   }
@@ -36201,7 +36654,7 @@ class ByteParser extends Writable {
    * or not enough bytes are buffered to parse.
    */
   run (callback) {
-    while (true) {
+    while (this.#loop) {
       if (this.#state === parserStates.INFO) {
         // If there aren't enough bytes to parse the payload length, etc.
         if (this.#byteOffset < 2) {
@@ -36209,23 +36662,76 @@ class ByteParser extends Writable {
         }
 
         const buffer = this.consume(2)
+        const fin = (buffer[0] & 0x80) !== 0
+        const opcode = buffer[0] & 0x0F
+        const masked = (buffer[1] & 0x80) === 0x80
 
-        this.#info.fin = (buffer[0] & 0x80) !== 0
-        this.#info.opcode = buffer[0] & 0x0F
+        const fragmented = !fin && opcode !== opcodes.CONTINUATION
+        const payloadLength = buffer[1] & 0x7F
 
-        // If we receive a fragmented message, we use the type of the first
-        // frame to parse the full message as binary/text, when it's terminated
-        this.#info.originalOpcode ??= this.#info.opcode
+        const rsv1 = buffer[0] & 0x40
+        const rsv2 = buffer[0] & 0x20
+        const rsv3 = buffer[0] & 0x10
 
-        this.#info.fragmented = !this.#info.fin && this.#info.opcode !== opcodes.CONTINUATION
+        if (!isValidOpcode(opcode)) {
+          failWebsocketConnection(this.ws, 'Invalid opcode received')
+          return callback()
+        }
 
-        if (this.#info.fragmented && this.#info.opcode !== opcodes.BINARY && this.#info.opcode !== opcodes.TEXT) {
+        if (masked) {
+          failWebsocketConnection(this.ws, 'Frame cannot be masked')
+          return callback()
+        }
+
+        // MUST be 0 unless an extension is negotiated that defines meanings
+        // for non-zero values.  If a nonzero value is received and none of
+        // the negotiated extensions defines the meaning of such a nonzero
+        // value, the receiving endpoint MUST _Fail the WebSocket
+        // Connection_.
+        // This document allocates the RSV1 bit of the WebSocket header for
+        // PMCEs and calls the bit the "Per-Message Compressed" bit.  On a
+        // WebSocket connection where a PMCE is in use, this bit indicates
+        // whether a message is compressed or not.
+        if (rsv1 !== 0 && !this.#extensions.has('permessage-deflate')) {
+          failWebsocketConnection(this.ws, 'Expected RSV1 to be clear.')
+          return
+        }
+
+        if (rsv2 !== 0 || rsv3 !== 0) {
+          failWebsocketConnection(this.ws, 'RSV1, RSV2, RSV3 must be clear')
+          return
+        }
+
+        if (fragmented && !isTextBinaryFrame(opcode)) {
           // Only text and binary frames can be fragmented
           failWebsocketConnection(this.ws, 'Invalid frame type was fragmented.')
           return
         }
 
-        const payloadLength = buffer[1] & 0x7F
+        // If we are already parsing a text/binary frame and do not receive either
+        // a continuation frame or close frame, fail the connection.
+        if (isTextBinaryFrame(opcode) && this.#fragments.length > 0) {
+          failWebsocketConnection(this.ws, 'Expected continuation frame')
+          return
+        }
+
+        if (this.#info.fragmented && fragmented) {
+          // A fragmented frame can't be fragmented itself
+          failWebsocketConnection(this.ws, 'Fragmented frame exceeded 125 bytes.')
+          return
+        }
+
+        // "All control frames MUST have a payload length of 125 bytes or less
+        // and MUST NOT be fragmented."
+        if ((payloadLength > 125 || fragmented) && isControlFrame(opcode)) {
+          failWebsocketConnection(this.ws, 'Control frame either too large or fragmented')
+          return
+        }
+
+        if (isContinuationFrame(opcode) && this.#fragments.length === 0 && !this.#info.compressed) {
+          failWebsocketConnection(this.ws, 'Unexpected continuation frame')
+          return
+        }
 
         if (payloadLength <= 125) {
           this.#info.payloadLength = payloadLength
@@ -36236,108 +36742,15 @@ class ByteParser extends Writable {
           this.#state = parserStates.PAYLOADLENGTH_64
         }
 
-        if (this.#info.fragmented && payloadLength > 125) {
-          // A fragmented frame can't be fragmented itself
-          failWebsocketConnection(this.ws, 'Fragmented frame exceeded 125 bytes.')
-          return
-        } else if (
-          (this.#info.opcode === opcodes.PING ||
-            this.#info.opcode === opcodes.PONG ||
-            this.#info.opcode === opcodes.CLOSE) &&
-          payloadLength > 125
-        ) {
-          // Control frames can have a payload length of 125 bytes MAX
-          failWebsocketConnection(this.ws, 'Payload length for control frame exceeded 125 bytes.')
-          return
-        } else if (this.#info.opcode === opcodes.CLOSE) {
-          if (payloadLength === 1) {
-            failWebsocketConnection(this.ws, 'Received close frame with a 1-byte body.')
-            return
-          }
-
-          const body = this.consume(payloadLength)
-
-          this.#info.closeInfo = this.parseCloseBody(body)
-
-          if (this.ws[kSentClose] !== sentCloseFrameState.SENT) {
-            // If an endpoint receives a Close frame and did not previously send a
-            // Close frame, the endpoint MUST send a Close frame in response.  (When
-            // sending a Close frame in response, the endpoint typically echos the
-            // status code it received.)
-            let body = emptyBuffer
-            if (this.#info.closeInfo.code) {
-              body = Buffer.allocUnsafe(2)
-              body.writeUInt16BE(this.#info.closeInfo.code, 0)
-            }
-            const closeFrame = new WebsocketFrameSend(body)
-
-            this.ws[kResponse].socket.write(
-              closeFrame.createFrame(opcodes.CLOSE),
-              (err) => {
-                if (!err) {
-                  this.ws[kSentClose] = sentCloseFrameState.SENT
-                }
-              }
-            )
-          }
-
-          // Upon either sending or receiving a Close control frame, it is said
-          // that _The WebSocket Closing Handshake is Started_ and that the
-          // WebSocket connection is in the CLOSING state.
-          this.ws[kReadyState] = states.CLOSING
-          this.ws[kReceivedClose] = true
-
-          this.end()
-
-          return
-        } else if (this.#info.opcode === opcodes.PING) {
-          // Upon receipt of a Ping frame, an endpoint MUST send a Pong frame in
-          // response, unless it already received a Close frame.
-          // A Pong frame sent in response to a Ping frame must have identical
-          // "Application data"
-
-          const body = this.consume(payloadLength)
-
-          if (!this.ws[kReceivedClose]) {
-            const frame = new WebsocketFrameSend(body)
-
-            this.ws[kResponse].socket.write(frame.createFrame(opcodes.PONG))
-
-            if (channels.ping.hasSubscribers) {
-              channels.ping.publish({
-                payload: body
-              })
-            }
-          }
-
-          this.#state = parserStates.INFO
-
-          if (this.#byteOffset > 0) {
-            continue
-          } else {
-            callback()
-            return
-          }
-        } else if (this.#info.opcode === opcodes.PONG) {
-          // A Pong frame MAY be sent unsolicited.  This serves as a
-          // unidirectional heartbeat.  A response to an unsolicited Pong frame is
-          // not expected.
-
-          const body = this.consume(payloadLength)
-
-          if (channels.pong.hasSubscribers) {
-            channels.pong.publish({
-              payload: body
-            })
-          }
-
-          if (this.#byteOffset > 0) {
-            continue
-          } else {
-            callback()
-            return
-          }
+        if (isTextBinaryFrame(opcode)) {
+          this.#info.binaryType = opcode
+          this.#info.compressed = rsv1 !== 0
         }
+
+        this.#info.opcode = opcode
+        this.#info.masked = masked
+        this.#info.fin = fin
+        this.#info.fragmented = fragmented
       } else if (this.#state === parserStates.PAYLOADLENGTH_16) {
         if (this.#byteOffset < 2) {
           return callback()
@@ -36355,7 +36768,7 @@ class ByteParser extends Writable {
         const buffer = this.consume(8)
         const upper = buffer.readUInt32BE(0)
 
-        // 2^31 is the maxinimum bytes an arraybuffer can contain
+        // 2^31 is the maximum bytes an arraybuffer can contain
         // on 32-bit systems. Although, on 64-bit systems, this is
         // 2^53-1 bytes.
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Errors/Invalid_array_length
@@ -36372,33 +36785,57 @@ class ByteParser extends Writable {
         this.#state = parserStates.READ_DATA
       } else if (this.#state === parserStates.READ_DATA) {
         if (this.#byteOffset < this.#info.payloadLength) {
-          // If there is still more data in this chunk that needs to be read
           return callback()
-        } else if (this.#byteOffset >= this.#info.payloadLength) {
-          // If the server sent multiple frames in a single chunk
-
-          const body = this.consume(this.#info.payloadLength)
-
-          this.#fragments.push(body)
-
-          // If the frame is unfragmented, or a fragmented frame was terminated,
-          // a message was received
-          if (!this.#info.fragmented || (this.#info.fin && this.#info.opcode === opcodes.CONTINUATION)) {
-            const fullMessage = Buffer.concat(this.#fragments)
-
-            websocketMessageReceived(this.ws, this.#info.originalOpcode, fullMessage)
-
-            this.#info = {}
-            this.#fragments.length = 0
-          }
-
-          this.#state = parserStates.INFO
         }
-      }
 
-      if (this.#byteOffset === 0) {
-        callback()
-        break
+        const body = this.consume(this.#info.payloadLength)
+
+        if (isControlFrame(this.#info.opcode)) {
+          this.#loop = this.parseControlFrame(body)
+          this.#state = parserStates.INFO
+        } else {
+          if (!this.#info.compressed) {
+            this.#fragments.push(body)
+
+            // If the frame is not fragmented, a message has been received.
+            // If the frame is fragmented, it will terminate with a fin bit set
+            // and an opcode of 0 (continuation), therefore we handle that when
+            // parsing continuation frames, not here.
+            if (!this.#info.fragmented && this.#info.fin) {
+              const fullMessage = Buffer.concat(this.#fragments)
+              websocketMessageReceived(this.ws, this.#info.binaryType, fullMessage)
+              this.#fragments.length = 0
+            }
+
+            this.#state = parserStates.INFO
+          } else {
+            this.#extensions.get('permessage-deflate').decompress(body, this.#info.fin, (error, data) => {
+              if (error) {
+                closeWebSocketConnection(this.ws, 1007, error.message, error.message.length)
+                return
+              }
+
+              this.#fragments.push(data)
+
+              if (!this.#info.fin) {
+                this.#state = parserStates.INFO
+                this.#loop = true
+                this.run(callback)
+                return
+              }
+
+              websocketMessageReceived(this.ws, this.#info.binaryType, Buffer.concat(this.#fragments))
+
+              this.#loop = true
+              this.#state = parserStates.INFO
+              this.run(callback)
+              this.#fragments.length = 0
+            })
+
+            this.#loop = false
+            break
+          }
+        }
       }
     }
   }
@@ -36406,11 +36843,11 @@ class ByteParser extends Writable {
   /**
    * Take n bytes from the buffered Buffers
    * @param {number} n
-   * @returns {Buffer|null}
+   * @returns {Buffer}
    */
   consume (n) {
     if (n > this.#byteOffset) {
-      return null
+      throw new Error('Called consume() before buffers satiated.')
     } else if (n === 0) {
       return emptyBuffer
     }
@@ -36446,6 +36883,8 @@ class ByteParser extends Writable {
   }
 
   parseCloseBody (data) {
+    assert(data.length !== 1)
+
     // https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.5
     /** @type {number|undefined} */
     let code
@@ -36457,6 +36896,10 @@ class ByteParser extends Writable {
       code = data.readUInt16BE(0)
     }
 
+    if (code !== undefined && !isValidStatusCode(code)) {
+      return { code: 1002, reason: 'Invalid status code', error: true }
+    }
+
     // https://datatracker.ietf.org/doc/html/rfc6455#section-7.1.6
     /** @type {Buffer} */
     let reason = data.subarray(2)
@@ -36466,17 +36909,97 @@ class ByteParser extends Writable {
       reason = reason.subarray(3)
     }
 
-    if (code !== undefined && !isValidStatusCode(code)) {
-      return null
-    }
-
     try {
       reason = utf8Decode(reason)
     } catch {
-      return null
+      return { code: 1007, reason: 'Invalid UTF-8', error: true }
     }
 
-    return { code, reason }
+    return { code, reason, error: false }
+  }
+
+  /**
+   * Parses control frames.
+   * @param {Buffer} body
+   */
+  parseControlFrame (body) {
+    const { opcode, payloadLength } = this.#info
+
+    if (opcode === opcodes.CLOSE) {
+      if (payloadLength === 1) {
+        failWebsocketConnection(this.ws, 'Received close frame with a 1-byte body.')
+        return false
+      }
+
+      this.#info.closeInfo = this.parseCloseBody(body)
+
+      if (this.#info.closeInfo.error) {
+        const { code, reason } = this.#info.closeInfo
+
+        closeWebSocketConnection(this.ws, code, reason, reason.length)
+        failWebsocketConnection(this.ws, reason)
+        return false
+      }
+
+      if (this.ws[kSentClose] !== sentCloseFrameState.SENT) {
+        // If an endpoint receives a Close frame and did not previously send a
+        // Close frame, the endpoint MUST send a Close frame in response.  (When
+        // sending a Close frame in response, the endpoint typically echos the
+        // status code it received.)
+        let body = emptyBuffer
+        if (this.#info.closeInfo.code) {
+          body = Buffer.allocUnsafe(2)
+          body.writeUInt16BE(this.#info.closeInfo.code, 0)
+        }
+        const closeFrame = new WebsocketFrameSend(body)
+
+        this.ws[kResponse].socket.write(
+          closeFrame.createFrame(opcodes.CLOSE),
+          (err) => {
+            if (!err) {
+              this.ws[kSentClose] = sentCloseFrameState.SENT
+            }
+          }
+        )
+      }
+
+      // Upon either sending or receiving a Close control frame, it is said
+      // that _The WebSocket Closing Handshake is Started_ and that the
+      // WebSocket connection is in the CLOSING state.
+      this.ws[kReadyState] = states.CLOSING
+      this.ws[kReceivedClose] = true
+
+      return false
+    } else if (opcode === opcodes.PING) {
+      // Upon receipt of a Ping frame, an endpoint MUST send a Pong frame in
+      // response, unless it already received a Close frame.
+      // A Pong frame sent in response to a Ping frame must have identical
+      // "Application data"
+
+      if (!this.ws[kReceivedClose]) {
+        const frame = new WebsocketFrameSend(body)
+
+        this.ws[kResponse].socket.write(frame.createFrame(opcodes.PONG))
+
+        if (channels.ping.hasSubscribers) {
+          channels.ping.publish({
+            payload: body
+          })
+        }
+      }
+    } else if (opcode === opcodes.PONG) {
+      // A Pong frame MAY be sent unsolicited.  This serves as a
+      // unidirectional heartbeat.  A response to an unsolicited Pong frame is
+      // not expected.
+
+      if (channels.pong.hasSubscribers) {
+        channels.pong.publish({
+          payload: body
+        })
+      }
+    }
+
+    return true
   }
 
   get closingInfo () {
@@ -36487,6 +37010,99 @@ class ByteParser extends Writable {
 module.exports = {
   ByteParser
 }
+
+
+/***/ }),
+
+/***/ 4821:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const { WebsocketFrameSend } = __nccwpck_require__(2391)
+const { opcodes, sendHints } = __nccwpck_require__(3587)
+
+/** @type {Uint8Array} */
+const FastBuffer = Buffer[Symbol.species]
+
+class SendQueue {
+  #queued = new Set()
+  #size = 0
+
+  /** @type {import('net').Socket} */
+  #socket
+
+  constructor (socket) {
+    this.#socket = socket
+  }
+
+  add (item, cb, hint) {
+    if (hint !== sendHints.blob) {
+      const data = clone(item, hint)
+
+      if (this.#size === 0) {
+        this.#dispatch(data, cb, hint)
+      } else {
+        this.#queued.add([data, cb, true, hint])
+        this.#size++
+
+        this.#run()
+      }
+
+      return
+    }
+
+    const promise = item.arrayBuffer()
+    const queue = [null, cb, false, hint]
+    promise.then((ab) => {
+      queue[0] = clone(ab, hint)
+      queue[2] = true
+
+      this.#run()
+    })
+
+    this.#queued.add(queue)
+    this.#size++
+  }
+
+  #run () {
+    for (const queued of this.#queued) {
+      const [data, cb, done, hint] = queued
+
+      if (!done) return
+
+      this.#queued.delete(queued)
+      this.#size--
+
+      this.#dispatch(data, cb, hint)
+    }
+  }
+
+  #dispatch (data, cb, hint) {
+    const frame = new WebsocketFrameSend()
+    const opcode = hint === sendHints.string ? opcodes.TEXT : opcodes.BINARY
+
+    frame.frameData = data
+    const buffer = frame.createFrame(opcode)
+
+    this.#socket.write(buffer, cb)
+  }
+}
+
+function clone (data, hint) {
+  switch (hint) {
+    case sendHints.string:
+      return Buffer.from(data)
+    case sendHints.arrayBuffer:
+    case sendHints.blob:
+      return new FastBuffer(data)
+    case sendHints.typedArray:
+      return Buffer.copyBytesFrom(data)
+  }
+}
+
+module.exports = { SendQueue }
 
 
 /***/ }),
@@ -36521,6 +37137,7 @@ const { kReadyState, kController, kResponse, kBinaryType, kWebSocketURL } = __nc
 const { states, opcodes } = __nccwpck_require__(3587)
 const { ErrorEvent, createFastMessageEvent } = __nccwpck_require__(5033)
 const { isUtf8 } = __nccwpck_require__(2254)
+const { collectASequenceOfCodePointsFast, removeHTTPWhitespace } = __nccwpck_require__(7704)
 
 /* globals Blob */
 
@@ -36621,7 +37238,7 @@ function websocketMessageReceived (ws, type, data) {
       // -> type indicates that the data is Binary and binary type is "arraybuffer"
       //      a new ArrayBuffer object, created in the relevant Realm of the
       //      WebSocket object, whose contents are data
-      dataForEvent = new Uint8Array(data).buffer
+      dataForEvent = toArrayBuffer(data)
     }
   }
 
@@ -36632,6 +37249,13 @@ function websocketMessageReceived (ws, type, data) {
     origin: ws[kWebSocketURL].origin,
     data: dataForEvent
   })
+}
+
+function toArrayBuffer (buffer) {
+  if (buffer.byteLength === buffer.buffer.byteLength) {
+    return buffer.buffer
+  }
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
 }
 
 /**
@@ -36714,9 +37338,76 @@ function failWebsocketConnection (ws, reason) {
   if (reason) {
     // TODO: process.nextTick
     fireEvent('error', ws, (type, init) => new ErrorEvent(type, init), {
-      error: new Error(reason)
+      error: new Error(reason),
+      message: reason
     })
   }
+}
+
+/**
+ * @see https://datatracker.ietf.org/doc/html/rfc6455#section-5.5
+ * @param {number} opcode
+ */
+function isControlFrame (opcode) {
+  return (
+    opcode === opcodes.CLOSE ||
+    opcode === opcodes.PING ||
+    opcode === opcodes.PONG
+  )
+}
+
+function isContinuationFrame (opcode) {
+  return opcode === opcodes.CONTINUATION
+}
+
+function isTextBinaryFrame (opcode) {
+  return opcode === opcodes.TEXT || opcode === opcodes.BINARY
+}
+
+function isValidOpcode (opcode) {
+  return isTextBinaryFrame(opcode) || isContinuationFrame(opcode) || isControlFrame(opcode)
+}
+
+/**
+ * Parses a Sec-WebSocket-Extensions header value.
+ * @param {string} extensions
+ * @returns {Map<string, string>}
+ */
+// TODO(@Uzlopak, @KhafraDev): make compliant https://datatracker.ietf.org/doc/html/rfc6455#section-9.1
+function parseExtensions (extensions) {
+  const position = { position: 0 }
+  const extensionList = new Map()
+
+  while (position.position < extensions.length) {
+    const pair = collectASequenceOfCodePointsFast(';', extensions, position)
+    const [name, value = ''] = pair.split('=')
+
+    extensionList.set(
+      removeHTTPWhitespace(name, true, false),
+      removeHTTPWhitespace(value, false, true)
+    )
+
+    position.position++
+  }
+
+  return extensionList
+}
+
+/**
+ * @see https://www.rfc-editor.org/rfc/rfc7692#section-7.1.2.2
+ * @description "client-max-window-bits = 1*DIGIT"
+ * @param {string} value
+ */
+function isValidClientWindowBits (value) {
+  for (let i = 0; i < value.length; i++) {
+    const byte = value.charCodeAt(i)
+
+    if (byte < 0x30 || byte > 0x39) {
+      return false
+    }
+  }
+
+  return true
 }
 
 // https://nodejs.org/api/intl.html#detecting-internationalization-support
@@ -36746,7 +37437,13 @@ module.exports = {
   isValidStatusCode,
   failWebsocketConnection,
   websocketMessageReceived,
-  utf8Decode
+  utf8Decode,
+  isControlFrame,
+  isContinuationFrame,
+  isTextBinaryFrame,
+  isValidOpcode,
+  parseExtensions,
+  isValidClientWindowBits
 }
 
 
@@ -36760,8 +37457,8 @@ module.exports = {
 
 const { webidl } = __nccwpck_require__(4890)
 const { URLSerializer } = __nccwpck_require__(7704)
-const { getGlobalOrigin } = __nccwpck_require__(2850)
-const { staticPropertyDescriptors, states, sentCloseFrameState, opcodes, emptyBuffer } = __nccwpck_require__(3587)
+const { environmentSettingsObject } = __nccwpck_require__(1310)
+const { staticPropertyDescriptors, states, sentCloseFrameState, sendHints } = __nccwpck_require__(3587)
 const {
   kWebSocketURL,
   kReadyState,
@@ -36774,18 +37471,17 @@ const {
 const {
   isConnecting,
   isEstablished,
-  isClosed,
   isClosing,
   isValidSubprotocol,
-  failWebsocketConnection,
   fireEvent
 } = __nccwpck_require__(9902)
-const { establishWebSocketConnection } = __nccwpck_require__(8380)
-const { WebsocketFrameSend } = __nccwpck_require__(2391)
+const { establishWebSocketConnection, closeWebSocketConnection } = __nccwpck_require__(8380)
 const { ByteParser } = __nccwpck_require__(5442)
 const { kEnumerableProperty, isBlobLike } = __nccwpck_require__(3983)
 const { getGlobalDispatcher } = __nccwpck_require__(1892)
 const { types } = __nccwpck_require__(7261)
+const { ErrorEvent, CloseEvent } = __nccwpck_require__(5033)
+const { SendQueue } = __nccwpck_require__(4821)
 
 let experimentalWarned = false
 
@@ -36801,6 +37497,9 @@ class WebSocket extends EventTarget {
   #bufferedAmount = 0
   #protocol = ''
   #extensions = ''
+
+  /** @type {SendQueue} */
+  #sendQueue
 
   /**
    * @param {string} url
@@ -36825,7 +37524,7 @@ class WebSocket extends EventTarget {
     protocols = options.protocols
 
     // 1. Let baseURL be this's relevant settings object's API base URL.
-    const baseURL = getGlobalOrigin()
+    const baseURL = environmentSettingsObject.settingsObject.baseUrl
 
     // 1. Let urlRecord be the result of applying the URL parser to url with baseURL.
     let urlRecord
@@ -36881,6 +37580,7 @@ class WebSocket extends EventTarget {
     this[kWebSocketURL] = new URL(urlRecord.href)
 
     // 11. Let client be this's relevant settings object.
+    const client = environmentSettingsObject.settingsObject
 
     // 12. Run this step in parallel:
 
@@ -36889,8 +37589,9 @@ class WebSocket extends EventTarget {
     this[kController] = establishWebSocketConnection(
       urlRecord,
       protocols,
+      client,
       this,
-      (response) => this.#onConnectionEstablished(response),
+      (response, extensions) => this.#onConnectionEstablished(response, extensions),
       options
     )
 
@@ -36955,67 +37656,7 @@ class WebSocket extends EventTarget {
     }
 
     // 3. Run the first matching steps from the following list:
-    if (isClosing(this) || isClosed(this)) {
-      // If this's ready state is CLOSING (2) or CLOSED (3)
-      // Do nothing.
-    } else if (!isEstablished(this)) {
-      // If the WebSocket connection is not yet established
-      // Fail the WebSocket connection and set this's ready state
-      // to CLOSING (2).
-      failWebsocketConnection(this, 'Connection was closed before it was established.')
-      this[kReadyState] = WebSocket.CLOSING
-    } else if (this[kSentClose] === sentCloseFrameState.NOT_SENT) {
-      // If the WebSocket closing handshake has not yet been started
-      // Start the WebSocket closing handshake and set this's ready
-      // state to CLOSING (2).
-      // - If neither code nor reason is present, the WebSocket Close
-      //   message must not have a body.
-      // - If code is present, then the status code to use in the
-      //   WebSocket Close message must be the integer given by code.
-      // - If reason is also present, then reasonBytes must be
-      //   provided in the Close message after the status code.
-
-      this[kSentClose] = sentCloseFrameState.PROCESSING
-
-      const frame = new WebsocketFrameSend()
-
-      // If neither code nor reason is present, the WebSocket Close
-      // message must not have a body.
-
-      // If code is present, then the status code to use in the
-      // WebSocket Close message must be the integer given by code.
-      if (code !== undefined && reason === undefined) {
-        frame.frameData = Buffer.allocUnsafe(2)
-        frame.frameData.writeUInt16BE(code, 0)
-      } else if (code !== undefined && reason !== undefined) {
-        // If reason is also present, then reasonBytes must be
-        // provided in the Close message after the status code.
-        frame.frameData = Buffer.allocUnsafe(2 + reasonByteLength)
-        frame.frameData.writeUInt16BE(code, 0)
-        // the body MAY contain UTF-8-encoded data with value /reason/
-        frame.frameData.write(reason, 2, 'utf-8')
-      } else {
-        frame.frameData = emptyBuffer
-      }
-
-      /** @type {import('stream').Duplex} */
-      const socket = this[kResponse].socket
-
-      socket.write(frame.createFrame(opcodes.CLOSE), (err) => {
-        if (!err) {
-          this[kSentClose] = sentCloseFrameState.SENT
-        }
-      })
-
-      // Upon either sending or receiving a Close control frame, it is said
-      // that _The WebSocket Closing Handshake is Started_ and that the
-      // WebSocket connection is in the CLOSING state.
-      this[kReadyState] = states.CLOSING
-    } else {
-      // Otherwise
-      // Set this's ready state to CLOSING (2).
-      this[kReadyState] = WebSocket.CLOSING
-    }
+    closeWebSocketConnection(this, code, reason, reasonByteLength)
   }
 
   /**
@@ -37044,9 +37685,6 @@ class WebSocket extends EventTarget {
       return
     }
 
-    /** @type {import('stream').Duplex} */
-    const socket = this[kResponse].socket
-
     // If data is a string
     if (typeof data === 'string') {
       // If the WebSocket connection is established and the WebSocket
@@ -37060,14 +37698,12 @@ class WebSocket extends EventTarget {
       // the bufferedAmount attribute by the number of bytes needed to
       // express the argument as UTF-8.
 
-      const value = Buffer.from(data)
-      const frame = new WebsocketFrameSend(value)
-      const buffer = frame.createFrame(opcodes.TEXT)
+      const length = Buffer.byteLength(data)
 
-      this.#bufferedAmount += value.byteLength
-      socket.write(buffer, () => {
-        this.#bufferedAmount -= value.byteLength
-      })
+      this.#bufferedAmount += length
+      this.#sendQueue.add(data, () => {
+        this.#bufferedAmount -= length
+      }, sendHints.string)
     } else if (types.isArrayBuffer(data)) {
       // If the WebSocket connection is established, and the WebSocket
       // closing handshake has not yet started, then the user agent must
@@ -37081,14 +37717,10 @@ class WebSocket extends EventTarget {
       // increase the bufferedAmount attribute by the length of the
       // ArrayBuffer in bytes.
 
-      const value = Buffer.from(data)
-      const frame = new WebsocketFrameSend(value)
-      const buffer = frame.createFrame(opcodes.BINARY)
-
-      this.#bufferedAmount += value.byteLength
-      socket.write(buffer, () => {
-        this.#bufferedAmount -= value.byteLength
-      })
+      this.#bufferedAmount += data.byteLength
+      this.#sendQueue.add(data, () => {
+        this.#bufferedAmount -= data.byteLength
+      }, sendHints.arrayBuffer)
     } else if (ArrayBuffer.isView(data)) {
       // If the WebSocket connection is established, and the WebSocket
       // closing handshake has not yet started, then the user agent must
@@ -37102,15 +37734,10 @@ class WebSocket extends EventTarget {
       // not throw an exception must increase the bufferedAmount attribute
       // by the length of data’s buffer in bytes.
 
-      const ab = Buffer.from(data, data.byteOffset, data.byteLength)
-
-      const frame = new WebsocketFrameSend(ab)
-      const buffer = frame.createFrame(opcodes.BINARY)
-
-      this.#bufferedAmount += ab.byteLength
-      socket.write(buffer, () => {
-        this.#bufferedAmount -= ab.byteLength
-      })
+      this.#bufferedAmount += data.byteLength
+      this.#sendQueue.add(data, () => {
+        this.#bufferedAmount -= data.byteLength
+      }, sendHints.typedArray)
     } else if (isBlobLike(data)) {
       // If the WebSocket connection is established, and the WebSocket
       // closing handshake has not yet started, then the user agent must
@@ -37123,18 +37750,10 @@ class WebSocket extends EventTarget {
       // an exception must increase the bufferedAmount attribute by the size
       // of the Blob object’s raw data, in bytes.
 
-      const frame = new WebsocketFrameSend()
-
-      data.arrayBuffer().then((ab) => {
-        const value = Buffer.from(ab)
-        frame.frameData = value
-        const buffer = frame.createFrame(opcodes.BINARY)
-
-        this.#bufferedAmount += value.byteLength
-        socket.write(buffer, () => {
-          this.#bufferedAmount -= value.byteLength
-        })
-      })
+      this.#bufferedAmount += data.size
+      this.#sendQueue.add(data, () => {
+        this.#bufferedAmount -= data.size
+      }, sendHints.blob)
     }
   }
 
@@ -37273,18 +37892,19 @@ class WebSocket extends EventTarget {
   /**
    * @see https://websockets.spec.whatwg.org/#feedback-from-the-protocol
    */
-  #onConnectionEstablished (response) {
+  #onConnectionEstablished (response, parsedExtensions) {
     // processResponse is called when the "response’s header list has been received and initialized."
     // once this happens, the connection is open
     this[kResponse] = response
 
-    const parser = new ByteParser(this)
-    parser.on('drain', function onParserDrain () {
-      this.ws[kResponse].socket.resume()
-    })
+    const parser = new ByteParser(this, parsedExtensions)
+    parser.on('drain', onParserDrain)
+    parser.on('error', onParserError.bind(this))
 
     response.socket.ws = this
     this[kByteParser] = parser
+
+    this.#sendQueue = new SendQueue(response.socket)
 
     // 1. Change the ready state to OPEN (1).
     this[kReadyState] = states.OPEN
@@ -37365,7 +37985,7 @@ webidl.converters['DOMString or sequence<DOMString>'] = function (V, prefix, arg
   return webidl.converters.DOMString(V, prefix, argument)
 }
 
-// This implements the propsal made in https://github.com/whatwg/websockets/issues/42
+// This implements the proposal made in https://github.com/whatwg/websockets/issues/42
 webidl.converters.WebSocketInit = webidl.dictionaryConverter([
   {
     key: 'protocols',
@@ -37374,7 +37994,7 @@ webidl.converters.WebSocketInit = webidl.dictionaryConverter([
   },
   {
     key: 'dispatcher',
-    converter: (V) => V,
+    converter: webidl.converters.any,
     defaultValue: () => getGlobalDispatcher()
   },
   {
@@ -37403,6 +38023,26 @@ webidl.converters.WebSocketSendData = function (V) {
   }
 
   return webidl.converters.USVString(V)
+}
+
+function onParserDrain () {
+  this.ws[kResponse].socket.resume()
+}
+
+function onParserError (err) {
+  let message
+  let code
+
+  if (err instanceof CloseEvent) {
+    message = err.reason
+    code = err.code
+  } else {
+    message = err.message
+  }
+
+  fireEvent('error', this, () => new ErrorEvent('error', { error: err, message }))
+
+  closeWebSocketConnection(this, code)
 }
 
 module.exports = {
