@@ -14824,6 +14824,7 @@ module.exports = {
   kHost: Symbol('host'),
   kNoRef: Symbol('no ref'),
   kBodyUsed: Symbol('used'),
+  kBody: Symbol('abstracted request body'),
   kRunning: Symbol('running'),
   kBlocking: Symbol('blocking'),
   kPending: Symbol('pending'),
@@ -15039,18 +15040,71 @@ module.exports = {
 
 
 const assert = __nccwpck_require__(8061)
-const { kDestroyed, kBodyUsed, kListeners } = __nccwpck_require__(2785)
+const { kDestroyed, kBodyUsed, kListeners, kBody } = __nccwpck_require__(2785)
 const { IncomingMessage } = __nccwpck_require__(8849)
 const stream = __nccwpck_require__(4492)
 const net = __nccwpck_require__(7503)
-const { InvalidArgumentError } = __nccwpck_require__(8045)
 const { Blob } = __nccwpck_require__(2254)
 const nodeUtil = __nccwpck_require__(7261)
 const { stringify } = __nccwpck_require__(9630)
+const { EventEmitter: EE } = __nccwpck_require__(5673)
+const { InvalidArgumentError } = __nccwpck_require__(8045)
 const { headerNameLowerCasedRecord } = __nccwpck_require__(4462)
 const { tree } = __nccwpck_require__(7506)
 
 const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(v => Number(v))
+
+class BodyAsyncIterable {
+  constructor (body) {
+    this[kBody] = body
+    this[kBodyUsed] = false
+  }
+
+  async * [Symbol.asyncIterator] () {
+    assert(!this[kBodyUsed], 'disturbed')
+    this[kBodyUsed] = true
+    yield * this[kBody]
+  }
+}
+
+function wrapRequestBody (body) {
+  if (isStream(body)) {
+    // TODO (fix): Provide some way for the user to cache the file to e.g. /tmp
+    // so that it can be dispatched again?
+    // TODO (fix): Do we need 100-expect support to provide a way to do this properly?
+    if (bodyLength(body) === 0) {
+      body
+        .on('data', function () {
+          assert(false)
+        })
+    }
+
+    if (typeof body.readableDidRead !== 'boolean') {
+      body[kBodyUsed] = false
+      EE.prototype.on.call(body, 'data', function () {
+        this[kBodyUsed] = true
+      })
+    }
+
+    return body
+  } else if (body && typeof body.pipeTo === 'function') {
+    // TODO (fix): We can't access ReadableStream internal state
+    // to determine whether or not it has been disturbed. This is just
+    // a workaround.
+    return new BodyAsyncIterable(body)
+  } else if (
+    body &&
+    typeof body !== 'string' &&
+    !ArrayBuffer.isView(body) &&
+    isIterable(body)
+  ) {
+    // TODO: Should we allow re-using iterable if !this.opts.idempotent
+    // or through some other flag?
+    return new BodyAsyncIterable(body)
+  } else {
+    return body
+  }
+}
 
 function nop () {}
 
@@ -15672,7 +15726,8 @@ module.exports = {
   isHttpOrHttpsPrefixed,
   nodeMajor,
   nodeMinor,
-  safeHTTPMethods: ['GET', 'HEAD', 'OPTIONS', 'TRACE']
+  safeHTTPMethods: ['GET', 'HEAD', 'OPTIONS', 'TRACE'],
+  wrapRequestBody
 }
 
 
@@ -20185,7 +20240,12 @@ const assert = __nccwpck_require__(8061)
 
 const { kRetryHandlerDefaultRetry } = __nccwpck_require__(2785)
 const { RequestRetryError } = __nccwpck_require__(8045)
-const { isDisturbed, parseHeaders, parseRangeHeader } = __nccwpck_require__(3983)
+const {
+  isDisturbed,
+  parseHeaders,
+  parseRangeHeader,
+  wrapRequestBody
+} = __nccwpck_require__(3983)
 
 function calculateRetryAfterHeader (retryAfter) {
   const current = Date.now()
@@ -20211,7 +20271,7 @@ class RetryHandler {
 
     this.dispatch = handlers.dispatch
     this.handler = handlers.handler
-    this.opts = dispatchOpts
+    this.opts = { ...dispatchOpts, body: wrapRequestBody(opts.body) }
     this.abort = null
     this.aborted = false
     this.retryOpts = {
@@ -20356,7 +20416,9 @@ class RetryHandler {
         this.abort(
           new RequestRetryError('Request failed', statusCode, {
             headers,
-            count: this.retryCount
+            data: {
+              count: this.retryCount
+            }
           })
         )
         return false
@@ -20460,7 +20522,7 @@ class RetryHandler {
 
     const err = new RequestRetryError('Request failed', statusCode, {
       headers,
-      count: this.retryCount
+      data: { count: this.retryCount }
     })
 
     this.abort(err)
@@ -23349,7 +23411,7 @@ module.exports = {
 
 
 const { parseSetCookie } = __nccwpck_require__(3903)
-const { stringify, getHeadersList } = __nccwpck_require__(4806)
+const { stringify } = __nccwpck_require__(4806)
 const { webidl } = __nccwpck_require__(4890)
 const { Headers } = __nccwpck_require__(2991)
 
@@ -23426,14 +23488,13 @@ function getSetCookies (headers) {
 
   webidl.brandCheck(headers, Headers, { strict: false })
 
-  const cookies = getHeadersList(headers).cookies
+  const cookies = headers.getSetCookie()
 
   if (!cookies) {
     return []
   }
 
-  // In older versions of undici, cookies is a list of name:value.
-  return cookies.map((pair) => parseSetCookie(Array.isArray(pair) ? pair[1] : pair))
+  return cookies.map((pair) => parseSetCookie(pair))
 }
 
 /**
@@ -23861,13 +23922,10 @@ module.exports = {
 /***/ }),
 
 /***/ 4806:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((module) => {
 
 "use strict";
 
-
-const assert = __nccwpck_require__(8061)
-const { getHeadersList: internalGetHeadersList } = __nccwpck_require__(2991)
 
 /**
  * @param {string} value
@@ -24141,37 +24199,13 @@ function stringify (cookie) {
   return out.join('; ')
 }
 
-let kHeadersListNode
-
-function getHeadersList (headers) {
-  try {
-    return internalGetHeadersList(headers)
-  } catch {
-    // fall-through
-  }
-
-  if (!kHeadersListNode) {
-    kHeadersListNode = Object.getOwnPropertySymbols(headers).find(
-      (symbol) => symbol.description === 'headers list'
-    )
-
-    assert(kHeadersListNode, 'Headers cannot be parsed')
-  }
-
-  const headersList = headers[kHeadersListNode]
-  assert(headersList)
-
-  return headersList
-}
-
 module.exports = {
   isCTLExcludingHtab,
   validateCookieName,
   validateCookiePath,
   validateCookieValue,
   toIMFDate,
-  stringify,
-  getHeadersList
+  stringify
 }
 
 
@@ -28112,14 +28146,6 @@ Object.defineProperties(Headers.prototype, {
   },
   [util.inspect.custom]: {
     enumerable: false
-  },
-  // Compatibility for global headers
-  [Symbol('headers list')]: {
-    configurable: false,
-    enumerable: false,
-    get: function () {
-      return getHeadersList(this)
-    }
   }
 })
 
