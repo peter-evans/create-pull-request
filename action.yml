@@ -1,4 +1,4 @@
-name: 'Create Pull Request'
+name: 'Create Pull Request - no-verify'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
 inputs:
   token:
