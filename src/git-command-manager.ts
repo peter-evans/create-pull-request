@@ -188,7 +188,7 @@ export class GitCommandManager {
   }
 
   async push(options?: string[]): Promise<void> {
-    const args = ['push']
+    const args = ['push', '--no-verify']
     if (options) {
       args.push(...options)
     }
