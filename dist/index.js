@@ -698,7 +698,7 @@ class GitCommandManager {
     }
     push(options) {
         return __awaiter(this, void 0, void 0, function* () {
-            const args = ['push'];
+            const args = ['push', '--no-verify']; //added no verify here
             if (options) {
                 args.push(...options);
             }
