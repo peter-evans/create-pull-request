@@ -117,6 +117,7 @@ The following outputs can be used by subsequent workflow steps.
 - `pull-request-url` - The URL of the pull request.
 - `pull-request-operation` - The pull request operation performed by the action, `created`, `updated` or `closed`.
 - `pull-request-head-sha` - The commit SHA of the pull request branch.
+- `pull-request-branch` - The branch name of the pull request.
 
 Step outputs can be accessed as in the following example.
 Note that in order to read the step outputs the action step must have an id.
