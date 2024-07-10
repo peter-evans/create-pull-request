@@ -32,6 +32,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  commitAsActions: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -154,24 +155,31 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     // Configure the committer and author
     core.startGroup('Configuring the committer and author')
-    const parsedAuthor = utils.parseDisplayNameEmail(inputs.author)
-    const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer)
-    git.setIdentityGitOptions([
-      '-c',
-      `author.name=${parsedAuthor.name}`,
-      '-c',
-      `author.email=${parsedAuthor.email}`,
-      '-c',
-      `committer.name=${parsedCommitter.name}`,
-      '-c',
-      `committer.email=${parsedCommitter.email}`
-    ])
-    core.info(
-      `Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`
-    )
-    core.info(
-      `Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`
-    )
+    if (inputs.commitAsActions == true) {
+        const parsedAuthor = ""
+        const parsedCommitter = ""
+    }
+    else {
+        const parsedAuthor = utils.parseDisplayNameEmail(inputs.author)
+        const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer)
+
+        git.setIdentityGitOptions([
+          '-c',
+          `author.name=${parsedAuthor.name}`,
+          '-c',
+          `author.email=${parsedAuthor.email}`,
+          '-c',
+          `committer.name=${parsedCommitter.name}`,
+          '-c',
+          `committer.email=${parsedCommitter.email}`
+        ])
+        core.info(
+          `Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`
+        )
+        core.info(
+          `Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`
+        )
+    }
     core.endGroup()
 
     // Create or update the pull request branch
@@ -183,7 +191,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths
+      inputs.addPaths,
+      inputs.commitAsActions
     )
     core.endGroup()
 

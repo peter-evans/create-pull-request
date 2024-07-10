@@ -124,7 +124,8 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[]
+  addPaths: string[],
+  useRestApi: boolean
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
