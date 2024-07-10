@@ -156,22 +156,25 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.startGroup('Configuring the committer and author')
     const parsedAuthor = utils.parseDisplayNameEmail(inputs.author)
     const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer)
-    git.setIdentityGitOptions([
-      '-c',
-      `author.name=${parsedAuthor.name}`,
-      '-c',
-      `author.email=${parsedAuthor.email}`,
-      '-c',
-      `committer.name=${parsedCommitter.name}`,
-      '-c',
-      `committer.email=${parsedCommitter.email}`
-    ])
-    core.info(
-      `Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`
-    )
-    core.info(
-      `Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`
-    )
+  
+    if (inputs.author != "" && inputs.committer != "") {
+      git.setIdentityGitOptions([
+        '-c',
+        `author.name=${parsedAuthor.name}`,
+        '-c',
+        `author.email=${parsedAuthor.email}`,
+        '-c',
+        `committer.name=${parsedCommitter.name}`,
+        '-c',
+        `committer.email=${parsedCommitter.email}`
+      ])
+      core.info(
+        `Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`
+      )
+      core.info(
+        `Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`
+      )
+    }
     core.endGroup()
 
     // Create or update the pull request branch
