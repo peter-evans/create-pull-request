@@ -173,7 +173,7 @@ export class GitCommandManager {
     }
     args.push(ref)
     const output = await this.exec(args)
-    return output.stdout.split("\n").filter((filename) => filename != '')
+    return output.stdout.split('\n').filter(filename => filename != '')
   }
 
   async isDirty(untracked: boolean, pathspec?: string[]): Promise<boolean> {
