@@ -1,4 +1,12 @@
 import * as core from '@actions/core'
+import * as fs from 'fs'
+import { graphql } from '@octokit/graphql'
+import type { 
+  Repository,
+  Ref,
+  Commit,
+  FileChanges
+} from '@octokit/graphql-schema'
 import {
   createOrUpdateBranch,
   getWorkingBaseAndType,
@@ -32,6 +40,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  signCommit: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -192,11 +201,180 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      await git.push([
-        '--force-with-lease',
-        branchRemoteName,
-        `${inputs.branch}:refs/heads/${inputs.branch}`
-      ])
+      if (inputs.signCommit) {
+        core.info(`Use API to push a signed commit`)
+        const graphqlWithAuth = graphql.defaults({
+          headers: {
+            authorization: 'token ' + inputs.token,
+          },
+        });
+
+        let repoOwner = process.env.GITHUB_REPOSITORY!.split("/")[0]
+        if (inputs.pushToFork) {
+          const forkName = await githubHelper.getRepositoryParent(baseRemote.repository)
+          if (!forkName) { repoOwner = forkName! }
+        }
+        const repoName = process.env.GITHUB_REPOSITORY!.split("/")[1]
+
+        core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`)
+        const refQuery = `
+            query GetRefId($repoName: String!, $repoOwner: String!, $branchName: String!) {
+              repository(owner: $repoOwner, name: $repoName){
+                id
+                ref(qualifiedName: $branchName){
+                  id
+                  name
+                  prefix
+                  target{
+                    id
+                    oid
+                    commitUrl
+                    commitResourcePath
+                    abbreviatedOid
+                  }
+                }
+              },
+            }
+          `
+
+        let branchRef = await graphqlWithAuth<{repository: Repository}>(
+          refQuery,
+          {
+            repoOwner: repoOwner,
+            repoName: repoName,
+            branchName: inputs.branch
+          }
+        )
+        core.debug( `Fetched information for branch '${inputs.branch}' - '${JSON.stringify(branchRef)}'`)
+
+        // if the branch does not exist, then first we need to create the branch from base
+        if (branchRef.repository.ref == null) {
+          core.debug( `Branch does not exist - '${inputs.branch}'`)
+          branchRef = await graphqlWithAuth<{repository: Repository}>(
+            refQuery,
+            {
+              repoOwner: repoOwner,
+              repoName: repoName,
+              branchName: inputs.base
+            }
+          )
+          core.debug( `Fetched information for base branch '${inputs.base}' - '${JSON.stringify(branchRef)}'`)
+
+          core.info( `Creating new branch '${inputs.branch}' from '${inputs.base}', with ref '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`)
+          if (branchRef.repository.ref != null) {
+            core.debug( `Send request for creating new branch`)
+            const newBranchMutation = `
+              mutation CreateNewBranch($branchName: String!, $oid: GitObjectID!, $repoId: ID!) {
+                createRef(input: {
+                  name: $branchName,
+                  oid: $oid,
+                  repositoryId: $repoId
+                }) {
+                  ref {
+                    id
+                    name
+                    prefix
+                  }
+                }
+              }
+            `
+            let newBranch = await graphqlWithAuth<{createRef: {ref: Ref}}>(
+              newBranchMutation,
+              {
+                repoId: branchRef.repository.id,
+                oid: branchRef.repository.ref.target!.oid,
+                branchName: 'refs/heads/' + inputs.branch
+              }
+            )
+            core.debug(`Created new branch '${inputs.branch}': '${JSON.stringify(newBranch.createRef.ref)}'`)
+          }
+        }
+        core.info( `Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`)
+
+        // switch to input-branch for reading updated file contents
+        await git.checkout(inputs.branch)
+
+        let changedFiles = await git.getChangedFiles(branchRef.repository.ref!.target!.oid, ['--diff-filter=M'])
+        let deletedFiles = await git.getChangedFiles(branchRef.repository.ref!.target!.oid, ['--diff-filter=D'])
+        let fileChanges = <FileChanges>{additions: [], deletions: []}
+
+        core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
+        core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
+
+        for (var file of changedFiles) {
+          fileChanges.additions!.push({
+            path: file,
+            contents: btoa(fs.readFileSync(file, 'utf8')),
+          })
+        }
+
+        for (var file of deletedFiles) {
+          fileChanges.deletions!.push({
+            path: file,
+          })
+        }
+
+        const pushCommitMutation = `
+          mutation PushCommit(
+            $repoNameWithOwner: String!,
+            $branchName: String!,
+            $headOid: GitObjectID!,
+            $commitMessage: String!,
+            $fileChanges: FileChanges
+          ) {
+            createCommitOnBranch(input: {
+              branch: {
+                repositoryNameWithOwner: $repoNameWithOwner,
+                branchName: $branchName,
+              }
+              fileChanges: $fileChanges
+              message: {
+                headline: $commitMessage
+              }
+              expectedHeadOid: $headOid
+            }){
+              clientMutationId
+              ref{
+                id
+                name
+                prefix
+              }
+              commit{
+                id
+                abbreviatedOid
+                oid
+              }
+            }
+          }
+        `
+        const pushCommitVars = {
+          branchName: inputs.branch,
+          repoNameWithOwner: repoOwner + '/' + repoName,
+          headOid: branchRef.repository.ref!.target!.oid,
+          commitMessage: inputs.commitMessage,
+          fileChanges: fileChanges,
+        }
+
+        core.info(`Push commit with payload: '${JSON.stringify(pushCommitVars)}'`)
+
+        const commit = await graphqlWithAuth<{createCommitOnBranch: {ref: Ref, commit: Commit} }>(
+          pushCommitMutation,
+          pushCommitVars,
+        );
+
+        core.debug( `Pushed commit - '${JSON.stringify(commit)}'`)
+        core.info( `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`)
+
+        // switch back to previous branch/state since we are done with reading the changed file contents
+        await git.checkout('-')
+
+      } else {
+        await git.push([
+          '--force-with-lease',
+          branchRemoteName,
+          `${inputs.branch}:refs/heads/${inputs.branch}`
+        ])
+      }
       core.endGroup()
     }
 
