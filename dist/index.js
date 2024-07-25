@@ -439,17 +439,17 @@ function createPullRequest(inputs) {
                     core.info(`Use API to push a signed commit`);
                     const graphqlWithAuth = graphql_1.graphql.defaults({
                         headers: {
-                            authorization: 'token ' + inputs.token,
-                        },
+                            authorization: 'token ' + inputs.token
+                        }
                     });
-                    let repoOwner = process.env.GITHUB_REPOSITORY.split("/")[0];
+                    let repoOwner = process.env.GITHUB_REPOSITORY.split('/')[0];
                     if (inputs.pushToFork) {
                         const forkName = yield githubHelper.getRepositoryParent(baseRemote.repository);
                         if (!forkName) {
                             repoOwner = forkName;
                         }
                     }
-                    const repoName = process.env.GITHUB_REPOSITORY.split("/")[1];
+                    const repoName = process.env.GITHUB_REPOSITORY.split('/')[1];
                     core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`);
                     const refQuery = `
             query GetRefId($repoName: String!, $repoOwner: String!, $branchName: String!) {
@@ -522,12 +522,12 @@ function createPullRequest(inputs) {
                     for (var file of changedFiles) {
                         fileChanges.additions.push({
                             path: file,
-                            contents: btoa(fs.readFileSync(file, 'utf8')),
+                            contents: btoa(fs.readFileSync(file, 'utf8'))
                         });
                     }
                     for (var file of deletedFiles) {
                         fileChanges.deletions.push({
-                            path: file,
+                            path: file
                         });
                     }
                     const pushCommitMutation = `
@@ -568,7 +568,7 @@ function createPullRequest(inputs) {
                         repoNameWithOwner: repoOwner + '/' + repoName,
                         headOid: branchRef.repository.ref.target.oid,
                         commitMessage: inputs.commitMessage,
-                        fileChanges: fileChanges,
+                        fileChanges: fileChanges
                     };
                     core.info(`Push commit with payload: '${JSON.stringify(pushCommitVars)}'`);
                     const commit = yield graphqlWithAuth(pushCommitMutation, pushCommitVars);
@@ -828,7 +828,7 @@ class GitCommandManager {
             }
             args.push(ref);
             const output = yield this.exec(args);
-            return output.stdout.split("\n").filter((filename) => filename != '');
+            return output.stdout.split('\n').filter(filename => filename != '');
         });
     }
     isDirty(untracked, pathspec) {
@@ -1428,7 +1428,7 @@ function run() {
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
                 draft: core.getBooleanInput('draft'),
-                signCommit: core.getBooleanInput('sign-commit'),
+                signCommit: core.getBooleanInput('sign-commit')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             if (!inputs.token) {

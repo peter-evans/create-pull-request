@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
-import { graphql } from '@octokit/graphql'
-import type { 
+import {graphql} from '@octokit/graphql'
+import type {
   Repository,
   Ref,
   Commit,
@@ -205,16 +205,20 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         core.info(`Use API to push a signed commit`)
         const graphqlWithAuth = graphql.defaults({
           headers: {
-            authorization: 'token ' + inputs.token,
-          },
-        });
+            authorization: 'token ' + inputs.token
+          }
+        })
 
-        let repoOwner = process.env.GITHUB_REPOSITORY!.split("/")[0]
+        let repoOwner = process.env.GITHUB_REPOSITORY!.split('/')[0]
         if (inputs.pushToFork) {
-          const forkName = await githubHelper.getRepositoryParent(baseRemote.repository)
-          if (!forkName) { repoOwner = forkName! }
+          const forkName = await githubHelper.getRepositoryParent(
+            baseRemote.repository
+          )
+          if (!forkName) {
+            repoOwner = forkName!
+          }
         }
-        const repoName = process.env.GITHUB_REPOSITORY!.split("/")[1]
+        const repoName = process.env.GITHUB_REPOSITORY!.split('/')[1]
 
         core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`)
         const refQuery = `
@@ -245,11 +249,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
             branchName: inputs.branch
           }
         )
-        core.debug( `Fetched information for branch '${inputs.branch}' - '${JSON.stringify(branchRef)}'`)
+        core.debug(
+          `Fetched information for branch '${inputs.branch}' - '${JSON.stringify(branchRef)}'`
+        )
 
         // if the branch does not exist, then first we need to create the branch from base
         if (branchRef.repository.ref == null) {
-          core.debug( `Branch does not exist - '${inputs.branch}'`)
+          core.debug(`Branch does not exist - '${inputs.branch}'`)
           branchRef = await graphqlWithAuth<{repository: Repository}>(
             refQuery,
             {
@@ -258,11 +264,15 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
               branchName: inputs.base
             }
           )
-          core.debug( `Fetched information for base branch '${inputs.base}' - '${JSON.stringify(branchRef)}'`)
+          core.debug(
+            `Fetched information for base branch '${inputs.base}' - '${JSON.stringify(branchRef)}'`
+          )
 
-          core.info( `Creating new branch '${inputs.branch}' from '${inputs.base}', with ref '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`)
+          core.info(
+            `Creating new branch '${inputs.branch}' from '${inputs.base}', with ref '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`
+          )
           if (branchRef.repository.ref != null) {
-            core.debug( `Send request for creating new branch`)
+            core.debug(`Send request for creating new branch`)
             const newBranchMutation = `
               mutation CreateNewBranch($branchName: String!, $oid: GitObjectID!, $repoId: ID!) {
                 createRef(input: {
@@ -286,16 +296,26 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
                 branchName: 'refs/heads/' + inputs.branch
               }
             )
-            core.debug(`Created new branch '${inputs.branch}': '${JSON.stringify(newBranch.createRef.ref)}'`)
+            core.debug(
+              `Created new branch '${inputs.branch}': '${JSON.stringify(newBranch.createRef.ref)}'`
+            )
           }
         }
-        core.info( `Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`)
+        core.info(
+          `Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`
+        )
 
         // switch to input-branch for reading updated file contents
         await git.checkout(inputs.branch)
 
-        let changedFiles = await git.getChangedFiles(branchRef.repository.ref!.target!.oid, ['--diff-filter=M'])
-        let deletedFiles = await git.getChangedFiles(branchRef.repository.ref!.target!.oid, ['--diff-filter=D'])
+        let changedFiles = await git.getChangedFiles(
+          branchRef.repository.ref!.target!.oid,
+          ['--diff-filter=M']
+        )
+        let deletedFiles = await git.getChangedFiles(
+          branchRef.repository.ref!.target!.oid,
+          ['--diff-filter=D']
+        )
         let fileChanges = <FileChanges>{additions: [], deletions: []}
 
         core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
@@ -304,13 +324,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         for (var file of changedFiles) {
           fileChanges.additions!.push({
             path: file,
-            contents: btoa(fs.readFileSync(file, 'utf8')),
+            contents: btoa(fs.readFileSync(file, 'utf8'))
           })
         }
 
         for (var file of deletedFiles) {
           fileChanges.deletions!.push({
-            path: file,
+            path: file
           })
         }
 
@@ -352,22 +372,24 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           repoNameWithOwner: repoOwner + '/' + repoName,
           headOid: branchRef.repository.ref!.target!.oid,
           commitMessage: inputs.commitMessage,
-          fileChanges: fileChanges,
+          fileChanges: fileChanges
         }
 
-        core.info(`Push commit with payload: '${JSON.stringify(pushCommitVars)}'`)
+        core.info(
+          `Push commit with payload: '${JSON.stringify(pushCommitVars)}'`
+        )
 
-        const commit = await graphqlWithAuth<{createCommitOnBranch: {ref: Ref, commit: Commit} }>(
-          pushCommitMutation,
-          pushCommitVars,
-        );
+        const commit = await graphqlWithAuth<{
+          createCommitOnBranch: {ref: Ref; commit: Commit}
+        }>(pushCommitMutation, pushCommitVars)
 
-        core.debug( `Pushed commit - '${JSON.stringify(commit)}'`)
-        core.info( `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`)
+        core.debug(`Pushed commit - '${JSON.stringify(commit)}'`)
+        core.info(
+          `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`
+        )
 
         // switch back to previous branch/state since we are done with reading the changed file contents
         await git.checkout('-')
-
       } else {
         await git.push([
           '--force-with-lease',
