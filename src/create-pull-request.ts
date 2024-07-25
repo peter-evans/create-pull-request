@@ -288,7 +288,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
                 }
               }
             `
-            let newBranch = await graphqlWithAuth<{createRef: {ref: Ref}}>(
+            const newBranch = await graphqlWithAuth<{createRef: {ref: Ref}}>(
               newBranchMutation,
               {
                 repoId: branchRef.repository.id,
@@ -308,27 +308,27 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         // switch to input-branch for reading updated file contents
         await git.checkout(inputs.branch)
 
-        let changedFiles = await git.getChangedFiles(
+        const changedFiles = await git.getChangedFiles(
           branchRef.repository.ref!.target!.oid,
           ['--diff-filter=M']
         )
-        let deletedFiles = await git.getChangedFiles(
+        const deletedFiles = await git.getChangedFiles(
           branchRef.repository.ref!.target!.oid,
           ['--diff-filter=D']
         )
-        let fileChanges = <FileChanges>{additions: [], deletions: []}
+        const fileChanges = <FileChanges>{additions: [], deletions: []}
 
         core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
         core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
 
-        for (var file of changedFiles) {
+        for (const file of changedFiles) {
           fileChanges.additions!.push({
             path: file,
             contents: btoa(fs.readFileSync(file, 'utf8'))
           })
         }
 
-        for (var file of deletedFiles) {
+        for (const file of deletedFiles) {
           fileChanges.deletions!.push({
             path: file
           })
