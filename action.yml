@@ -74,6 +74,9 @@ inputs:
   draft:
     description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
+  sign-commit:
+    description: 'Sign the commit as github-actions bot (and as custom app if a different github-token is provided)'
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'
