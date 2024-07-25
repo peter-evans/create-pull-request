@@ -76,7 +76,7 @@ inputs:
     default: false
   sign-commit:
     description: 'Sign the commit as github-actions bot (and as custom app if a different github-token is provided)'
-    default: false
+    default: true
 outputs:
   pull-request-number:
     description: 'The pull request number'
