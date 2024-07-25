@@ -503,7 +503,7 @@ function createPullRequest(inputs) {
                 }
               }
             `;
-                            let newBranch = yield graphqlWithAuth(newBranchMutation, {
+                            const newBranch = yield graphqlWithAuth(newBranchMutation, {
                                 repoId: branchRef.repository.id,
                                 oid: branchRef.repository.ref.target.oid,
                                 branchName: 'refs/heads/' + inputs.branch
@@ -514,18 +514,18 @@ function createPullRequest(inputs) {
                     core.info(`Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref.target.oid)}'`);
                     // switch to input-branch for reading updated file contents
                     yield git.checkout(inputs.branch);
-                    let changedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=M']);
-                    let deletedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=D']);
-                    let fileChanges = { additions: [], deletions: [] };
+                    const changedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=M']);
+                    const deletedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=D']);
+                    const fileChanges = { additions: [], deletions: [] };
                     core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`);
                     core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`);
-                    for (var file of changedFiles) {
+                    for (const file of changedFiles) {
                         fileChanges.additions.push({
                             path: file,
                             contents: btoa(fs.readFileSync(file, 'utf8'))
                         });
                     }
-                    for (var file of deletedFiles) {
+                    for (const file of deletedFiles) {
                         fileChanges.deletions.push({
                             path: file
                         });
