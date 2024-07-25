@@ -194,6 +194,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.signoff,
       inputs.addPaths
     )
+    // Set the base. It would have been '' if not specified as an input
+    inputs.base = result.base
     core.endGroup()
 
     if (['created', 'updated'].includes(result.action)) {
@@ -399,9 +401,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       }
       core.endGroup()
     }
-
-    // Set the base. It would have been '' if not specified as an input
-    inputs.base = result.base
 
     if (result.hasDiffWithBase) {
       // Create or update the pull request
