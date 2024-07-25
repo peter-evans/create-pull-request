@@ -431,6 +431,8 @@ function createPullRequest(inputs) {
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
             const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
+            // Set the base. It would have been '' if not specified as an input
+            inputs.base = result.base;
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
@@ -586,8 +588,6 @@ function createPullRequest(inputs) {
                 }
                 core.endGroup();
             }
-            // Set the base. It would have been '' if not specified as an input
-            inputs.base = result.base;
             if (result.hasDiffWithBase) {
                 // Create or update the pull request
                 core.startGroup('Create or update the pull request');
