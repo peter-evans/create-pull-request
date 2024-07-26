@@ -384,6 +384,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           fileChanges: {
             ...pushCommitVars.fileChanges,
             additions: pushCommitVars.fileChanges.additions?.map(addition => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const {contents, ...rest} = addition
               return rest
             })
