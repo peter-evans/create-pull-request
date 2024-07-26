@@ -379,8 +379,19 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           fileChanges: fileChanges
         }
 
-        core.info(
-          `Push commit with payload: '${JSON.stringify(pushCommitVars)}'`
+        const pushCommitVarsWithoutContents = {
+          ...pushCommitVars,
+          fileChanges: {
+            ...pushCommitVars.fileChanges,
+            additions: pushCommitVars.fileChanges.additions?.map(addition => {
+              const {contents, ...rest} = addition
+              return rest
+            })
+          }
+        }
+
+        core.debug(
+          `Push commit with payload: '${JSON.stringify(pushCommitVarsWithoutContents)}'`
         )
 
         const commit = await graphqlWithAuth<{
