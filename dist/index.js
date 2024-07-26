@@ -313,6 +313,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createPullRequest = createPullRequest;
 const core = __importStar(__nccwpck_require__(2186));
@@ -325,6 +336,7 @@ const git_config_helper_1 = __nccwpck_require__(8384);
 const utils = __importStar(__nccwpck_require__(918));
 function createPullRequest(inputs) {
     return __awaiter(this, void 0, void 0, function* () {
+        var _a;
         let gitConfigHelper, git;
         try {
             core.startGroup('Prepare git configuration');
@@ -574,7 +586,11 @@ function createPullRequest(inputs) {
                         commitMessage: inputs.commitMessage,
                         fileChanges: fileChanges
                     };
-                    core.info(`Push commit with payload: '${JSON.stringify(pushCommitVars)}'`);
+                    const pushCommitVarsWithoutContents = Object.assign(Object.assign({}, pushCommitVars), { fileChanges: Object.assign(Object.assign({}, pushCommitVars.fileChanges), { additions: (_a = pushCommitVars.fileChanges.additions) === null || _a === void 0 ? void 0 : _a.map(addition => {
+                                const { contents } = addition, rest = __rest(addition, ["contents"]);
+                                return rest;
+                            }) }) });
+                    core.debug(`Push commit with payload: '${JSON.stringify(pushCommitVarsWithoutContents)}'`);
                     const commit = yield graphqlWithAuth(pushCommitMutation, pushCommitVars);
                     core.debug(`Pushed commit - '${JSON.stringify(commit)}'`);
                     core.info(`Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`);
