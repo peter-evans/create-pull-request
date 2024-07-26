@@ -525,7 +525,7 @@ function createPullRequest(inputs) {
                         core.debug(`Reading contents of file: '${file}'`);
                         fileChanges.additions.push({
                             path: file,
-                            contents: btoa(fs.readFileSync(file, 'utf8'))
+                            contents: fs.readFileSync(file).toString('base64')
                         });
                     }
                     for (const file of deletedFiles) {
