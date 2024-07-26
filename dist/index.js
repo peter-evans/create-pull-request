@@ -522,12 +522,14 @@ function createPullRequest(inputs) {
                     core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`);
                     core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`);
                     for (const file of changedFiles) {
+                        core.debug(`Reading contents of file: '${file}'`);
                         fileChanges.additions.push({
                             path: file,
                             contents: btoa(fs.readFileSync(file, 'utf8'))
                         });
                     }
                     for (const file of deletedFiles) {
+                        core.debug(`Marking file as deleted: '${file}'`);
                         fileChanges.deletions.push({
                             path: file
                         });
