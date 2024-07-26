@@ -166,6 +166,17 @@ Alternatively, use the action directly and reference the commit hash for the ver
 
 This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/main/dist) directory.
 
+A best security practice is to assign the least permission required for your workflow (the principle of least privilege).
+Refer to [Assigning permissions to jobs](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-permissions).
+
+```yaml
+name: My example workflow
+
+permissions:
+  contents: write
+  pull-requests: write
+```  
+
 ## Advanced usage
 
 ### Creating pull requests in a remote repository
@@ -281,8 +292,22 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 ```
 
 ### GPG commit signature verification
+#### Sign Commits as `github-actions` bot
+By setting `sign-commit` to `true`, commits will be signed as github-actions bot. This can be useful if your repo or org has enforced commit-signing.
 
-The action can use GPG to sign commits with a GPG key that you generate yourself.
+```yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      # Make changes to pull request here
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          sign-commit: true
+```
+
+#### Sign Commits as a bot or a real user
+The action can also use GPG to sign commits with a GPG key that you generate yourself.
 
 1. Follow GitHub's guide to [generate a new GPG key](https://docs.github.com/en/github/authenticating-to-github/generating-a-new-gpg-key).
 
