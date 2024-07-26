@@ -587,6 +587,7 @@ function createPullRequest(inputs) {
                         fileChanges: fileChanges
                     };
                     const pushCommitVarsWithoutContents = Object.assign(Object.assign({}, pushCommitVars), { fileChanges: Object.assign(Object.assign({}, pushCommitVars.fileChanges), { additions: (_a = pushCommitVars.fileChanges.additions) === null || _a === void 0 ? void 0 : _a.map(addition => {
+                                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                                 const { contents } = addition, rest = __rest(addition, ["contents"]);
                                 return rest;
                             }) }) });
