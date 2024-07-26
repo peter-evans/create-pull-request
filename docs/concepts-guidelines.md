@@ -166,7 +166,7 @@ Alternatively, use the action directly and reference the commit hash for the ver
 
 This action uses [ncc](https://github.com/vercel/ncc) to compile the Node.js code and dependencies into a single JavaScript file under the [dist](https://github.com/peter-evans/create-pull-request/tree/main/dist) directory.
 
-A best security practice is to assign the least permission required for your workflow (the principle of least privilege).
+A security best practice is to assign the least permission required for your workflow (the principle of least privilege).
 Refer to [Assigning permissions to jobs](https://docs.github.com/en/actions/using-jobs/assigning-permissions-to-jobs#defining-access-for-the-github_token-permissions).
 
 ```yaml
