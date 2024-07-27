@@ -1,5 +1,4 @@
 import * as core from '@actions/core'
-import * as fs from 'fs'
 import {graphql} from '@octokit/graphql'
 import type {
   Repository,
@@ -327,7 +326,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           core.debug(`Reading contents of file: '${file}'`)
           fileChanges.additions!.push({
             path: file,
-            contents: fs.readFileSync(file).toString('base64')
+            contents: utils.readFileBase64([repoPath, file])
           })
         }
 
