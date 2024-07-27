@@ -455,14 +455,17 @@ function createPullRequest(inputs) {
                             authorization: 'token ' + inputs.token
                         }
                     });
-                    let repoOwner = process.env.GITHUB_REPOSITORY.split('/')[0];
-                    if (inputs.pushToFork) {
-                        const forkName = yield githubHelper.getRepositoryParent(baseRemote.repository);
-                        if (!forkName) {
-                            repoOwner = forkName;
-                        }
-                    }
-                    const repoName = process.env.GITHUB_REPOSITORY.split('/')[1];
+                    // let repoOwner = process.env.GITHUB_REPOSITORY!.split('/')[0]
+                    // if (inputs.pushToFork) {
+                    //   const forkName = await githubHelper.getRepositoryParent(
+                    //     baseRemote.repository
+                    //   )
+                    //   if (!forkName) {
+                    //     repoOwner = forkName!
+                    //   }
+                    // }
+                    // const repoName = process.env.GITHUB_REPOSITORY!.split('/')[1]
+                    const [repoOwner, repoName] = branchRepository.split('/');
                     core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`);
                     const refQuery = `
             query GetRefId($repoName: String!, $repoOwner: String!, $branchName: String!) {
