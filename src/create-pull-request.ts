@@ -210,16 +210,17 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           }
         })
 
-        let repoOwner = process.env.GITHUB_REPOSITORY!.split('/')[0]
-        if (inputs.pushToFork) {
-          const forkName = await githubHelper.getRepositoryParent(
-            baseRemote.repository
-          )
-          if (!forkName) {
-            repoOwner = forkName!
-          }
-        }
-        const repoName = process.env.GITHUB_REPOSITORY!.split('/')[1]
+        // let repoOwner = process.env.GITHUB_REPOSITORY!.split('/')[0]
+        // if (inputs.pushToFork) {
+        //   const forkName = await githubHelper.getRepositoryParent(
+        //     baseRemote.repository
+        //   )
+        //   if (!forkName) {
+        //     repoOwner = forkName!
+        //   }
+        // }
+        // const repoName = process.env.GITHUB_REPOSITORY!.split('/')[1]
+        const [repoOwner, repoName] = branchRepository.split('/')
 
         core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`)
         const refQuery = `
