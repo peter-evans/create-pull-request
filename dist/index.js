@@ -327,7 +327,6 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.createPullRequest = createPullRequest;
 const core = __importStar(__nccwpck_require__(2186));
-const fs = __importStar(__nccwpck_require__(7147));
 const graphql_1 = __nccwpck_require__(3414);
 const create_or_update_branch_1 = __nccwpck_require__(8363);
 const github_helper_1 = __nccwpck_require__(446);
@@ -537,7 +536,7 @@ function createPullRequest(inputs) {
                         core.debug(`Reading contents of file: '${file}'`);
                         fileChanges.additions.push({
                             path: file,
-                            contents: fs.readFileSync(file).toString('base64')
+                            contents: utils.readFileBase64([repoPath, file])
                         });
                     }
                     for (const file of deletedFiles) {
@@ -1550,6 +1549,7 @@ exports.randomString = randomString;
 exports.parseDisplayNameEmail = parseDisplayNameEmail;
 exports.fileExistsSync = fileExistsSync;
 exports.readFile = readFile;
+exports.readFileBase64 = readFileBase64;
 exports.getErrorMessage = getErrorMessage;
 const core = __importStar(__nccwpck_require__(2186));
 const fs = __importStar(__nccwpck_require__(7147));
@@ -1638,6 +1638,9 @@ function fileExistsSync(path) {
 }
 function readFile(path) {
     return fs.readFileSync(path, 'utf-8');
+}
+function readFileBase64(pathParts) {
+    return fs.readFileSync(path.resolve(...pathParts)).toString('base64');
 }
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 function hasErrorCode(error) {
