@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import {GitCommandManager} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
+import * as utils from './utils'
 
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
@@ -115,6 +116,15 @@ interface CreateOrUpdateBranchResult {
   base: string
   hasDiffWithBase: boolean
   headSha: string
+  fileChanges?: {
+    additions: {
+      path: string
+      contents: string
+    }[]
+    deletions: {
+      path: string
+    }[]
+  }
 }
 
 export async function createOrUpdateBranch(
@@ -287,6 +297,42 @@ export async function createOrUpdateBranch(
 
     // Check if the pull request branch is ahead of the base
     result.hasDiffWithBase = await isAhead(git, base, branch)
+  }
+
+  if (result.hasDiffWithBase) {
+    // Build file changes
+    result.fileChanges = {
+      additions: [],
+      deletions: []
+    }
+
+    const changedFiles = await git.getChangedFiles([
+      '--diff-filter=M',
+      `${base}..${branch}`
+    ])
+    const deletedFiles = await git.getChangedFiles([
+      '--diff-filter=D',
+      `${base}..${branch}`
+    ])
+
+    core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
+    core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
+
+    const repoPath = git.getWorkingDirectory()
+    for (const file of changedFiles) {
+      core.debug(`Reading contents of file: '${file}'`)
+      result.fileChanges.additions!.push({
+        path: file,
+        contents: utils.readFileBase64([repoPath, file])
+      })
+    }
+
+    for (const file of deletedFiles) {
+      core.debug(`Marking file as deleted: '${file}'`)
+      result.fileChanges.deletions!.push({
+        path: file
+      })
+    }
   }
 
   // Get the pull request branch SHA

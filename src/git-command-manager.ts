@@ -166,12 +166,11 @@ export class GitCommandManager {
     return output.exitCode === 1
   }
 
-  async getChangedFiles(ref: string, options?: string[]): Promise<string[]> {
+  async getChangedFiles(options?: string[]): Promise<string[]> {
     const args = ['diff', '--name-only']
     if (options) {
       args.push(...options)
     }
-    args.push(ref)
     const output = await this.exec(args)
     return output.stdout.split('\n').filter(filename => filename != '')
   }

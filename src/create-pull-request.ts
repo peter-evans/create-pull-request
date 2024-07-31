@@ -296,35 +296,40 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           `Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`
         )
 
-        // switch to input-branch for reading updated file contents
-        await git.checkout(inputs.branch)
+        // // switch to input-branch for reading updated file contents
+        // await git.checkout(inputs.branch)
 
-        const changedFiles = await git.getChangedFiles(
-          branchRef.repository.ref!.target!.oid,
-          ['--diff-filter=M']
-        )
-        const deletedFiles = await git.getChangedFiles(
-          branchRef.repository.ref!.target!.oid,
-          ['--diff-filter=D']
-        )
-        const fileChanges = <FileChanges>{additions: [], deletions: []}
+        // const changedFiles = await git.getChangedFiles(
+        //   branchRef.repository.ref!.target!.oid,
+        //   ['--diff-filter=M']
+        // )
+        // const deletedFiles = await git.getChangedFiles(
+        //   branchRef.repository.ref!.target!.oid,
+        //   ['--diff-filter=D']
+        // )
+        // const fileChanges = <FileChanges>{additions: [], deletions: []}
 
-        core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
-        core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
+        // core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
+        // core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
 
-        for (const file of changedFiles) {
-          core.debug(`Reading contents of file: '${file}'`)
-          fileChanges.additions!.push({
-            path: file,
-            contents: utils.readFileBase64([repoPath, file])
-          })
-        }
+        // for (const file of changedFiles) {
+        //   core.debug(`Reading contents of file: '${file}'`)
+        //   fileChanges.additions!.push({
+        //     path: file,
+        //     contents: utils.readFileBase64([repoPath, file])
+        //   })
+        // }
 
-        for (const file of deletedFiles) {
-          core.debug(`Marking file as deleted: '${file}'`)
-          fileChanges.deletions!.push({
-            path: file
-          })
+        // for (const file of deletedFiles) {
+        //   core.debug(`Marking file as deleted: '${file}'`)
+        //   fileChanges.deletions!.push({
+        //     path: file
+        //   })
+        // }
+
+        const fileChanges = <FileChanges>{
+          additions: result.fileChanges!.additions,
+          deletions: result.fileChanges!.deletions
         }
 
         const pushCommitMutation = `
@@ -393,8 +398,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`
         )
 
-        // switch back to previous branch/state since we are done with reading the changed file contents
-        await git.checkout('-')
+        // // switch back to previous branch/state since we are done with reading the changed file contents
+        // await git.checkout('-')
       } else {
         await git.push([
           '--force-with-lease',

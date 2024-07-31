@@ -45,6 +45,7 @@ exports.tryFetch = tryFetch;
 exports.createOrUpdateBranch = createOrUpdateBranch;
 const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
+const utils = __importStar(__nccwpck_require__(918));
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
 const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean';
 const FETCH_DEPTH_MARGIN = 10;
@@ -258,6 +259,37 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             }
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
+        }
+        if (result.hasDiffWithBase) {
+            // Build file changes
+            result.fileChanges = {
+                additions: [],
+                deletions: []
+            };
+            const changedFiles = yield git.getChangedFiles([
+                '--diff-filter=M',
+                `${base}..${branch}`
+            ]);
+            const deletedFiles = yield git.getChangedFiles([
+                '--diff-filter=D',
+                `${base}..${branch}`
+            ]);
+            core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`);
+            core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`);
+            const repoPath = git.getWorkingDirectory();
+            for (const file of changedFiles) {
+                core.debug(`Reading contents of file: '${file}'`);
+                result.fileChanges.additions.push({
+                    path: file,
+                    contents: utils.readFileBase64([repoPath, file])
+                });
+            }
+            for (const file of deletedFiles) {
+                core.debug(`Marking file as deleted: '${file}'`);
+                result.fileChanges.deletions.push({
+                    path: file
+                });
+            }
         }
         // Get the pull request branch SHA
         result.headSha = yield git.revParse('HEAD');
@@ -518,26 +550,36 @@ function createPullRequest(inputs) {
                         }
                     }
                     core.info(`Hash ref of branch '${inputs.branch}' is '${JSON.stringify(branchRef.repository.ref.target.oid)}'`);
-                    // switch to input-branch for reading updated file contents
-                    yield git.checkout(inputs.branch);
-                    const changedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=M']);
-                    const deletedFiles = yield git.getChangedFiles(branchRef.repository.ref.target.oid, ['--diff-filter=D']);
-                    const fileChanges = { additions: [], deletions: [] };
-                    core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`);
-                    core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`);
-                    for (const file of changedFiles) {
-                        core.debug(`Reading contents of file: '${file}'`);
-                        fileChanges.additions.push({
-                            path: file,
-                            contents: utils.readFileBase64([repoPath, file])
-                        });
-                    }
-                    for (const file of deletedFiles) {
-                        core.debug(`Marking file as deleted: '${file}'`);
-                        fileChanges.deletions.push({
-                            path: file
-                        });
-                    }
+                    // // switch to input-branch for reading updated file contents
+                    // await git.checkout(inputs.branch)
+                    // const changedFiles = await git.getChangedFiles(
+                    //   branchRef.repository.ref!.target!.oid,
+                    //   ['--diff-filter=M']
+                    // )
+                    // const deletedFiles = await git.getChangedFiles(
+                    //   branchRef.repository.ref!.target!.oid,
+                    //   ['--diff-filter=D']
+                    // )
+                    // const fileChanges = <FileChanges>{additions: [], deletions: []}
+                    // core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`)
+                    // core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`)
+                    // for (const file of changedFiles) {
+                    //   core.debug(`Reading contents of file: '${file}'`)
+                    //   fileChanges.additions!.push({
+                    //     path: file,
+                    //     contents: utils.readFileBase64([repoPath, file])
+                    //   })
+                    // }
+                    // for (const file of deletedFiles) {
+                    //   core.debug(`Marking file as deleted: '${file}'`)
+                    //   fileChanges.deletions!.push({
+                    //     path: file
+                    //   })
+                    // }
+                    const fileChanges = {
+                        additions: result.fileChanges.additions,
+                        deletions: result.fileChanges.deletions
+                    };
                     const pushCommitMutation = `
           mutation PushCommit(
             $repoNameWithOwner: String!,
@@ -587,8 +629,8 @@ function createPullRequest(inputs) {
                     const commit = yield graphqlWithAuth(pushCommitMutation, pushCommitVars);
                     core.debug(`Pushed commit - '${JSON.stringify(commit)}'`);
                     core.info(`Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`);
-                    // switch back to previous branch/state since we are done with reading the changed file contents
-                    yield git.checkout('-');
+                    // // switch back to previous branch/state since we are done with reading the changed file contents
+                    // await git.checkout('-')
                 }
                 else {
                     yield git.push([
@@ -831,13 +873,12 @@ class GitCommandManager {
             return output.exitCode === 1;
         });
     }
-    getChangedFiles(ref, options) {
+    getChangedFiles(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['diff', '--name-only'];
             if (options) {
                 args.push(...options);
             }
-            args.push(ref);
             const output = yield this.exec(args);
             return output.stdout.split('\n').filter(filename => filename != '');
         });
