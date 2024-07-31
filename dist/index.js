@@ -42,6 +42,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WorkingBaseType = void 0;
 exports.getWorkingBaseAndType = getWorkingBaseAndType;
 exports.tryFetch = tryFetch;
+exports.buildFileChanges = buildFileChanges;
 exports.createOrUpdateBranch = createOrUpdateBranch;
 const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
@@ -80,6 +81,35 @@ function tryFetch(git, remote, branch, depth) {
         catch (_a) {
             return false;
         }
+    });
+}
+function buildFileChanges(git, base, branch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const fileChanges = {
+            additions: [],
+            deletions: []
+        };
+        const changedFiles = yield git.getChangedFiles([
+            '--diff-filter=AM',
+            `${base}..${branch}`
+        ]);
+        const deletedFiles = yield git.getChangedFiles([
+            '--diff-filter=D',
+            `${base}..${branch}`
+        ]);
+        const repoPath = git.getWorkingDirectory();
+        for (const file of changedFiles) {
+            fileChanges.additions.push({
+                path: file,
+                contents: utils.readFileBase64([repoPath, file])
+            });
+        }
+        for (const file of deletedFiles) {
+            fileChanges.deletions.push({
+                path: file
+            });
+        }
+        return fileChanges;
     });
 }
 // Return the number of commits that branch2 is ahead of branch1
@@ -261,35 +291,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             result.hasDiffWithBase = yield isAhead(git, base, branch);
         }
         if (result.hasDiffWithBase) {
-            // Build file changes
-            result.fileChanges = {
-                additions: [],
-                deletions: []
-            };
-            const changedFiles = yield git.getChangedFiles([
-                '--diff-filter=M',
-                `${base}..${branch}`
-            ]);
-            const deletedFiles = yield git.getChangedFiles([
-                '--diff-filter=D',
-                `${base}..${branch}`
-            ]);
-            core.debug(`Changed files: '${JSON.stringify(changedFiles)}'`);
-            core.debug(`Deleted files: '${JSON.stringify(deletedFiles)}'`);
-            const repoPath = git.getWorkingDirectory();
-            for (const file of changedFiles) {
-                core.debug(`Reading contents of file: '${file}'`);
-                result.fileChanges.additions.push({
-                    path: file,
-                    contents: utils.readFileBase64([repoPath, file])
-                });
-            }
-            for (const file of deletedFiles) {
-                core.debug(`Marking file as deleted: '${file}'`);
-                result.fileChanges.deletions.push({
-                    path: file
-                });
-            }
+            result.fileChanges = yield buildFileChanges(git, base, branch);
         }
         // Get the pull request branch SHA
         result.headSha = yield git.revParse('HEAD');
