@@ -1,7 +1,8 @@
 import {
   createOrUpdateBranch,
   tryFetch,
-  getWorkingBaseAndType
+  getWorkingBaseAndType,
+  buildFileChanges
 } from '../lib/create-or-update-branch'
 import * as fs from 'fs'
 import {GitCommandManager} from '../lib/git-command-manager'
@@ -227,6 +228,52 @@ describe('create-or-update-branch tests', () => {
     const [workingBase, workingBaseType] = await getWorkingBaseAndType(git)
     expect(workingBase).toEqual(headSha)
     expect(workingBaseType).toEqual('commit')
+  })
+
+  it('tests buildFileChanges with addition and modification', async () => {
+    await git.checkout(BRANCH, BASE)
+    const changes = await createChanges()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const fileChanges = await buildFileChanges(git, BASE, BRANCH)
+
+    expect(fileChanges.additions).toEqual([
+      {
+        path: TRACKED_FILE,
+        contents: Buffer.from(changes.tracked, 'binary').toString('base64')
+      },
+      {
+        path: UNTRACKED_FILE,
+        contents: Buffer.from(changes.untracked, 'binary').toString('base64')
+      }
+    ])
+    expect(fileChanges.deletions.length).toEqual(0)
+  })
+
+  it('tests buildFileChanges with addition and deletion', async () => {
+    await git.checkout(BRANCH, BASE)
+    const changes = await createChanges()
+    const TRACKED_FILE_NEW_PATH = 'c/tracked-file.txt'
+    const filepath = path.join(REPO_PATH, TRACKED_FILE_NEW_PATH)
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.rename(path.join(REPO_PATH, TRACKED_FILE), filepath)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const fileChanges = await buildFileChanges(git, BASE, BRANCH)
+
+    expect(fileChanges.additions).toEqual([
+      {
+        path: UNTRACKED_FILE,
+        contents: Buffer.from(changes.untracked, 'binary').toString('base64')
+      },
+      {
+        path: TRACKED_FILE_NEW_PATH,
+        contents: Buffer.from(changes.tracked, 'binary').toString('base64')
+      }
+    ])
+    expect(fileChanges.deletions).toEqual([{path: TRACKED_FILE}])
   })
 
   it('tests no changes resulting in no new branch being created', async () => {
