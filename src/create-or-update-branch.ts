@@ -333,9 +333,8 @@ export async function createOrUpdateBranch(
     result.hasDiffWithBase = await isAhead(git, base, branch)
   }
 
-  if (result.hasDiffWithBase) {
-    result.branchFileChanges = await buildBranchFileChanges(git, base, branch)
-  }
+  // Build the branch file changes
+  result.branchFileChanges = await buildBranchFileChanges(git, base, branch)
 
   // Get the pull request branch SHA
   result.headSha = await git.revParse('HEAD')
