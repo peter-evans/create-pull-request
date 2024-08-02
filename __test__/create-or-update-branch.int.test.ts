@@ -276,6 +276,27 @@ describe('create-or-update-branch tests', () => {
     expect(fileChanges.deletions).toEqual([{path: TRACKED_FILE}])
   })
 
+  it('tests buildFileChanges with binary files', async () => {
+    await git.checkout(BRANCH, BASE)
+    const filename = 'c/untracked-binary-file'
+    const filepath = path.join(REPO_PATH, filename)
+    const binaryData = Buffer.from([0x00, 0xff, 0x10, 0x20])
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.writeFile(filepath, binaryData)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const fileChanges = await buildFileChanges(git, BASE, BRANCH)
+
+    expect(fileChanges.additions).toEqual([
+      {
+        path: filename,
+        contents: binaryData.toString('base64')
+      }
+    ])
+    expect(fileChanges.deletions.length).toEqual(0)
+  })
+
   it('tests no changes resulting in no new branch being created', async () => {
     const commitMessage = uuidv4()
     const result = await createOrUpdateBranch(
