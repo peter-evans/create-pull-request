@@ -230,6 +230,13 @@ describe('create-or-update-branch tests', () => {
     expect(workingBaseType).toEqual('commit')
   })
 
+  it('tests buildBranchFileChanges with no diff', async () => {
+    await git.checkout(BRANCH, BASE)
+    const branchFileChanges = await buildBranchFileChanges(git, BASE, BRANCH)
+    expect(branchFileChanges.additions.length).toEqual(0)
+    expect(branchFileChanges.deletions.length).toEqual(0)
+  })
+
   it('tests buildBranchFileChanges with addition and modification', async () => {
     await git.checkout(BRANCH, BASE)
     const changes = await createChanges()

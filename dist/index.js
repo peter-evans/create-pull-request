@@ -290,9 +290,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
         }
-        if (result.hasDiffWithBase) {
-            result.branchFileChanges = yield buildBranchFileChanges(git, base, branch);
-        }
+        // Build the branch file changes
+        result.branchFileChanges = yield buildBranchFileChanges(git, base, branch);
         // Get the pull request branch SHA
         result.headSha = yield git.revParse('HEAD');
         // Delete the temporary branch
