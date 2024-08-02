@@ -48,12 +48,12 @@ export async function tryFetch(
   }
 }
 
-export async function buildFileChanges(
+export async function buildBranchFileChanges(
   git: GitCommandManager,
   base: string,
   branch: string
-): Promise<FileChanges> {
-  const fileChanges: FileChanges = {
+): Promise<BranchFileChanges> {
+  const branchFileChanges: BranchFileChanges = {
     additions: [],
     deletions: []
   }
@@ -67,17 +67,17 @@ export async function buildFileChanges(
   ])
   const repoPath = git.getWorkingDirectory()
   for (const file of changedFiles) {
-    fileChanges.additions!.push({
+    branchFileChanges.additions!.push({
       path: file,
       contents: utils.readFileBase64([repoPath, file])
     })
   }
   for (const file of deletedFiles) {
-    fileChanges.deletions!.push({
+    branchFileChanges.deletions!.push({
       path: file
     })
   }
-  return fileChanges
+  return branchFileChanges
 }
 
 // Return the number of commits that branch2 is ahead of branch1
@@ -143,7 +143,7 @@ function splitLines(multilineString: string): string[] {
     .filter(x => x !== '')
 }
 
-interface FileChanges {
+export interface BranchFileChanges {
   additions: {
     path: string
     contents: string
@@ -158,7 +158,7 @@ interface CreateOrUpdateBranchResult {
   base: string
   hasDiffWithBase: boolean
   headSha: string
-  fileChanges?: FileChanges
+  branchFileChanges?: BranchFileChanges
 }
 
 export async function createOrUpdateBranch(
@@ -334,7 +334,7 @@ export async function createOrUpdateBranch(
   }
 
   if (result.hasDiffWithBase) {
-    result.fileChanges = await buildFileChanges(git, base, branch)
+    result.branchFileChanges = await buildBranchFileChanges(git, base, branch)
   }
 
   // Get the pull request branch SHA
