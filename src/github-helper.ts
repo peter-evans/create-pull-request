@@ -235,8 +235,10 @@ export class GitHubHelper {
       `Fetched information for branch '${branch}' - '${JSON.stringify(branchRef)}'`
     )
 
+    const branchExists = branchRef.repository.ref != null
+
     // if the branch does not exist, then first we need to create the branch from base
-    if (branchRef.repository.ref == null) {
+    if (!branchExists) {
       core.debug(`Branch does not exist - '${branch}'`)
       branchRef = await this.octokit.graphql<{repository: TempRepository}>(
         refQuery,
@@ -357,5 +359,36 @@ export class GitHubHelper {
     core.info(
       `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`
     )
+
+    if (branchExists) {
+      // The branch existed so update the branch ref to point to the new commit
+      // This is the same behavior as force pushing the branch
+      core.info(
+        `Updating branch '${branch}' to commit '${commit.createCommitOnBranch.commit.oid}'`
+      )
+      const updateBranchMutation = `
+        mutation UpdateBranch($branchId: ID!, $commitOid: GitObjectID!) {
+          updateRef(input: {
+            refId: $branchId,
+            oid: $commitOid,
+            force: true
+          }) {
+            ref {
+              id
+              name
+              prefix
+            }
+          }
+        }
+      `
+      const updatedBranch = await this.octokit.graphql<{updateRef: {ref: Ref}}>(
+        updateBranchMutation,
+        {
+          branchId: branchRef.repository.ref!.id,
+          commitOid: commit.createCommitOnBranch.commit.oid
+        }
+      )
+      core.debug(`Updated branch - '${JSON.stringify(updatedBranch)}'`)
+    }
   }
 }
