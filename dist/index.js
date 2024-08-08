@@ -491,14 +491,14 @@ function createPullRequest(inputs) {
                     // Stash any uncommitted tracked and untracked changes
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    // await githubHelper.pushSignedCommits(
+                    yield githubHelper.pushSignedCommits(result.branchCommits, repoPath, branchRepository, inputs.branch);
+                    // await githubHelper.pushSignedCommit(
                     //   branchRepository,
                     //   inputs.branch,
                     //   inputs.base,
                     //   inputs.commitMessage,
-                    //   result.branchCommits
+                    //   result.branchFileChanges
                     // )
-                    yield githubHelper.pushSignedCommit(branchRepository, inputs.branch, inputs.base, inputs.commitMessage, result.branchFileChanges);
                     yield git.checkout('-');
                     if (stashed) {
                         yield git.stashPop();
@@ -1212,7 +1212,6 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
-// import {Commit} from './git-command-manager'
 const octokit_client_1 = __nccwpck_require__(5040);
 const utils = __importStar(__nccwpck_require__(918));
 const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a node with the global id of';
@@ -1326,44 +1325,61 @@ class GitHubHelper {
             return pull;
         });
     }
-    // async pushSignedCommits(
-    //   branchCommits: Commit[],
-    //   repoPath: string,
-    //   branchRepository: string,
-    //   branch: string,
-    //   base: string,
-    //   commitMessage: string
-    // ): Promise<void> {
-    //   for (const commit of branchCommits) {
-    //     await this.createCommit(commit, repoPath, branchRepository)
-    //   }
-    //   // update branch ref
-    // }
-    // private async createCommit(
-    //   commit: Commit,
-    //   repoPath: string,
-    //   branchRepository: string
-    // ): Promise<void> {
-    //   const tree = await Promise.all(
-    //     commit.changes.map(async ({path, mode, status}) => {
-    //       let sha: string | null = null
-    //       if (status === 'A' || status === 'M') {
-    //         const {data: blob} = await this.octokit.rest.git.createBlob({
-    //           ...this.parseRepository(branchRepository),
-    //           content: utils.readFileBase64([repoPath, path]),
-    //           encoding: 'base64'
-    //         })
-    //         sha = blob.sha
-    //       }
-    //       return {
-    //         path,
-    //         mode,
-    //         sha,
-    //         type: 'blob'
-    //       }
-    //     })
-    //   )
-    // }
+    pushSignedCommits(branchCommits, repoPath, branchRepository, branch) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let headSha = '';
+            for (const commit of branchCommits) {
+                headSha = yield this.createCommit(commit, repoPath, branchRepository);
+            }
+            yield this.createOrUpdateRef(branchRepository, branch, headSha);
+        });
+    }
+    createCommit(commit, repoPath, branchRepository) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const repository = this.parseRepository(branchRepository);
+            let treeSha = commit.tree;
+            if (commit.changes.length > 0) {
+                core.debug(`Creating tree objects for local commit ${commit.sha}`);
+                const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status }) {
+                    let sha = null;
+                    if (status === 'A' || status === 'M') {
+                        core.debug(`Creating blob for file '${path}'`);
+                        const { data: blob } = yield this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' }));
+                        sha = blob.sha;
+                    }
+                    return {
+                        path,
+                        mode,
+                        sha,
+                        type: 'blob'
+                    };
+                })));
+                core.debug(`Creating tree for local commit ${commit.sha}`);
+                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: commit.parents[0], tree: treeObjects }));
+                treeSha = tree.sha;
+                core.debug(`Created tree ${treeSha} for local commit ${commit.sha}`);
+            }
+            const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: commit.parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
+            core.debug(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
+            return remoteCommit.sha;
+        });
+    }
+    createOrUpdateRef(branchRepository, branch, newHead) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const repository = this.parseRepository(branchRepository);
+            const branchExists = yield this.octokit.rest.git
+                .getRef(Object.assign(Object.assign({}, repository), { ref: branch }))
+                .then(() => true, () => false);
+            if (branchExists) {
+                core.debug(`Branch ${branch} exists, updating ref`);
+                yield this.octokit.rest.git.updateRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `heads/${branch}` }));
+            }
+            else {
+                core.debug(`Branch ${branch} does not exist, creating ref`);
+                yield this.octokit.rest.git.createRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `refs/heads/${branch}` }));
+            }
+        });
+    }
     pushSignedCommit(branchRepository, branch, base, commitMessage, branchFileChanges) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
