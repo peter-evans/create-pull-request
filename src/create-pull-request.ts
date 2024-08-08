@@ -196,6 +196,16 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
       if (inputs.signCommit) {
+        // Stash any uncommitted tracked and untracked changes
+        const stashed = await git.stashPush(['--include-untracked'])
+        await git.checkout(inputs.branch)
+        // await githubHelper.pushSignedCommits(
+        //   branchRepository,
+        //   inputs.branch,
+        //   inputs.base,
+        //   inputs.commitMessage,
+        //   result.branchCommits
+        // )
         await githubHelper.pushSignedCommit(
           branchRepository,
           inputs.branch,
@@ -203,6 +213,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           inputs.commitMessage,
           result.branchFileChanges
         )
+        await git.checkout('-')
+        if (stashed) {
+          await git.stashPop()
+        }
       } else {
         await git.push([
           '--force-with-lease',

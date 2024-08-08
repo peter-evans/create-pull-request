@@ -185,7 +185,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             action: 'none',
             base: base,
             hasDiffWithBase: false,
-            headSha: ''
+            headSha: '',
+            branchCommits: []
         };
         // Save the working base changes to a temporary branch
         const tempBranch = (0, uuid_1.v4)();
@@ -306,6 +307,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
         }
+        // Build the branch commits
+        result.branchCommits = yield buildBranchCommits(git, base, branch);
         // Build the branch file changes
         result.branchFileChanges = yield buildBranchFileChanges(git, base, branch);
         // Get the pull request branch SHA
@@ -485,7 +488,21 @@ function createPullRequest(inputs) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
                 if (inputs.signCommit) {
+                    // Stash any uncommitted tracked and untracked changes
+                    const stashed = yield git.stashPush(['--include-untracked']);
+                    yield git.checkout(inputs.branch);
+                    // await githubHelper.pushSignedCommits(
+                    //   branchRepository,
+                    //   inputs.branch,
+                    //   inputs.base,
+                    //   inputs.commitMessage,
+                    //   result.branchCommits
+                    // )
                     yield githubHelper.pushSignedCommit(branchRepository, inputs.branch, inputs.base, inputs.commitMessage, result.branchFileChanges);
+                    yield git.checkout('-');
+                    if (stashed) {
+                        yield git.stashPop();
+                    }
                 }
                 else {
                     yield git.push([
@@ -721,12 +738,12 @@ class GitCommandManager {
                 subject: detailLines[3],
                 body: detailLines.slice(4, endOfBodyIndex).join('\n'),
                 changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
-                    const change = line.match(/^:\d{6} (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/);
+                    const change = line.match(/^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/);
                     if (change) {
                         return {
-                            mode: change[1],
-                            status: change[2],
-                            path: change[3]
+                            mode: change[3] === 'D' ? change[1] : change[2],
+                            status: change[3],
+                            path: change[4]
                         };
                     }
                     else {
@@ -1195,6 +1212,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
+// import {Commit} from './git-command-manager'
 const octokit_client_1 = __nccwpck_require__(5040);
 const utils = __importStar(__nccwpck_require__(918));
 const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a node with the global id of';
@@ -1308,6 +1326,44 @@ class GitHubHelper {
             return pull;
         });
     }
+    // async pushSignedCommits(
+    //   branchCommits: Commit[],
+    //   repoPath: string,
+    //   branchRepository: string,
+    //   branch: string,
+    //   base: string,
+    //   commitMessage: string
+    // ): Promise<void> {
+    //   for (const commit of branchCommits) {
+    //     await this.createCommit(commit, repoPath, branchRepository)
+    //   }
+    //   // update branch ref
+    // }
+    // private async createCommit(
+    //   commit: Commit,
+    //   repoPath: string,
+    //   branchRepository: string
+    // ): Promise<void> {
+    //   const tree = await Promise.all(
+    //     commit.changes.map(async ({path, mode, status}) => {
+    //       let sha: string | null = null
+    //       if (status === 'A' || status === 'M') {
+    //         const {data: blob} = await this.octokit.rest.git.createBlob({
+    //           ...this.parseRepository(branchRepository),
+    //           content: utils.readFileBase64([repoPath, path]),
+    //           encoding: 'base64'
+    //         })
+    //         sha = blob.sha
+    //       }
+    //       return {
+    //         path,
+    //         mode,
+    //         sha,
+    //         type: 'blob'
+    //       }
+    //     })
+    //   )
+    // }
     pushSignedCommit(branchRepository, branch, base, commitMessage, branchFileChanges) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
