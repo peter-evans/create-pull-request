@@ -43,11 +43,9 @@ exports.WorkingBaseType = void 0;
 exports.getWorkingBaseAndType = getWorkingBaseAndType;
 exports.tryFetch = tryFetch;
 exports.buildBranchCommits = buildBranchCommits;
-exports.buildBranchFileChanges = buildBranchFileChanges;
 exports.createOrUpdateBranch = createOrUpdateBranch;
 const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
-const utils = __importStar(__nccwpck_require__(918));
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
 const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean';
 const FETCH_DEPTH_MARGIN = 10;
@@ -97,35 +95,6 @@ function buildBranchCommits(git, base, branch) {
             commits.push(commit);
         }
         return commits;
-    });
-}
-function buildBranchFileChanges(git, base, branch) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const branchFileChanges = {
-            additions: [],
-            deletions: []
-        };
-        const changedFiles = yield git.getChangedFiles([
-            '--diff-filter=AM',
-            `${base}..${branch}`
-        ]);
-        const deletedFiles = yield git.getChangedFiles([
-            '--diff-filter=D',
-            `${base}..${branch}`
-        ]);
-        const repoPath = git.getWorkingDirectory();
-        for (const file of changedFiles) {
-            branchFileChanges.additions.push({
-                path: file,
-                contents: utils.readFileBase64([repoPath, file])
-            });
-        }
-        for (const file of deletedFiles) {
-            branchFileChanges.deletions.push({
-                path: file
-            });
-        }
-        return branchFileChanges;
     });
 }
 // Return the number of commits that branch2 is ahead of branch1
@@ -309,8 +278,6 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         }
         // Build the branch commits
         result.branchCommits = yield buildBranchCommits(git, base, branch);
-        // Build the branch file changes
-        result.branchFileChanges = yield buildBranchFileChanges(git, base, branch);
         // Get the pull request branch SHA
         result.headSha = yield git.revParse('HEAD');
         // Delete the temporary branch
@@ -492,13 +459,6 @@ function createPullRequest(inputs) {
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
                     yield githubHelper.pushSignedCommits(result.branchCommits, repoPath, branchRepository, inputs.branch);
-                    // await githubHelper.pushSignedCommit(
-                    //   branchRepository,
-                    //   inputs.branch,
-                    //   inputs.base,
-                    //   inputs.commitMessage,
-                    //   result.branchFileChanges
-                    // )
                     yield git.checkout('-');
                     if (stashed) {
                         yield git.stashPop();
@@ -1198,17 +1158,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(2186));
@@ -1339,11 +1288,11 @@ class GitHubHelper {
             const repository = this.parseRepository(branchRepository);
             let treeSha = commit.tree;
             if (commit.changes.length > 0) {
-                core.debug(`Creating tree objects for local commit ${commit.sha}`);
+                core.info(`Creating tree objects for local commit ${commit.sha}`);
                 const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status }) {
                     let sha = null;
                     if (status === 'A' || status === 'M') {
-                        core.debug(`Creating blob for file '${path}'`);
+                        core.info(`Creating blob for file '${path}'`);
                         const { data: blob } = yield this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' }));
                         sha = blob.sha;
                     }
@@ -1354,152 +1303,30 @@ class GitHubHelper {
                         type: 'blob'
                     };
                 })));
-                core.debug(`Creating tree for local commit ${commit.sha}`);
+                core.info(`Creating tree for local commit ${commit.sha}`);
                 const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: commit.parents[0], tree: treeObjects }));
                 treeSha = tree.sha;
-                core.debug(`Created tree ${treeSha} for local commit ${commit.sha}`);
+                core.info(`Created tree ${treeSha} for local commit ${commit.sha}`);
             }
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: commit.parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
-            core.debug(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
+            core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
             return remoteCommit.sha;
         });
     }
     createOrUpdateRef(branchRepository, branch, newHead) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
-            const branchExists = yield this.octokit.rest.git
-                .getRef(Object.assign(Object.assign({}, repository), { ref: branch }))
+            const branchExists = yield this.octokit.rest.repos
+                .getBranch(Object.assign(Object.assign({}, repository), { branch: branch }))
                 .then(() => true, () => false);
             if (branchExists) {
-                core.debug(`Branch ${branch} exists, updating ref`);
+                core.info(`Branch ${branch} exists; Updating ref`);
                 yield this.octokit.rest.git.updateRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `heads/${branch}` }));
             }
             else {
-                core.debug(`Branch ${branch} does not exist, creating ref`);
+                core.info(`Branch ${branch} does not exist; Creating ref`);
                 yield this.octokit.rest.git.createRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `refs/heads/${branch}` }));
             }
-        });
-    }
-    pushSignedCommit(branchRepository, branch, base, commitMessage, branchFileChanges) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            core.info(`Use API to push a signed commit`);
-            const [repoOwner, repoName] = branchRepository.split('/');
-            core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`);
-            const refQuery = `
-        query GetRefId($repoName: String!, $repoOwner: String!, $branchName: String!) {
-          repository(owner: $repoOwner, name: $repoName){
-            id
-            ref(qualifiedName: $branchName){
-              id
-              name
-              prefix
-              target{
-                id
-                oid
-                commitUrl
-                commitResourcePath
-                abbreviatedOid
-              }
-            }
-          },
-        }
-      `;
-            let branchRef = yield this.octokit.graphql(refQuery, {
-                repoOwner: repoOwner,
-                repoName: repoName,
-                branchName: branch
-            });
-            core.debug(`Fetched information for branch '${branch}' - '${JSON.stringify(branchRef)}'`);
-            // if the branch does not exist, then first we need to create the branch from base
-            if (branchRef.repository.ref == null) {
-                core.debug(`Branch does not exist - '${branch}'`);
-                branchRef = yield this.octokit.graphql(refQuery, {
-                    repoOwner: repoOwner,
-                    repoName: repoName,
-                    branchName: base
-                });
-                core.debug(`Fetched information for base branch '${base}' - '${JSON.stringify(branchRef)}'`);
-                core.info(`Creating new branch '${branch}' from '${base}', with ref '${JSON.stringify(branchRef.repository.ref.target.oid)}'`);
-                if (branchRef.repository.ref != null) {
-                    core.debug(`Send request for creating new branch`);
-                    const newBranchMutation = `
-          mutation CreateNewBranch($branchName: String!, $oid: GitObjectID!, $repoId: ID!) {
-            createRef(input: {
-              name: $branchName,
-              oid: $oid,
-              repositoryId: $repoId
-            }) {
-              ref {
-                id
-                name
-                prefix
-              }
-            }
-          }
-        `;
-                    const newBranch = yield this.octokit.graphql(newBranchMutation, {
-                        repoId: branchRef.repository.id,
-                        oid: branchRef.repository.ref.target.oid,
-                        branchName: 'refs/heads/' + branch
-                    });
-                    core.debug(`Created new branch '${branch}': '${JSON.stringify(newBranch.createRef.ref)}'`);
-                }
-            }
-            core.info(`Hash ref of branch '${branch}' is '${JSON.stringify(branchRef.repository.ref.target.oid)}'`);
-            const fileChanges = {
-                additions: branchFileChanges.additions,
-                deletions: branchFileChanges.deletions
-            };
-            const pushCommitMutation = `
-      mutation PushCommit(
-        $repoNameWithOwner: String!,
-        $branchName: String!,
-        $headOid: GitObjectID!,
-        $commitMessage: String!,
-        $fileChanges: FileChanges
-      ) {
-        createCommitOnBranch(input: {
-          branch: {
-            repositoryNameWithOwner: $repoNameWithOwner,
-            branchName: $branchName,
-          }
-          fileChanges: $fileChanges
-          message: {
-            headline: $commitMessage
-          }
-          expectedHeadOid: $headOid
-        }){
-          clientMutationId
-          ref{
-            id
-            name
-            prefix
-          }
-          commit{
-            id
-            abbreviatedOid
-            oid
-          }
-        }
-      }
-    `;
-            const pushCommitVars = {
-                branchName: branch,
-                repoNameWithOwner: repoOwner + '/' + repoName,
-                headOid: branchRef.repository.ref.target.oid,
-                commitMessage: commitMessage,
-                fileChanges: fileChanges
-            };
-            const pushCommitVarsWithoutContents = Object.assign(Object.assign({}, pushCommitVars), { fileChanges: Object.assign(Object.assign({}, pushCommitVars.fileChanges), { additions: (_a = pushCommitVars.fileChanges.additions) === null || _a === void 0 ? void 0 : _a.map(addition => {
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                        const { contents } = addition, rest = __rest(addition, ["contents"]);
-                        return rest;
-                    }) }) });
-            core.debug(`Push commit with payload: '${JSON.stringify(pushCommitVarsWithoutContents)}'`);
-            const commit = yield this.octokit.graphql(pushCommitMutation, pushCommitVars);
-            core.debug(`Pushed commit - '${JSON.stringify(commit)}'`);
-            core.info(`Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`);
         });
     }
 }
