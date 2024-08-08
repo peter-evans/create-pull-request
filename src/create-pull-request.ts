@@ -201,6 +201,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         await git.checkout(inputs.branch)
         await githubHelper.pushSignedCommits(
           result.branchCommits,
+          result.baseSha,
           repoPath,
           branchRepository,
           inputs.branch
