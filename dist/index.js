@@ -154,6 +154,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             action: 'none',
             base: base,
             hasDiffWithBase: false,
+            baseSha: '',
             headSha: '',
             branchCommits: []
         };
@@ -278,8 +279,9 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         }
         // Build the branch commits
         result.branchCommits = yield buildBranchCommits(git, base, branch);
-        // Get the pull request branch SHA
-        result.headSha = yield git.revParse('HEAD');
+        // Get the base and head SHAs
+        result.baseSha = yield git.revParse(base);
+        result.headSha = yield git.revParse(branch);
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
         // Checkout the working base to leave the local repository as it was found
@@ -458,7 +460,7 @@ function createPullRequest(inputs) {
                     // Stash any uncommitted tracked and untracked changes
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    yield githubHelper.pushSignedCommits(result.branchCommits, repoPath, branchRepository, inputs.branch);
+                    yield githubHelper.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
                     yield git.checkout('-');
                     if (stashed) {
                         yield git.stashPop();
@@ -1274,16 +1276,21 @@ class GitHubHelper {
             return pull;
         });
     }
-    pushSignedCommits(branchCommits, repoPath, branchRepository, branch) {
+    pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
-            let headSha = '';
+            let headSha = baseSha;
+            // testing
+            if (branchCommits.length > 0 && branchCommits[0].parents[0] !== baseSha) {
+                throw new Error(`The base commit ${baseSha} does not match the first commit's parent ${branchCommits[0].parents[0]}`);
+            }
             for (const commit of branchCommits) {
-                headSha = yield this.createCommit(commit, repoPath, branchRepository);
+                // TODO: The headSha of the previous commit should be passed and used as the parent.
+                headSha = yield this.createCommit(commit, [headSha], repoPath, branchRepository);
             }
             yield this.createOrUpdateRef(branchRepository, branch, headSha);
         });
     }
-    createCommit(commit, repoPath, branchRepository) {
+    createCommit(commit, parents, repoPath, branchRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
             let treeSha = commit.tree;
@@ -1304,11 +1311,11 @@ class GitHubHelper {
                     };
                 })));
                 core.info(`Creating tree for local commit ${commit.sha}`);
-                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: commit.parents[0], tree: treeObjects }));
+                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: parents[0], tree: treeObjects }));
                 treeSha = tree.sha;
                 core.info(`Created tree ${treeSha} for local commit ${commit.sha}`);
             }
-            const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: commit.parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
+            const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
             return remoteCommit.sha;
         });

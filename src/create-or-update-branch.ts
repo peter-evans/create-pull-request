@@ -142,6 +142,7 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
+  baseSha: string
   headSha: string
   branchCommits: Commit[]
 }
@@ -173,6 +174,7 @@ export async function createOrUpdateBranch(
     action: 'none',
     base: base,
     hasDiffWithBase: false,
+    baseSha: '',
     headSha: '',
     branchCommits: []
   }
@@ -322,8 +324,9 @@ export async function createOrUpdateBranch(
   // Build the branch commits
   result.branchCommits = await buildBranchCommits(git, base, branch)
 
-  // Get the pull request branch SHA
-  result.headSha = await git.revParse('HEAD')
+  // Get the base and head SHAs
+  result.baseSha = await git.revParse(base)
+  result.headSha = await git.revParse(branch)
 
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])
