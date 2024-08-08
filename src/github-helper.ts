@@ -195,19 +195,35 @@ export class GitHubHelper {
 
   async pushSignedCommits(
     branchCommits: Commit[],
+    baseSha: string,
     repoPath: string,
     branchRepository: string,
     branch: string
   ): Promise<void> {
-    let headSha = ''
+    let headSha = baseSha
+
+    // testing
+    if (branchCommits.length > 0 && branchCommits[0].parents[0] !== baseSha) {
+      throw new Error(
+        `The base commit ${baseSha} does not match the first commit's parent ${branchCommits[0].parents[0]}`
+      )
+    }
+
     for (const commit of branchCommits) {
-      headSha = await this.createCommit(commit, repoPath, branchRepository)
+      // TODO: The headSha of the previous commit should be passed and used as the parent.
+      headSha = await this.createCommit(
+        commit,
+        [headSha],
+        repoPath,
+        branchRepository
+      )
     }
     await this.createOrUpdateRef(branchRepository, branch, headSha)
   }
 
   private async createCommit(
     commit: Commit,
+    parents: string[],
     repoPath: string,
     branchRepository: string
   ): Promise<string> {
@@ -238,7 +254,7 @@ export class GitHubHelper {
       core.info(`Creating tree for local commit ${commit.sha}`)
       const {data: tree} = await this.octokit.rest.git.createTree({
         ...repository,
-        base_tree: commit.parents[0],
+        base_tree: parents[0],
         tree: treeObjects
       })
       treeSha = tree.sha
@@ -247,7 +263,7 @@ export class GitHubHelper {
 
     const {data: remoteCommit} = await this.octokit.rest.git.createCommit({
       ...repository,
-      parents: commit.parents,
+      parents: parents,
       tree: treeSha,
       message: `${commit.subject}\n\n${commit.body}`
     })
