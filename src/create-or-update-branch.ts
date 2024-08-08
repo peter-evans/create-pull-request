@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {GitCommandManager} from './git-command-manager'
+import {GitCommandManager, Commit} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
 import * as utils from './utils'
 
@@ -46,6 +46,24 @@ export async function tryFetch(
   } catch {
     return false
   }
+}
+
+export async function buildBranchCommits(
+  git: GitCommandManager,
+  base: string,
+  branch: string
+): Promise<Commit[]> {
+  const output = await git.exec(['log', '--format=%H', `${base}..${branch}`])
+  const shas = output.stdout
+    .split('\n')
+    .filter(x => x !== '')
+    .reverse()
+  const commits: Commit[] = []
+  for (const sha of shas) {
+    const commit = await git.getCommit(sha)
+    commits.push(commit)
+  }
+  return commits
 }
 
 export async function buildBranchFileChanges(

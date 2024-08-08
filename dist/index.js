@@ -42,6 +42,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.WorkingBaseType = void 0;
 exports.getWorkingBaseAndType = getWorkingBaseAndType;
 exports.tryFetch = tryFetch;
+exports.buildBranchCommits = buildBranchCommits;
 exports.buildBranchFileChanges = buildBranchFileChanges;
 exports.createOrUpdateBranch = createOrUpdateBranch;
 const core = __importStar(__nccwpck_require__(2186));
@@ -81,6 +82,21 @@ function tryFetch(git, remote, branch, depth) {
         catch (_a) {
             return false;
         }
+    });
+}
+function buildBranchCommits(git, base, branch) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const output = yield git.exec(['log', '--format=%H', `${base}..${branch}`]);
+        const shas = output.stdout
+            .split('\n')
+            .filter(x => x !== '')
+            .reverse();
+        const commits = [];
+        for (const sha of shas) {
+            const commit = yield git.getCommit(sha);
+            commits.push(commit);
+        }
+        return commits;
     });
 }
 function buildBranchFileChanges(git, base, branch) {
