@@ -2,13 +2,6 @@ import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Commit} from './git-command-manager'
 import {Octokit, OctokitOptions} from './octokit-client'
-import type {
-  Repository as TempRepository,
-  Ref,
-  Commit as CommitTemp,
-  FileChanges
-} from '@octokit/graphql-schema'
-import {BranchFileChanges} from './create-or-update-branch'
 import * as utils from './utils'
 
 const ERROR_PR_REVIEW_TOKEN_SCOPE =
@@ -221,12 +214,12 @@ export class GitHubHelper {
     const repository = this.parseRepository(branchRepository)
     let treeSha = commit.tree
     if (commit.changes.length > 0) {
-      core.debug(`Creating tree objects for local commit ${commit.sha}`)
+      core.info(`Creating tree objects for local commit ${commit.sha}`)
       const treeObjects = await Promise.all(
         commit.changes.map(async ({path, mode, status}) => {
           let sha: string | null = null
           if (status === 'A' || status === 'M') {
-            core.debug(`Creating blob for file '${path}'`)
+            core.info(`Creating blob for file '${path}'`)
             const {data: blob} = await this.octokit.rest.git.createBlob({
               ...repository,
               content: utils.readFileBase64([repoPath, path]),
@@ -242,14 +235,14 @@ export class GitHubHelper {
           }
         })
       )
-      core.debug(`Creating tree for local commit ${commit.sha}`)
+      core.info(`Creating tree for local commit ${commit.sha}`)
       const {data: tree} = await this.octokit.rest.git.createTree({
         ...repository,
         base_tree: commit.parents[0],
         tree: treeObjects
       })
       treeSha = tree.sha
-      core.debug(`Created tree ${treeSha} for local commit ${commit.sha}`)
+      core.info(`Created tree ${treeSha} for local commit ${commit.sha}`)
     }
 
     const {data: remoteCommit} = await this.octokit.rest.git.createCommit({
@@ -258,7 +251,7 @@ export class GitHubHelper {
       tree: treeSha,
       message: `${commit.subject}\n\n${commit.body}`
     })
-    core.debug(
+    core.info(
       `Created commit ${remoteCommit.sha} for local commit ${commit.sha}`
     )
     return remoteCommit.sha
@@ -270,10 +263,10 @@ export class GitHubHelper {
     newHead: string
   ) {
     const repository = this.parseRepository(branchRepository)
-    const branchExists = await this.octokit.rest.git
-      .getRef({
+    const branchExists = await this.octokit.rest.repos
+      .getBranch({
         ...repository,
-        ref: branch
+        branch: branch
       })
       .then(
         () => true,
@@ -281,186 +274,19 @@ export class GitHubHelper {
       )
 
     if (branchExists) {
-      core.debug(`Branch ${branch} exists, updating ref`)
+      core.info(`Branch ${branch} exists; Updating ref`)
       await this.octokit.rest.git.updateRef({
         ...repository,
         sha: newHead,
         ref: `heads/${branch}`
       })
     } else {
-      core.debug(`Branch ${branch} does not exist, creating ref`)
+      core.info(`Branch ${branch} does not exist; Creating ref`)
       await this.octokit.rest.git.createRef({
         ...repository,
         sha: newHead,
         ref: `refs/heads/${branch}`
       })
     }
-  }
-
-  async pushSignedCommit(
-    branchRepository: string,
-    branch: string,
-    base: string,
-    commitMessage: string,
-    branchFileChanges?: BranchFileChanges
-  ): Promise<void> {
-    core.info(`Use API to push a signed commit`)
-
-    const [repoOwner, repoName] = branchRepository.split('/')
-    core.debug(`repoOwner: '${repoOwner}', repoName: '${repoName}'`)
-    const refQuery = `
-        query GetRefId($repoName: String!, $repoOwner: String!, $branchName: String!) {
-          repository(owner: $repoOwner, name: $repoName){
-            id
-            ref(qualifiedName: $branchName){
-              id
-              name
-              prefix
-              target{
-                id
-                oid
-                commitUrl
-                commitResourcePath
-                abbreviatedOid
-              }
-            }
-          },
-        }
-      `
-
-    let branchRef = await this.octokit.graphql<{repository: TempRepository}>(
-      refQuery,
-      {
-        repoOwner: repoOwner,
-        repoName: repoName,
-        branchName: branch
-      }
-    )
-    core.debug(
-      `Fetched information for branch '${branch}' - '${JSON.stringify(branchRef)}'`
-    )
-
-    // if the branch does not exist, then first we need to create the branch from base
-    if (branchRef.repository.ref == null) {
-      core.debug(`Branch does not exist - '${branch}'`)
-      branchRef = await this.octokit.graphql<{repository: TempRepository}>(
-        refQuery,
-        {
-          repoOwner: repoOwner,
-          repoName: repoName,
-          branchName: base
-        }
-      )
-      core.debug(
-        `Fetched information for base branch '${base}' - '${JSON.stringify(branchRef)}'`
-      )
-
-      core.info(
-        `Creating new branch '${branch}' from '${base}', with ref '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`
-      )
-      if (branchRef.repository.ref != null) {
-        core.debug(`Send request for creating new branch`)
-        const newBranchMutation = `
-          mutation CreateNewBranch($branchName: String!, $oid: GitObjectID!, $repoId: ID!) {
-            createRef(input: {
-              name: $branchName,
-              oid: $oid,
-              repositoryId: $repoId
-            }) {
-              ref {
-                id
-                name
-                prefix
-              }
-            }
-          }
-        `
-        const newBranch = await this.octokit.graphql<{createRef: {ref: Ref}}>(
-          newBranchMutation,
-          {
-            repoId: branchRef.repository.id,
-            oid: branchRef.repository.ref.target!.oid,
-            branchName: 'refs/heads/' + branch
-          }
-        )
-        core.debug(
-          `Created new branch '${branch}': '${JSON.stringify(newBranch.createRef.ref)}'`
-        )
-      }
-    }
-    core.info(
-      `Hash ref of branch '${branch}' is '${JSON.stringify(branchRef.repository.ref!.target!.oid)}'`
-    )
-
-    const fileChanges = <FileChanges>{
-      additions: branchFileChanges!.additions,
-      deletions: branchFileChanges!.deletions
-    }
-
-    const pushCommitMutation = `
-      mutation PushCommit(
-        $repoNameWithOwner: String!,
-        $branchName: String!,
-        $headOid: GitObjectID!,
-        $commitMessage: String!,
-        $fileChanges: FileChanges
-      ) {
-        createCommitOnBranch(input: {
-          branch: {
-            repositoryNameWithOwner: $repoNameWithOwner,
-            branchName: $branchName,
-          }
-          fileChanges: $fileChanges
-          message: {
-            headline: $commitMessage
-          }
-          expectedHeadOid: $headOid
-        }){
-          clientMutationId
-          ref{
-            id
-            name
-            prefix
-          }
-          commit{
-            id
-            abbreviatedOid
-            oid
-          }
-        }
-      }
-    `
-    const pushCommitVars = {
-      branchName: branch,
-      repoNameWithOwner: repoOwner + '/' + repoName,
-      headOid: branchRef.repository.ref!.target!.oid,
-      commitMessage: commitMessage,
-      fileChanges: fileChanges
-    }
-
-    const pushCommitVarsWithoutContents = {
-      ...pushCommitVars,
-      fileChanges: {
-        ...pushCommitVars.fileChanges,
-        additions: pushCommitVars.fileChanges.additions?.map(addition => {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const {contents, ...rest} = addition
-          return rest
-        })
-      }
-    }
-
-    core.debug(
-      `Push commit with payload: '${JSON.stringify(pushCommitVarsWithoutContents)}'`
-    )
-
-    const commit = await this.octokit.graphql<{
-      createCommitOnBranch: {ref: Ref; commit: CommitTemp}
-    }>(pushCommitMutation, pushCommitVars)
-
-    core.debug(`Pushed commit - '${JSON.stringify(commit)}'`)
-    core.info(
-      `Pushed commit with hash - '${commit.createCommitOnBranch.commit.oid}' on branch - '${commit.createCommitOnBranch.ref.name}'`
-    )
   }
 }

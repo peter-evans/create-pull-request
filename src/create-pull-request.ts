@@ -205,13 +205,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           branchRepository,
           inputs.branch
         )
-        // await githubHelper.pushSignedCommit(
-        //   branchRepository,
-        //   inputs.branch,
-        //   inputs.base,
-        //   inputs.commitMessage,
-        //   result.branchFileChanges
-        // )
         await git.checkout('-')
         if (stashed) {
           await git.stashPop()
