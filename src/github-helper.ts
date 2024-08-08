@@ -278,7 +278,8 @@ export class GitHubHelper {
       await this.octokit.rest.git.updateRef({
         ...repository,
         sha: newHead,
-        ref: `heads/${branch}`
+        ref: `heads/${branch}`,
+        force: true
       })
     } else {
       core.info(`Branch ${branch} does not exist; Creating ref`)
