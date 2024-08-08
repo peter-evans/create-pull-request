@@ -1321,7 +1321,7 @@ class GitHubHelper {
                 .then(() => true, () => false);
             if (branchExists) {
                 core.info(`Branch ${branch} exists; Updating ref`);
-                yield this.octokit.rest.git.updateRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `heads/${branch}` }));
+                yield this.octokit.rest.git.updateRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `heads/${branch}`, force: true }));
             }
             else {
                 core.info(`Branch ${branch} does not exist; Creating ref`);
