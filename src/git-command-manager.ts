@@ -172,12 +172,14 @@ export class GitCommandManager {
       subject: detailLines[3],
       body: detailLines.slice(4, endOfBodyIndex).join('\n'),
       changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
-        const change = line.match(/^:\d{6} (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/)
+        const change = line.match(
+          /^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/
+        )
         if (change) {
           return {
-            mode: change[1],
-            status: change[2],
-            path: change[3]
+            mode: change[3] === 'D' ? change[1] : change[2],
+            status: change[3],
+            path: change[4]
           }
         } else {
           throw new Error(`Unexpected line format: ${line}`)

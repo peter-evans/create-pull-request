@@ -270,7 +270,7 @@ describe('create-or-update-branch tests', () => {
     expect(branchCommits[0].subject).toEqual('Test changes')
     expect(branchCommits[0].changes.length).toEqual(3)
     expect(branchCommits[0].changes).toEqual([
-      {mode: '000000', path: TRACKED_FILE, status: 'D'},
+      {mode: '100644', path: TRACKED_FILE, status: 'D'},
       {mode: '100644', path: UNTRACKED_FILE, status: 'A'},
       {mode: '100644', path: TRACKED_FILE_NEW_PATH, status: 'A'}
     ])

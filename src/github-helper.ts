@@ -1,10 +1,11 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
+// import {Commit} from './git-command-manager'
 import {Octokit, OctokitOptions} from './octokit-client'
 import type {
   Repository as TempRepository,
   Ref,
-  Commit,
+  Commit as CommitTemp,
   FileChanges
 } from '@octokit/graphql-schema'
 import {BranchFileChanges} from './create-or-update-branch'
@@ -192,6 +193,47 @@ export class GitHubHelper {
     return pull
   }
 
+  // async pushSignedCommits(
+  //   branchCommits: Commit[],
+  //   repoPath: string,
+  //   branchRepository: string,
+  //   branch: string,
+  //   base: string,
+  //   commitMessage: string
+  // ): Promise<void> {
+  //   for (const commit of branchCommits) {
+  //     await this.createCommit(commit, repoPath, branchRepository)
+  //   }
+
+  //   // update branch ref
+  // }
+
+  // private async createCommit(
+  //   commit: Commit,
+  //   repoPath: string,
+  //   branchRepository: string
+  // ): Promise<void> {
+  //   const tree = await Promise.all(
+  //     commit.changes.map(async ({path, mode, status}) => {
+  //       let sha: string | null = null
+  //       if (status === 'A' || status === 'M') {
+  //         const {data: blob} = await this.octokit.rest.git.createBlob({
+  //           ...this.parseRepository(branchRepository),
+  //           content: utils.readFileBase64([repoPath, path]),
+  //           encoding: 'base64'
+  //         })
+  //         sha = blob.sha
+  //       }
+  //       return {
+  //         path,
+  //         mode,
+  //         sha,
+  //         type: 'blob'
+  //       }
+  //     })
+  //   )
+  // }
+
   async pushSignedCommit(
     branchRepository: string,
     branch: string,
@@ -350,7 +392,7 @@ export class GitHubHelper {
     )
 
     const commit = await this.octokit.graphql<{
-      createCommitOnBranch: {ref: Ref; commit: Commit}
+      createCommitOnBranch: {ref: Ref; commit: CommitTemp}
     }>(pushCommitMutation, pushCommitVars)
 
     core.debug(`Pushed commit - '${JSON.stringify(commit)}'`)

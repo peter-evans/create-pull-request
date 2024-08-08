@@ -177,6 +177,7 @@ interface CreateOrUpdateBranchResult {
   hasDiffWithBase: boolean
   headSha: string
   branchFileChanges?: BranchFileChanges
+  branchCommits: Commit[]
 }
 
 export async function createOrUpdateBranch(
@@ -206,7 +207,8 @@ export async function createOrUpdateBranch(
     action: 'none',
     base: base,
     hasDiffWithBase: false,
-    headSha: ''
+    headSha: '',
+    branchCommits: []
   }
 
   // Save the working base changes to a temporary branch
@@ -350,6 +352,9 @@ export async function createOrUpdateBranch(
     // Check if the pull request branch is ahead of the base
     result.hasDiffWithBase = await isAhead(git, base, branch)
   }
+
+  // Build the branch commits
+  result.branchCommits = await buildBranchCommits(git, base, branch)
 
   // Build the branch file changes
   result.branchFileChanges = await buildBranchFileChanges(git, base, branch)
