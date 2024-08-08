@@ -199,20 +199,19 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         // Stash any uncommitted tracked and untracked changes
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)
-        // await githubHelper.pushSignedCommits(
+        await githubHelper.pushSignedCommits(
+          result.branchCommits,
+          repoPath,
+          branchRepository,
+          inputs.branch
+        )
+        // await githubHelper.pushSignedCommit(
         //   branchRepository,
         //   inputs.branch,
         //   inputs.base,
         //   inputs.commitMessage,
-        //   result.branchCommits
+        //   result.branchFileChanges
         // )
-        await githubHelper.pushSignedCommit(
-          branchRepository,
-          inputs.branch,
-          inputs.base,
-          inputs.commitMessage,
-          result.branchFileChanges
-        )
         await git.checkout('-')
         if (stashed) {
           await git.stashPop()

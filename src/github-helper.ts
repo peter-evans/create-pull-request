@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
-// import {Commit} from './git-command-manager'
+import {Commit} from './git-command-manager'
 import {Octokit, OctokitOptions} from './octokit-client'
 import type {
   Repository as TempRepository,
@@ -23,6 +23,13 @@ interface Pull {
   number: number
   html_url: string
   created: boolean
+}
+
+type TreeObject = {
+  path: string
+  mode: '100644' | '100755' | '040000' | '160000' | '120000'
+  sha: string | null
+  type: 'blob'
 }
 
 export class GitHubHelper {
@@ -193,46 +200,102 @@ export class GitHubHelper {
     return pull
   }
 
-  // async pushSignedCommits(
-  //   branchCommits: Commit[],
-  //   repoPath: string,
-  //   branchRepository: string,
-  //   branch: string,
-  //   base: string,
-  //   commitMessage: string
-  // ): Promise<void> {
-  //   for (const commit of branchCommits) {
-  //     await this.createCommit(commit, repoPath, branchRepository)
-  //   }
+  async pushSignedCommits(
+    branchCommits: Commit[],
+    repoPath: string,
+    branchRepository: string,
+    branch: string
+  ): Promise<void> {
+    let headSha = ''
+    for (const commit of branchCommits) {
+      headSha = await this.createCommit(commit, repoPath, branchRepository)
+    }
+    await this.createOrUpdateRef(branchRepository, branch, headSha)
+  }
 
-  //   // update branch ref
-  // }
+  private async createCommit(
+    commit: Commit,
+    repoPath: string,
+    branchRepository: string
+  ): Promise<string> {
+    const repository = this.parseRepository(branchRepository)
+    let treeSha = commit.tree
+    if (commit.changes.length > 0) {
+      core.debug(`Creating tree objects for local commit ${commit.sha}`)
+      const treeObjects = await Promise.all(
+        commit.changes.map(async ({path, mode, status}) => {
+          let sha: string | null = null
+          if (status === 'A' || status === 'M') {
+            core.debug(`Creating blob for file '${path}'`)
+            const {data: blob} = await this.octokit.rest.git.createBlob({
+              ...repository,
+              content: utils.readFileBase64([repoPath, path]),
+              encoding: 'base64'
+            })
+            sha = blob.sha
+          }
+          return <TreeObject>{
+            path,
+            mode,
+            sha,
+            type: 'blob'
+          }
+        })
+      )
+      core.debug(`Creating tree for local commit ${commit.sha}`)
+      const {data: tree} = await this.octokit.rest.git.createTree({
+        ...repository,
+        base_tree: commit.parents[0],
+        tree: treeObjects
+      })
+      treeSha = tree.sha
+      core.debug(`Created tree ${treeSha} for local commit ${commit.sha}`)
+    }
 
-  // private async createCommit(
-  //   commit: Commit,
-  //   repoPath: string,
-  //   branchRepository: string
-  // ): Promise<void> {
-  //   const tree = await Promise.all(
-  //     commit.changes.map(async ({path, mode, status}) => {
-  //       let sha: string | null = null
-  //       if (status === 'A' || status === 'M') {
-  //         const {data: blob} = await this.octokit.rest.git.createBlob({
-  //           ...this.parseRepository(branchRepository),
-  //           content: utils.readFileBase64([repoPath, path]),
-  //           encoding: 'base64'
-  //         })
-  //         sha = blob.sha
-  //       }
-  //       return {
-  //         path,
-  //         mode,
-  //         sha,
-  //         type: 'blob'
-  //       }
-  //     })
-  //   )
-  // }
+    const {data: remoteCommit} = await this.octokit.rest.git.createCommit({
+      ...repository,
+      parents: commit.parents,
+      tree: treeSha,
+      message: `${commit.subject}\n\n${commit.body}`
+    })
+    core.debug(
+      `Created commit ${remoteCommit.sha} for local commit ${commit.sha}`
+    )
+    return remoteCommit.sha
+  }
+
+  private async createOrUpdateRef(
+    branchRepository: string,
+    branch: string,
+    newHead: string
+  ) {
+    const repository = this.parseRepository(branchRepository)
+    const branchExists = await this.octokit.rest.git
+      .getRef({
+        ...repository,
+        ref: branch
+      })
+      .then(
+        () => true,
+        () => false
+      )
+
+    if (branchExists) {
+      core.debug(`Branch ${branch} exists, updating ref`)
+      await this.octokit.rest.git.updateRef({
+        ...repository,
+        sha: newHead,
+        ref: `heads/${branch}`
+      })
+    } else {
+      core.debug(`Branch ${branch} does not exist, creating ref`)
+      await this.octokit.rest.git.createRef({
+        ...repository,
+        sha: newHead,
+        ref: `refs/heads/${branch}`
+      })
+    }
+  }
 
   async pushSignedCommit(
     branchRepository: string,
