@@ -216,15 +216,6 @@ export class GitCommandManager {
     return output.exitCode === 1
   }
 
-  async getChangedFiles(options?: string[]): Promise<string[]> {
-    const args = ['diff', '--name-only']
-    if (options) {
-      args.push(...options)
-    }
-    const output = await this.exec(args)
-    return output.stdout.split('\n').filter(filename => filename != '')
-  }
-
   async isDirty(untracked: boolean, pathspec?: string[]): Promise<boolean> {
     const pathspecArgs = pathspec ? ['--', ...pathspec] : []
     // Check untracked changes

@@ -128,16 +128,6 @@ function splitLines(multilineString: string): string[] {
     .filter(x => x !== '')
 }
 
-export interface BranchFileChanges {
-  additions: {
-    path: string
-    contents: string
-  }[]
-  deletions: {
-    path: string
-  }[]
-}
-
 interface CreateOrUpdateBranchResult {
   action: string
   base: string
