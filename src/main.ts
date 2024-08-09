@@ -19,6 +19,7 @@ async function run(): Promise<void> {
       branchSuffix: core.getInput('branch-suffix'),
       base: core.getInput('base'),
       pushToFork: core.getInput('push-to-fork'),
+      signCommits: core.getBooleanInput('sign-commits'),
       title: core.getInput('title'),
       body: core.getInput('body'),
       bodyPath: core.getInput('body-path'),
@@ -27,8 +28,7 @@ async function run(): Promise<void> {
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
-      draft: core.getBooleanInput('draft'),
-      signCommit: core.getBooleanInput('sign-commit')
+      draft: core.getBooleanInput('draft')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 

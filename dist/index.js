@@ -136,8 +136,8 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, addPaths) {
-    return __awaiter(this, void 0, void 0, function* () {
+function createOrUpdateBranch(git_1, commitMessage_1, base_1, branch_1, branchRemoteName_1, signoff_1, addPaths_1) {
+    return __awaiter(this, arguments, void 0, function* (git, commitMessage, base, branch, branchRemoteName, signoff, addPaths, signCommits = false) {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
         // When a commit, we must rebase onto the actual base.
@@ -280,8 +280,11 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // Get the base and head SHAs
         result.baseSha = yield git.revParse(base);
         result.headSha = yield git.revParse(branch);
-        // Build the branch commits
-        result.branchCommits = yield buildBranchCommits(git, base, branch);
+        // NOTE: This could always be built and returned. Maybe remove when there is confidence in buildBranchCommits.
+        if (signCommits) {
+            // Build the branch commits
+            result.branchCommits = yield buildBranchCommits(git, base, branch);
+        }
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
         // Checkout the working base to leave the local repository as it was found
@@ -449,14 +452,14 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
+            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths, inputs.signCommits);
             // Set the base. It would have been '' if not specified as an input
             inputs.base = result.base;
             core.endGroup();
             if (['created', 'updated'].includes(result.action)) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
-                if (inputs.signCommit) {
+                if (inputs.signCommits) {
                     // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
@@ -1402,6 +1405,7 @@ function run() {
                 branchSuffix: core.getInput('branch-suffix'),
                 base: core.getInput('base'),
                 pushToFork: core.getInput('push-to-fork'),
+                signCommits: core.getBooleanInput('sign-commits'),
                 title: core.getInput('title'),
                 body: core.getInput('body'),
                 bodyPath: core.getInput('body-path'),
@@ -1410,8 +1414,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getBooleanInput('draft'),
-                signCommit: core.getBooleanInput('sign-commit')
+                draft: core.getBooleanInput('draft')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             if (!inputs.token) {

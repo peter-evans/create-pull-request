@@ -23,6 +23,7 @@ export interface Inputs {
   branchSuffix: string
   base: string
   pushToFork: string
+  signCommits: boolean
   title: string
   body: string
   bodyPath: string
@@ -32,7 +33,6 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
-  signCommit: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -184,7 +184,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths
+      inputs.addPaths,
+      inputs.signCommits
     )
     // Set the base. It would have been '' if not specified as an input
     inputs.base = result.base
@@ -195,7 +196,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      if (inputs.signCommit) {
+      if (inputs.signCommits) {
         // Create signed commits via the GitHub API
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)

@@ -65,6 +65,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `push-to-fork` | A fork of the checked-out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
+| `sign-commits` | Sign commits as `github-actions[bot]` when using `GITHUB_TOKEN`, or your own bot when using [GitHub App tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens). See [commit signing](docs/concepts-guidelines.md#commit signing) for details.  | `false` |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
 | `body` | The body of the pull request. | `Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action` |
 | `body-path` | The path to a file containing the pull request body. Takes precedence over `body`. | |
@@ -74,7 +75,6 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token), or equivalent [GitHub App permissions](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens), are required. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
-| `sign-commit` | Sign the commit as bot [refer: [Signature verification for bots](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification#signature-verification-for-bots)]. This can be useful if your repo or org has enforced commit-signing. | `false` |
 
 #### commit-message
 
