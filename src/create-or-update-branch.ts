@@ -154,7 +154,8 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[]
+  addPaths: string[],
+  signCommits: boolean = false
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -325,8 +326,11 @@ export async function createOrUpdateBranch(
   result.baseSha = await git.revParse(base)
   result.headSha = await git.revParse(branch)
 
-  // Build the branch commits
-  result.branchCommits = await buildBranchCommits(git, base, branch)
+  // NOTE: This could always be built and returned. Maybe remove when there is confidence in buildBranchCommits.
+  if (signCommits) {
+    // Build the branch commits
+    result.branchCommits = await buildBranchCommits(git, base, branch)
+  }
 
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])
