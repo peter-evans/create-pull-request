@@ -2,10 +2,13 @@ import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Commit} from './git-command-manager'
 import {Octokit, OctokitOptions} from './octokit-client'
+import pLimit from 'p-limit'
 import * as utils from './utils'
 
 const ERROR_PR_REVIEW_TOKEN_SCOPE =
   'Validation Failed: "Could not resolve to a node with the global id of'
+
+const blobCreationLimit = pLimit(8)
 
 interface Repository {
   owner: string
@@ -227,11 +230,13 @@ export class GitHubHelper {
           let sha: string | null = null
           if (status === 'A' || status === 'M') {
             core.info(`Creating blob for file '${path}'`)
-            const {data: blob} = await this.octokit.rest.git.createBlob({
-              ...repository,
-              content: utils.readFileBase64([repoPath, path]),
-              encoding: 'base64'
-            })
+            const {data: blob} = await blobCreationLimit(() =>
+              this.octokit.rest.git.createBlob({
+                ...repository,
+                content: utils.readFileBase64([repoPath, path]),
+                encoding: 'base64'
+              })
+            )
             sha = blob.sha
           }
           return <TreeObject>{
