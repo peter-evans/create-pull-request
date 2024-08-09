@@ -277,11 +277,11 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Check if the pull request branch is ahead of the base
             result.hasDiffWithBase = yield isAhead(git, base, branch);
         }
-        // Build the branch commits
-        result.branchCommits = yield buildBranchCommits(git, base, branch);
         // Get the base and head SHAs
         result.baseSha = yield git.revParse(base);
         result.headSha = yield git.revParse(branch);
+        // Build the branch commits
+        result.branchCommits = yield buildBranchCommits(git, base, branch);
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
         // Checkout the working base to leave the local repository as it was found
@@ -457,7 +457,7 @@ function createPullRequest(inputs) {
                 // The branch was created or updated
                 core.startGroup(`Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`);
                 if (inputs.signCommit) {
-                    // Stash any uncommitted tracked and untracked changes
+                    // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
                     yield githubHelper.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
@@ -1279,12 +1279,7 @@ class GitHubHelper {
     pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
             let headSha = baseSha;
-            // testing
-            if (branchCommits.length > 0 && branchCommits[0].parents[0] !== baseSha) {
-                throw new Error(`The base commit ${baseSha} does not match the first commit's parent ${branchCommits[0].parents[0]}`);
-            }
             for (const commit of branchCommits) {
-                // TODO: The headSha of the previous commit should be passed and used as the parent.
                 headSha = yield this.createCommit(commit, [headSha], repoPath, branchRepository);
             }
             yield this.createOrUpdateRef(branchRepository, branch, headSha);
@@ -1317,7 +1312,7 @@ class GitHubHelper {
             }
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
-            core.debug(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
+            core.info(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
             return remoteCommit.sha;
         });
     }

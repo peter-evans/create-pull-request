@@ -196,7 +196,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
       if (inputs.signCommit) {
-        // Stash any uncommitted tracked and untracked changes
+        // Create signed commits via the GitHub API
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)
         await githubHelper.pushSignedCommits(
