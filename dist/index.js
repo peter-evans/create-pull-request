@@ -746,16 +746,6 @@ class GitCommandManager {
             return output.exitCode === 1;
         });
     }
-    getChangedFiles(options) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const args = ['diff', '--name-only'];
-            if (options) {
-                args.push(...options);
-            }
-            const output = yield this.exec(args);
-            return output.stdout.split('\n').filter(filename => filename != '');
-        });
-    }
     isDirty(untracked, pathspec) {
         return __awaiter(this, void 0, void 0, function* () {
             const pathspecArgs = pathspec ? ['--', ...pathspec] : [];
