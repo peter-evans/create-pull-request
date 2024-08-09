@@ -34,6 +34,7 @@
     "@octokit/core": "^4.2.4",
     "@octokit/plugin-paginate-rest": "^5.0.1",
     "@octokit/plugin-rest-endpoint-methods": "^6.8.1",
+    "p-limit": "^6.1.0",
     "proxy-from-env": "^1.1.0",
     "undici": "^6.19.7",
     "uuid": "^9.0.1"
