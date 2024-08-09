@@ -270,7 +270,7 @@ export class GitHubHelper {
     core.info(
       `Created commit ${remoteCommit.sha} for local commit ${commit.sha}`
     )
-    core.debug(`Commit verification: ${remoteCommit.verification}`)
+    core.debug(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`)
     return remoteCommit.sha
   }
 
