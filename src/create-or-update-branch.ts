@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {GitCommandManager} from './git-command-manager'
+import {GitCommandManager, Commit} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
 
 const CHERRYPICK_EMPTY =
@@ -45,6 +45,24 @@ export async function tryFetch(
   } catch {
     return false
   }
+}
+
+export async function buildBranchCommits(
+  git: GitCommandManager,
+  base: string,
+  branch: string
+): Promise<Commit[]> {
+  const output = await git.exec(['log', '--format=%H', `${base}..${branch}`])
+  const shas = output.stdout
+    .split('\n')
+    .filter(x => x !== '')
+    .reverse()
+  const commits: Commit[] = []
+  for (const sha of shas) {
+    const commit = await git.getCommit(sha)
+    commits.push(commit)
+  }
+  return commits
 }
 
 // Return the number of commits that branch2 is ahead of branch1
@@ -114,7 +132,9 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
+  baseSha: string
   headSha: string
+  branchCommits: Commit[]
 }
 
 export async function createOrUpdateBranch(
@@ -124,7 +144,8 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[]
+  addPaths: string[],
+  signCommits: boolean = false
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -144,7 +165,9 @@ export async function createOrUpdateBranch(
     action: 'none',
     base: base,
     hasDiffWithBase: false,
-    headSha: ''
+    baseSha: '',
+    headSha: '',
+    branchCommits: []
   }
 
   // Save the working base changes to a temporary branch
@@ -289,8 +312,15 @@ export async function createOrUpdateBranch(
     result.hasDiffWithBase = await isAhead(git, base, branch)
   }
 
-  // Get the pull request branch SHA
-  result.headSha = await git.revParse('HEAD')
+  // Get the base and head SHAs
+  result.baseSha = await git.revParse(base)
+  result.headSha = await git.revParse(branch)
+
+  // NOTE: This could always be built and returned. Maybe remove when there is confidence in buildBranchCommits.
+  if (signCommits) {
+    // Build the branch commits
+    result.branchCommits = await buildBranchCommits(git, base, branch)
+  }
 
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])

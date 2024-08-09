@@ -13,7 +13,7 @@ git daemon --verbose --enable=receive-pack --base-path=/git/remote --export-all 
 # Give the daemon time to start
 sleep 2
 
-# Create a local clone and make an initial commit
+# Create a local clone and make initial commits
 mkdir -p /git/local/repos
 git clone git://127.0.0.1/repos/test-base.git /git/local/repos/test-base
 cd /git/local/repos/test-base
@@ -22,6 +22,10 @@ git config --global user.name "Your Name"
 echo "#test-base" > README.md
 git add .
 git commit -m "initial commit"
+echo "#test-base :sparkles:" > README.md
+git add .
+git commit -m "add sparkles" -m "Change description:
+- updates README.md to add sparkles to the title"
 git push -u
 git log -1 --pretty=oneline
 git config --global --unset user.email

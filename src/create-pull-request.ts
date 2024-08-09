@@ -23,6 +23,7 @@ export interface Inputs {
   branchSuffix: string
   base: string
   pushToFork: string
+  signCommits: boolean
   title: string
   body: string
   bodyPath: string
@@ -183,8 +184,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths
+      inputs.addPaths,
+      inputs.signCommits
     )
+    // Set the base. It would have been '' if not specified as an input
+    inputs.base = result.base
     core.endGroup()
 
     if (['created', 'updated'].includes(result.action)) {
@@ -192,16 +196,30 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      await git.push([
-        '--force-with-lease',
-        branchRemoteName,
-        `${inputs.branch}:refs/heads/${inputs.branch}`
-      ])
+      if (inputs.signCommits) {
+        // Create signed commits via the GitHub API
+        const stashed = await git.stashPush(['--include-untracked'])
+        await git.checkout(inputs.branch)
+        await githubHelper.pushSignedCommits(
+          result.branchCommits,
+          result.baseSha,
+          repoPath,
+          branchRepository,
+          inputs.branch
+        )
+        await git.checkout('-')
+        if (stashed) {
+          await git.stashPop()
+        }
+      } else {
+        await git.push([
+          '--force-with-lease',
+          branchRemoteName,
+          `${inputs.branch}:refs/heads/${inputs.branch}`
+        ])
+      }
       core.endGroup()
     }
-
-    // Set the base. It would have been '' if not specified as an input
-    inputs.base = result.base
 
     if (result.hasDiffWithBase) {
       // Create or update the pull request

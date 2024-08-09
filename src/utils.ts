@@ -126,6 +126,10 @@ export function readFile(path: string): string {
   return fs.readFileSync(path, 'utf-8')
 }
 
+export function readFileBase64(pathParts: string[]): string {
+  return fs.readFileSync(path.resolve(...pathParts)).toString('base64')
+}
+
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 function hasErrorCode(error: any): error is {code: string} {
   return typeof (error && error.code) === 'string'
