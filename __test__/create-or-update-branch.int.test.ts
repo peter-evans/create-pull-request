@@ -239,6 +239,9 @@ describe('create-or-update-branch tests', () => {
   it('tests buildBranchCommits with addition and modification', async () => {
     await git.checkout(BRANCH, BASE)
     await createChanges()
+    const UNTRACKED_EXE_FILE = 'a/script.sh'
+    const filepath = path.join(REPO_PATH, UNTRACKED_EXE_FILE)
+    await fs.promises.writeFile(filepath, '#!/usr/bin/env bash', {mode: 0o755})
     await git.exec(['add', '-A'])
     await git.commit(['-m', 'Test changes'])
 
@@ -246,8 +249,9 @@ describe('create-or-update-branch tests', () => {
 
     expect(branchCommits.length).toEqual(1)
     expect(branchCommits[0].subject).toEqual('Test changes')
-    expect(branchCommits[0].changes.length).toEqual(2)
+    expect(branchCommits[0].changes.length).toEqual(3)
     expect(branchCommits[0].changes).toEqual([
+      {mode: '100755', path: UNTRACKED_EXE_FILE, status: 'A'},
       {mode: '100644', path: TRACKED_FILE, status: 'M'},
       {mode: '100644', path: UNTRACKED_FILE, status: 'A'}
     ])
