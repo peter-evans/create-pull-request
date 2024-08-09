@@ -1317,6 +1317,7 @@ class GitHubHelper {
             }
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
+            core.debug(`Commit verification: ${remoteCommit.verification}`);
             return remoteCommit.sha;
         });
     }
