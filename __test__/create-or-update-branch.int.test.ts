@@ -1,7 +1,9 @@
 import {
   createOrUpdateBranch,
   tryFetch,
-  getWorkingBaseAndType
+  getWorkingBaseAndType,
+  buildBranchFileChanges,
+  buildBranchCommits
 } from '../lib/create-or-update-branch'
 import * as fs from 'fs'
 import {GitCommandManager} from '../lib/git-command-manager'
@@ -227,6 +229,147 @@ describe('create-or-update-branch tests', () => {
     const [workingBase, workingBaseType] = await getWorkingBaseAndType(git)
     expect(workingBase).toEqual(headSha)
     expect(workingBaseType).toEqual('commit')
+  })
+
+  it('tests buildBranchCommits with no diff', async () => {
+    await git.checkout(BRANCH, BASE)
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+    expect(branchCommits.length).toEqual(0)
+  })
+
+  it('tests buildBranchCommits with addition and modification', async () => {
+    await git.checkout(BRANCH, BASE)
+    await createChanges()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(1)
+    expect(branchCommits[0].subject).toEqual('Test changes')
+    expect(branchCommits[0].changes.length).toEqual(2)
+    expect(branchCommits[0].changes).toEqual([
+      {mode: '100644', path: TRACKED_FILE, status: 'M'},
+      {mode: '100644', path: UNTRACKED_FILE, status: 'A'}
+    ])
+  })
+
+  it('tests buildBranchCommits with addition and deletion', async () => {
+    await git.checkout(BRANCH, BASE)
+    await createChanges()
+    const TRACKED_FILE_NEW_PATH = 'c/tracked-file.txt'
+    const filepath = path.join(REPO_PATH, TRACKED_FILE_NEW_PATH)
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.rename(path.join(REPO_PATH, TRACKED_FILE), filepath)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(1)
+    expect(branchCommits[0].subject).toEqual('Test changes')
+    expect(branchCommits[0].changes.length).toEqual(3)
+    expect(branchCommits[0].changes).toEqual([
+      {mode: '100644', path: TRACKED_FILE, status: 'D'},
+      {mode: '100644', path: UNTRACKED_FILE, status: 'A'},
+      {mode: '100644', path: TRACKED_FILE_NEW_PATH, status: 'A'}
+    ])
+  })
+
+  it('tests buildBranchCommits with multiple commits', async () => {
+    await git.checkout(BRANCH, BASE)
+    for (let i = 0; i < 3; i++) {
+      await createChanges()
+      await git.exec(['add', '-A'])
+      await git.commit(['-m', `Test changes ${i}`])
+    }
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(3)
+    for (let i = 0; i < 3; i++) {
+      expect(branchCommits[i].subject).toEqual(`Test changes ${i}`)
+      expect(branchCommits[i].changes.length).toEqual(2)
+      const untrackedFileStatus = i == 0 ? 'A' : 'M'
+      expect(branchCommits[i].changes).toEqual([
+        {mode: '100644', path: TRACKED_FILE, status: 'M'},
+        {mode: '100644', path: UNTRACKED_FILE, status: untrackedFileStatus}
+      ])
+    }
+  })
+
+  it('tests buildBranchFileChanges with no diff', async () => {
+    await git.checkout(BRANCH, BASE)
+    const branchFileChanges = await buildBranchFileChanges(git, BASE, BRANCH)
+    expect(branchFileChanges.additions.length).toEqual(0)
+    expect(branchFileChanges.deletions.length).toEqual(0)
+  })
+
+  it('tests buildBranchFileChanges with addition and modification', async () => {
+    await git.checkout(BRANCH, BASE)
+    const changes = await createChanges()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchFileChanges = await buildBranchFileChanges(git, BASE, BRANCH)
+
+    expect(branchFileChanges.additions).toEqual([
+      {
+        path: TRACKED_FILE,
+        contents: Buffer.from(changes.tracked, 'binary').toString('base64')
+      },
+      {
+        path: UNTRACKED_FILE,
+        contents: Buffer.from(changes.untracked, 'binary').toString('base64')
+      }
+    ])
+    expect(branchFileChanges.deletions.length).toEqual(0)
+  })
+
+  it('tests buildBranchFileChanges with addition and deletion', async () => {
+    await git.checkout(BRANCH, BASE)
+    const changes = await createChanges()
+    const TRACKED_FILE_NEW_PATH = 'c/tracked-file.txt'
+    const filepath = path.join(REPO_PATH, TRACKED_FILE_NEW_PATH)
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.rename(path.join(REPO_PATH, TRACKED_FILE), filepath)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchFileChanges = await buildBranchFileChanges(git, BASE, BRANCH)
+
+    expect(branchFileChanges.additions).toEqual([
+      {
+        path: UNTRACKED_FILE,
+        contents: Buffer.from(changes.untracked, 'binary').toString('base64')
+      },
+      {
+        path: TRACKED_FILE_NEW_PATH,
+        contents: Buffer.from(changes.tracked, 'binary').toString('base64')
+      }
+    ])
+    expect(branchFileChanges.deletions).toEqual([{path: TRACKED_FILE}])
+  })
+
+  it('tests buildBranchFileChanges with binary files', async () => {
+    await git.checkout(BRANCH, BASE)
+    const filename = 'c/untracked-binary-file'
+    const filepath = path.join(REPO_PATH, filename)
+    const binaryData = Buffer.from([0x00, 0xff, 0x10, 0x20])
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.writeFile(filepath, binaryData)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchFileChanges = await buildBranchFileChanges(git, BASE, BRANCH)
+
+    expect(branchFileChanges.additions).toEqual([
+      {
+        path: filename,
+        contents: binaryData.toString('base64')
+      }
+    ])
+    expect(branchFileChanges.deletions.length).toEqual(0)
   })
 
   it('tests no changes resulting in no new branch being created', async () => {

@@ -32,6 +32,8 @@
     "@actions/core": "^1.10.1",
     "@actions/exec": "^1.1.1",
     "@octokit/core": "^4.2.4",
+    "@octokit/graphql": "^8.1.1",
+    "@octokit/graphql-schema": "^15.25.0",
     "@octokit/plugin-paginate-rest": "^5.0.1",
     "@octokit/plugin-rest-endpoint-methods": "^6.8.1",
     "proxy-from-env": "^1.1.0",
@@ -41,7 +43,8 @@
   "devDependencies": {
     "@types/jest": "^29.5.12",
     "@types/node": "^18.19.43",
-    "@typescript-eslint/parser": "^5.62.0",
+    "@typescript-eslint/eslint-plugin": "^7.17.0",
+    "@typescript-eslint/parser": "^7.17.0",
     "@vercel/ncc": "^0.38.1",
     "eslint": "^8.57.0",
     "eslint-import-resolver-typescript": "^3.6.1",
@@ -55,6 +58,6 @@
     "js-yaml": "^4.1.0",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.4",
-    "typescript": "^4.9.5"
+    "typescript": "^5.5.4"
   }
 }

@@ -32,6 +32,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  signCommit: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -185,6 +186,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.signoff,
       inputs.addPaths
     )
+    // Set the base. It would have been '' if not specified as an input
+    inputs.base = result.base
     core.endGroup()
 
     if (['created', 'updated'].includes(result.action)) {
@@ -192,16 +195,36 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.startGroup(
         `Pushing pull request branch to '${branchRemoteName}/${inputs.branch}'`
       )
-      await git.push([
-        '--force-with-lease',
-        branchRemoteName,
-        `${inputs.branch}:refs/heads/${inputs.branch}`
-      ])
+      if (inputs.signCommit) {
+        // Stash any uncommitted tracked and untracked changes
+        const stashed = await git.stashPush(['--include-untracked'])
+        await git.checkout(inputs.branch)
+        await githubHelper.pushSignedCommits(
+          result.branchCommits,
+          repoPath,
+          branchRepository,
+          inputs.branch
+        )
+        // await githubHelper.pushSignedCommit(
+        //   branchRepository,
+        //   inputs.branch,
+        //   inputs.base,
+        //   inputs.commitMessage,
+        //   result.branchFileChanges
+        // )
+        await git.checkout('-')
+        if (stashed) {
+          await git.stashPop()
+        }
+      } else {
+        await git.push([
+          '--force-with-lease',
+          branchRemoteName,
+          `${inputs.branch}:refs/heads/${inputs.branch}`
+        ])
+      }
       core.endGroup()
     }
-
-    // Set the base. It would have been '' if not specified as an input
-    inputs.base = result.base
 
     if (result.hasDiffWithBase) {
       // Create or update the pull request

@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
-import {GitCommandManager} from './git-command-manager'
+import {GitCommandManager, Commit} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
+import * as utils from './utils'
 
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
@@ -45,6 +46,56 @@ export async function tryFetch(
   } catch {
     return false
   }
+}
+
+export async function buildBranchCommits(
+  git: GitCommandManager,
+  base: string,
+  branch: string
+): Promise<Commit[]> {
+  const output = await git.exec(['log', '--format=%H', `${base}..${branch}`])
+  const shas = output.stdout
+    .split('\n')
+    .filter(x => x !== '')
+    .reverse()
+  const commits: Commit[] = []
+  for (const sha of shas) {
+    const commit = await git.getCommit(sha)
+    commits.push(commit)
+  }
+  return commits
+}
+
+export async function buildBranchFileChanges(
+  git: GitCommandManager,
+  base: string,
+  branch: string
+): Promise<BranchFileChanges> {
+  const branchFileChanges: BranchFileChanges = {
+    additions: [],
+    deletions: []
+  }
+  const changedFiles = await git.getChangedFiles([
+    '--diff-filter=AM',
+    `${base}..${branch}`
+  ])
+  const deletedFiles = await git.getChangedFiles([
+    '--diff-filter=D',
+    `${base}..${branch}`
+  ])
+  const repoPath = git.getWorkingDirectory()
+  for (const file of changedFiles) {
+    branchFileChanges.additions!.push({
+      path: file,
+      contents: utils.readFileBase64([repoPath, file])
+    })
+  }
+  for (const file of deletedFiles) {
+    branchFileChanges.deletions!.push({
+      path: file
+    })
+  }
+  return branchFileChanges
 }
 
 // Return the number of commits that branch2 is ahead of branch1
@@ -110,11 +161,23 @@ function splitLines(multilineString: string): string[] {
     .filter(x => x !== '')
 }
 
+export interface BranchFileChanges {
+  additions: {
+    path: string
+    contents: string
+  }[]
+  deletions: {
+    path: string
+  }[]
+}
+
 interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
   headSha: string
+  branchFileChanges?: BranchFileChanges
+  branchCommits: Commit[]
 }
 
 export async function createOrUpdateBranch(
@@ -144,7 +207,8 @@ export async function createOrUpdateBranch(
     action: 'none',
     base: base,
     hasDiffWithBase: false,
-    headSha: ''
+    headSha: '',
+    branchCommits: []
   }
 
   // Save the working base changes to a temporary branch
@@ -288,6 +352,12 @@ export async function createOrUpdateBranch(
     // Check if the pull request branch is ahead of the base
     result.hasDiffWithBase = await isAhead(git, base, branch)
   }
+
+  // Build the branch commits
+  result.branchCommits = await buildBranchCommits(git, base, branch)
+
+  // Build the branch file changes
+  result.branchFileChanges = await buildBranchFileChanges(git, base, branch)
 
   // Get the pull request branch SHA
   result.headSha = await git.revParse('HEAD')
