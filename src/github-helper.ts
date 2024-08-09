@@ -201,16 +201,7 @@ export class GitHubHelper {
     branch: string
   ): Promise<void> {
     let headSha = baseSha
-
-    // testing
-    if (branchCommits.length > 0 && branchCommits[0].parents[0] !== baseSha) {
-      throw new Error(
-        `The base commit ${baseSha} does not match the first commit's parent ${branchCommits[0].parents[0]}`
-      )
-    }
-
     for (const commit of branchCommits) {
-      // TODO: The headSha of the previous commit should be passed and used as the parent.
       headSha = await this.createCommit(
         commit,
         [headSha],
@@ -270,7 +261,9 @@ export class GitHubHelper {
     core.info(
       `Created commit ${remoteCommit.sha} for local commit ${commit.sha}`
     )
-    core.debug(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`)
+    core.info(
+      `Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`
+    )
     return remoteCommit.sha
   }
 
