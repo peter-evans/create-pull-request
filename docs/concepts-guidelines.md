@@ -17,7 +17,7 @@ This document covers terminology, how the action works, general usage guidelines
   - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Authenticating with GitHub App generated tokens](#authenticating-with-github-app-generated-tokens)
   - [Commit signing](#commit-signing)
-    - [commit signature verification for bots](#commit-signature-verification-for-bots)
+    - [Commit signature verification for bots](#commit-signature-verification-for-bots)
     - [GPG commit signature verification](#gpg-commit-signature-verification)
   - [Running in a container or on self-hosted runners](#running-in-a-container-or-on-self-hosted-runners)
 
