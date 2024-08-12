@@ -284,6 +284,8 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 
 ### Commit signing
 
+[Commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification) is a feature where GitHub will mark signed commits as "verified" to give confidence that changes are from a trusted source. Some organizations require commit signing, and enforce it with branch protection rules.
+
 The action supports two methods to sign commits, [commit signature verification for bots](#commit-signature-verification-for-bots), and [GPG commit signature verification](#gpg-commit-signature-verification).
 
 #### Commit signature verification for bots
