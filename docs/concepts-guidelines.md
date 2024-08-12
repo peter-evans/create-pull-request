@@ -16,7 +16,9 @@ This document covers terminology, how the action works, general usage guidelines
   - [Push using SSH (deploy keys)](#push-using-ssh-deploy-keys)
   - [Push pull request branches to a fork](#push-pull-request-branches-to-a-fork)
   - [Authenticating with GitHub App generated tokens](#authenticating-with-github-app-generated-tokens)
-  - [GPG commit signature verification](#gpg-commit-signature-verification)
+  - [Commit signing](#commit-signing)
+    - [commit signature verification for bots](#commit-signature-verification-for-bots)
+    - [GPG commit signature verification](#gpg-commit-signature-verification)
   - [Running in a container or on self-hosted runners](#running-in-a-container-or-on-self-hosted-runners)
 
 ## Terminology
@@ -260,17 +262,17 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
 
 4. Set secrets on your repository containing the GitHub App ID, and the private key you created in step 2. e.g. `APP_ID`, `APP_PRIVATE_KEY`.
 
-5. The following example workflow shows how to use [tibdex/github-app-token](https://github.com/tibdex/github-app-token) to generate a token for use with this action.
+5. The following example workflow shows how to use [actions/create-github-app-token](https://github.com/actions/create-github-app-token) to generate a token for use with this action.
 
 ```yaml
     steps:
       - uses: actions/checkout@v4
 
-      - uses: tibdex/github-app-token@v1
+      - uses: actions/create-github-app-token@v1
         id: generate-token
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
       # Make changes to pull request here
 
@@ -280,7 +282,52 @@ GitHub App generated tokens are more secure than using a PAT because GitHub App 
           token: ${{ steps.generate-token.outputs.token }}
 ```
 
-### GPG commit signature verification
+### Commit signing
+
+The action supports two methods to sign commits, [commit signature verification for bots](#commit-signature-verification-for-bots), and [GPG commit signature verification](#gpg-commit-signature-verification).
+
+#### Commit signature verification for bots
+
+The action can sign commits as `github-actions[bot]` when using the repository's default `GITHUB_TOKEN`, or your own bot when using [GitHub App tokens](#authenticating-with-github-app-generated-tokens).
+
+> [!IMPORTANT]  
+> - When setting `sign-commits: true` the action will ignore the `committer` and `author` inputs.
+> - If you attempt to use a [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) the action will create the pull request, but commits will not be signed. Commit signing is only supported with bot generated tokens.
+
+In this example the `token` input is not supplied, so the action will use the repository's default `GITHUB_TOKEN`. This will sign commits as `github-actions[bot]`.
+```yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          sign-commits: true
+```
+
+In this example, the `token` input is generated using a GitHub App. This will sign commits as `<application-name>[bot]`.
+```yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/create-github-app-token@v1
+        id: generate-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      # Make changes to pull request here
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          sign-commits: true
+```
+
+#### GPG commit signature verification
 
 The action can use GPG to sign commits with a GPG key that you generate yourself.
 
