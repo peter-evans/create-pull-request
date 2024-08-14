@@ -21,6 +21,11 @@ interface Pull {
   created: boolean
 }
 
+interface CommitResponse {
+  sha: string
+  verified: boolean
+}
+
 type TreeObject = {
   path: string
   mode: '100644' | '100755' | '040000' | '160000' | '120000'
@@ -203,17 +208,21 @@ export class GitHubHelper {
     repoPath: string,
     branchRepository: string,
     branch: string
-  ): Promise<void> {
-    let headSha = baseSha
+  ): Promise<CommitResponse> {
+    let headCommit: CommitResponse = {
+      sha: baseSha,
+      verified: false
+    }
     for (const commit of branchCommits) {
-      headSha = await this.createCommit(
+      headCommit = await this.createCommit(
         commit,
-        [headSha],
+        [headCommit.sha],
         repoPath,
         branchRepository
       )
     }
-    await this.createOrUpdateRef(branchRepository, branch, headSha)
+    await this.createOrUpdateRef(branchRepository, branch, headCommit.sha)
+    return headCommit
   }
 
   private async createCommit(
@@ -221,7 +230,7 @@ export class GitHubHelper {
     parents: string[],
     repoPath: string,
     branchRepository: string
-  ): Promise<string> {
+  ): Promise<CommitResponse> {
     const repository = this.parseRepository(branchRepository)
     let treeSha = commit.tree
     if (commit.changes.length > 0) {
@@ -270,7 +279,10 @@ export class GitHubHelper {
     core.info(
       `Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`
     )
-    return remoteCommit.sha
+    return {
+      sha: remoteCommit.sha,
+      verified: remoteCommit.verification.verified
+    }
   }
 
   private async createOrUpdateRef(
