@@ -108,6 +108,8 @@ jobs:
             Full test suite slash command (repository admin only)
             ```
             /test repository=${{ github.event.pull_request.head.repo.full_name }} ref=${{ github.event.pull_request.head.ref }} build=true
+            ```
+            ```
             /test repository=${{ github.event.pull_request.head.repo.full_name }} ref=${{ github.event.pull_request.head.ref }} build=true sign-commits=true
             ```
 
