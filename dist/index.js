@@ -450,9 +450,13 @@ function createPullRequest(inputs) {
             core.info(`Configured git committer as '${parsedCommitter.name} <${parsedCommitter.email}>'`);
             core.info(`Configured git author as '${parsedAuthor.name} <${parsedAuthor.email}>'`);
             core.endGroup();
+            // Action outputs
+            const outputs = new Map();
+            outputs.set('pull-request-commits-verified', 'false');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
             const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths, inputs.signCommits);
+            outputs.set('pull-request-head-sha', result.headSha);
             // Set the base. It would have been '' if not specified as an input
             inputs.base = result.base;
             core.endGroup();
@@ -463,7 +467,9 @@ function createPullRequest(inputs) {
                     // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    yield githubHelper.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
+                    const pushSignedCommitsResult = yield githubHelper.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
+                    outputs.set('pull-request-head-sha', pushSignedCommitsResult.sha);
+                    outputs.set('pull-request-commits-verified', pushSignedCommitsResult.verified.toString());
                     yield git.checkout('-');
                     if (stashed) {
                         yield git.stashPop();
@@ -483,21 +489,18 @@ function createPullRequest(inputs) {
                 core.startGroup('Create or update the pull request');
                 const pull = yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
                 core.endGroup();
-                // Set outputs
-                core.startGroup('Setting outputs');
-                core.setOutput('pull-request-number', pull.number);
-                core.setOutput('pull-request-url', pull.html_url);
+                outputs.set('pull-request-number', pull.number.toString());
+                outputs.set('pull-request-url', pull.html_url);
                 if (pull.created) {
-                    core.setOutput('pull-request-operation', 'created');
+                    outputs.set('pull-request-operation', 'created');
                 }
                 else if (result.action == 'updated') {
-                    core.setOutput('pull-request-operation', 'updated');
+                    outputs.set('pull-request-operation', 'updated');
                 }
-                core.setOutput('pull-request-head-sha', result.headSha);
-                core.setOutput('pull-request-branch', inputs.branch);
+                outputs.set('pull-request-head-sha', result.headSha);
+                outputs.set('pull-request-branch', inputs.branch);
                 // Deprecated
                 core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
-                core.endGroup();
             }
             else {
                 // There is no longer a diff with the base
@@ -512,13 +515,16 @@ function createPullRequest(inputs) {
                             branchRemoteName,
                             `refs/heads/${inputs.branch}`
                         ]);
-                        // Set outputs
-                        core.startGroup('Setting outputs');
-                        core.setOutput('pull-request-operation', 'closed');
-                        core.endGroup();
+                        outputs.set('pull-request-operation', 'closed');
                     }
                 }
             }
+            // Set outputs
+            core.startGroup('Setting outputs');
+            for (const [key, value] of outputs) {
+                core.setOutput(key, value);
+            }
+            core.endGroup();
         }
         catch (error) {
             core.setFailed(utils.getErrorMessage(error));
@@ -1277,11 +1283,15 @@ class GitHubHelper {
     }
     pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
-            let headSha = baseSha;
+            let headCommit = {
+                sha: baseSha,
+                verified: false
+            };
             for (const commit of branchCommits) {
-                headSha = yield this.createCommit(commit, [headSha], repoPath, branchRepository);
+                headCommit = yield this.createCommit(commit, [headCommit.sha], repoPath, branchRepository);
             }
-            yield this.createOrUpdateRef(branchRepository, branch, headSha);
+            yield this.createOrUpdateRef(branchRepository, branch, headCommit.sha);
+            return headCommit;
         });
     }
     createCommit(commit, parents, repoPath, branchRepository) {
@@ -1312,7 +1322,10 @@ class GitHubHelper {
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
             core.info(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
-            return remoteCommit.sha;
+            return {
+                sha: remoteCommit.sha,
+                verified: remoteCommit.verification.verified
+            };
         });
     }
     createOrUpdateRef(branchRepository, branch, newHead) {

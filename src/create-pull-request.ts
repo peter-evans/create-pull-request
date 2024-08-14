@@ -175,6 +175,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     )
     core.endGroup()
 
+    // Action outputs
+    const outputs = new Map<string, string>()
+    outputs.set('pull-request-commits-verified', 'false')
+
     // Create or update the pull request branch
     core.startGroup('Create or update the pull request branch')
     const result = await createOrUpdateBranch(
@@ -187,6 +191,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.addPaths,
       inputs.signCommits
     )
+    outputs.set('pull-request-head-sha', result.headSha)
     // Set the base. It would have been '' if not specified as an input
     inputs.base = result.base
     core.endGroup()
@@ -200,12 +205,17 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         // Create signed commits via the GitHub API
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)
-        await githubHelper.pushSignedCommits(
+        const pushSignedCommitsResult = await githubHelper.pushSignedCommits(
           result.branchCommits,
           result.baseSha,
           repoPath,
           branchRepository,
           inputs.branch
+        )
+        outputs.set('pull-request-head-sha', pushSignedCommitsResult.sha)
+        outputs.set(
+          'pull-request-commits-verified',
+          pushSignedCommitsResult.verified.toString()
         )
         await git.checkout('-')
         if (stashed) {
@@ -231,20 +241,17 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       )
       core.endGroup()
 
-      // Set outputs
-      core.startGroup('Setting outputs')
-      core.setOutput('pull-request-number', pull.number)
-      core.setOutput('pull-request-url', pull.html_url)
+      outputs.set('pull-request-number', pull.number.toString())
+      outputs.set('pull-request-url', pull.html_url)
       if (pull.created) {
-        core.setOutput('pull-request-operation', 'created')
+        outputs.set('pull-request-operation', 'created')
       } else if (result.action == 'updated') {
-        core.setOutput('pull-request-operation', 'updated')
+        outputs.set('pull-request-operation', 'updated')
       }
-      core.setOutput('pull-request-head-sha', result.headSha)
-      core.setOutput('pull-request-branch', inputs.branch)
+      outputs.set('pull-request-head-sha', result.headSha)
+      outputs.set('pull-request-branch', inputs.branch)
       // Deprecated
       core.exportVariable('PULL_REQUEST_NUMBER', pull.number)
-      core.endGroup()
     } else {
       // There is no longer a diff with the base
       // Check we are in a state where a branch exists
@@ -260,13 +267,17 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
             branchRemoteName,
             `refs/heads/${inputs.branch}`
           ])
-          // Set outputs
-          core.startGroup('Setting outputs')
-          core.setOutput('pull-request-operation', 'closed')
-          core.endGroup()
+          outputs.set('pull-request-operation', 'closed')
         }
       }
     }
+
+    // Set outputs
+    core.startGroup('Setting outputs')
+    for (const [key, value] of outputs) {
+      core.setOutput(key, value)
+    }
+    core.endGroup()
   } catch (error) {
     core.setFailed(utils.getErrorMessage(error))
   } finally {
