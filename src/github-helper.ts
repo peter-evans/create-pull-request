@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Commit} from './git-command-manager'
-import {Octokit, OctokitOptions} from './octokit-client'
+import {Octokit, OctokitOptions, throttleOptions} from './octokit-client'
 import pLimit from 'p-limit'
 import * as utils from './utils'
 
@@ -41,6 +41,7 @@ export class GitHubHelper {
     } else {
       options.baseUrl = 'https://api.github.com'
     }
+    options.throttle = throttleOptions
     this.octokit = new Octokit(options)
   }
 
