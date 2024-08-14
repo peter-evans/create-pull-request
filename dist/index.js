@@ -522,6 +522,7 @@ function createPullRequest(inputs) {
             // Set outputs
             core.startGroup('Setting outputs');
             for (const [key, value] of outputs) {
+                core.info(`${key} = ${value}`);
                 core.setOutput(key, value);
             }
             core.endGroup();
