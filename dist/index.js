@@ -453,6 +453,7 @@ function createPullRequest(inputs) {
             // Action outputs
             const outputs = new Map();
             outputs.set('pull-request-branch', inputs.branch);
+            outputs.set('pull-request-operation', 'none');
             outputs.set('pull-request-commits-verified', 'false');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');

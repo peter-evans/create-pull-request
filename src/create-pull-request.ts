@@ -178,6 +178,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Action outputs
     const outputs = new Map<string, string>()
     outputs.set('pull-request-branch', inputs.branch)
+    outputs.set('pull-request-operation', 'none')
     outputs.set('pull-request-commits-verified', 'false')
 
     // Create or update the pull request branch
