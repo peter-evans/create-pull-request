@@ -1498,8 +1498,9 @@ exports.throttleOptions = {
             return true;
         }
     },
-    onSecondaryRateLimit: (_, options) => {
+    onSecondaryRateLimit: (retryAfter, options) => {
         core.warning(`Hit secondary rate limit for request ${options.method} ${options.url}`);
+        core.warning(`Requests may be retried after ${retryAfter} seconds.`);
     }
 };
 const proxyFetch = (proxyUrl) => (url, opts) => {
