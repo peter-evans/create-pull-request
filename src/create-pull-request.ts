@@ -177,6 +177,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     // Action outputs
     const outputs = new Map<string, string>()
+    outputs.set('pull-request-branch', inputs.branch)
     outputs.set('pull-request-commits-verified', 'false')
 
     // Create or update the pull request branch
@@ -232,15 +233,12 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     }
 
     if (result.hasDiffWithBase) {
-      // Create or update the pull request
       core.startGroup('Create or update the pull request')
       const pull = await githubHelper.createOrUpdatePullRequest(
         inputs,
         baseRemote.repository,
         branchRepository
       )
-      core.endGroup()
-
       outputs.set('pull-request-number', pull.number.toString())
       outputs.set('pull-request-url', pull.html_url)
       if (pull.created) {
@@ -248,10 +246,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       } else if (result.action == 'updated') {
         outputs.set('pull-request-operation', 'updated')
       }
-      outputs.set('pull-request-head-sha', result.headSha)
-      outputs.set('pull-request-branch', inputs.branch)
       // Deprecated
       core.exportVariable('PULL_REQUEST_NUMBER', pull.number)
+      core.endGroup()
     } else {
       // There is no longer a diff with the base
       // Check we are in a state where a branch exists
