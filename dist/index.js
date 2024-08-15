@@ -452,6 +452,7 @@ function createPullRequest(inputs) {
             core.endGroup();
             // Action outputs
             const outputs = new Map();
+            outputs.set('pull-request-branch', inputs.branch);
             outputs.set('pull-request-commits-verified', 'false');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
@@ -485,10 +486,8 @@ function createPullRequest(inputs) {
                 core.endGroup();
             }
             if (result.hasDiffWithBase) {
-                // Create or update the pull request
                 core.startGroup('Create or update the pull request');
                 const pull = yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
-                core.endGroup();
                 outputs.set('pull-request-number', pull.number.toString());
                 outputs.set('pull-request-url', pull.html_url);
                 if (pull.created) {
@@ -497,10 +496,9 @@ function createPullRequest(inputs) {
                 else if (result.action == 'updated') {
                     outputs.set('pull-request-operation', 'updated');
                 }
-                outputs.set('pull-request-head-sha', result.headSha);
-                outputs.set('pull-request-branch', inputs.branch);
                 // Deprecated
                 core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
+                core.endGroup();
             }
             else {
                 // There is no longer a diff with the base
