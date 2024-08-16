@@ -75,6 +75,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token), or equivalent [GitHub App permissions](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens), are required. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
+| `maintainer-can-modify` | Indicates whether [maintainers can modify](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) the pull request. | `true` |
 
 #### commit-message
 

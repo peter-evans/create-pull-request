@@ -33,6 +33,7 @@ export interface Inputs {
   teamReviewers: string[]
   milestone: number
   draft: boolean
+  maintainerCanModify: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {

@@ -1169,7 +1169,9 @@ const core = __importStar(__nccwpck_require__(2186));
 const octokit_client_1 = __nccwpck_require__(5040);
 const p_limit_1 = __importDefault(__nccwpck_require__(3783));
 const utils = __importStar(__nccwpck_require__(918));
+const ERROR_PR_ALREADY_EXISTS = 'A pull request already exists for';
 const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a node with the global id of';
+const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`;
 const blobCreationLimit = (0, p_limit_1.default)(8);
 class GitHubHelper {
     constructor(githubServerHostname, token) {
@@ -1200,7 +1202,7 @@ class GitHubHelper {
             // Try to create the pull request
             try {
                 core.info(`Attempting creation of pull request`);
-                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, head_repo: headRepository, base: inputs.base, body: inputs.body, draft: inputs.draft }));
+                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, head_repo: headRepository, base: inputs.base, body: inputs.body, draft: inputs.draft, maintainer_can_modify: inputs.maintainerCanModify }));
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
                     number: pull.number,
@@ -1209,8 +1211,14 @@ class GitHubHelper {
                 };
             }
             catch (e) {
-                if (utils.getErrorMessage(e).includes(`A pull request already exists for`)) {
+                const errorMessage = utils.getErrorMessage(e);
+                if (errorMessage.includes(ERROR_PR_ALREADY_EXISTS)) {
                     core.info(`A pull request already exists for ${headBranch}`);
+                }
+                else if (errorMessage.includes(ERROR_PR_FORK_COLLAB)) {
+                    core.warning('An attempt was made to create a pull request using a token that does not have write access to the head branch.');
+                    core.warning(`For this case, set input 'maintainer-can-modify' to 'false' to allow pull request creation.`);
+                    throw e;
                 }
                 else {
                     throw e;
@@ -1419,7 +1427,8 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getBooleanInput('draft')
+                draft: core.getBooleanInput('draft'),
+                maintainerCanModify: core.getBooleanInput('maintainer-can-modify')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             if (!inputs.token) {

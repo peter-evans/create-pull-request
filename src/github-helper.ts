@@ -5,8 +5,10 @@ import {Octokit, OctokitOptions, throttleOptions} from './octokit-client'
 import pLimit from 'p-limit'
 import * as utils from './utils'
 
+const ERROR_PR_ALREADY_EXISTS = 'A pull request already exists for'
 const ERROR_PR_REVIEW_TOKEN_SCOPE =
   'Validation Failed: "Could not resolve to a node with the global id of'
+const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`
 
 const blobCreationLimit = pLimit(8)
 
@@ -76,7 +78,8 @@ export class GitHubHelper {
         head_repo: headRepository,
         base: inputs.base,
         body: inputs.body,
-        draft: inputs.draft
+        draft: inputs.draft,
+        maintainer_can_modify: inputs.maintainerCanModify
       })
       core.info(
         `Created pull request #${pull.number} (${headBranch} => ${inputs.base})`
@@ -87,10 +90,17 @@ export class GitHubHelper {
         created: true
       }
     } catch (e) {
-      if (
-        utils.getErrorMessage(e).includes(`A pull request already exists for`)
-      ) {
+      const errorMessage = utils.getErrorMessage(e)
+      if (errorMessage.includes(ERROR_PR_ALREADY_EXISTS)) {
         core.info(`A pull request already exists for ${headBranch}`)
+      } else if (errorMessage.includes(ERROR_PR_FORK_COLLAB)) {
+        core.warning(
+          'An attempt was made to create a pull request using a token that does not have write access to the head branch.'
+        )
+        core.warning(
+          `For this case, set input 'maintainer-can-modify' to 'false' to allow pull request creation.`
+        )
+        throw e
       } else {
         throw e
       }

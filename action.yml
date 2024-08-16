@@ -77,6 +77,9 @@ inputs:
   draft:
     description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
+  maintainer-can-modify:
+    description: 'Indicates whether maintainers can modify the pull request.'
+    default: true
 outputs:
   pull-request-number:
     description: 'The pull request number'
