@@ -424,8 +424,8 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
 
 6. The following example workflow shows how to use [crazy-max/ghaction-import-gpg](https://github.com/crazy-max/ghaction-import-gpg) to import your GPG key and allow the action to sign commits.
 
-   > [!IMPORTANT]
-   > The `committer` email address *MUST* match the email address used to create your GPG key.
+> [!IMPORTANT]
+> The `committer` email address *MUST* match the email address used to create your GPG key.
 
 ```yaml
     steps:
