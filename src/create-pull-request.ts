@@ -46,8 +46,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     core.startGroup('Determining the base and head repositories')
     const baseRemote = gitConfigHelper.getGitRemote()
-    // Init the GitHub client
-    const githubHelper = new GitHubHelper(baseRemote.hostname, inputs.token)
+    // Init the GitHub clients
+    const ghBranch = new GitHubHelper(baseRemote.hostname, inputs.gitToken)
+    const ghPull = new GitHubHelper(baseRemote.hostname, inputs.token)
     // Determine the head repository; the target for the pull request branch
     const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin'
     const branchRepository = inputs.pushToFork
@@ -58,11 +59,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.info(
         `Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`
       )
-      const baseParentRepository = await githubHelper.getRepositoryParent(
+      const baseParentRepository = await ghBranch.getRepositoryParent(
         baseRemote.repository
       )
       const branchParentRepository =
-        await githubHelper.getRepositoryParent(branchRepository)
+        await ghBranch.getRepositoryParent(branchRepository)
       if (branchParentRepository == null) {
         throw new Error(
           `Repository '${branchRepository}' is not a fork. Unable to continue.`
@@ -207,7 +208,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         // Create signed commits via the GitHub API
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)
-        const pushSignedCommitsResult = await githubHelper.pushSignedCommits(
+        const pushSignedCommitsResult = await ghBranch.pushSignedCommits(
           result.branchCommits,
           result.baseSha,
           repoPath,
@@ -235,7 +236,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     if (result.hasDiffWithBase) {
       core.startGroup('Create or update the pull request')
-      const pull = await githubHelper.createOrUpdatePullRequest(
+      const pull = await ghPull.createOrUpdatePullRequest(
         inputs,
         baseRemote.repository,
         branchRepository

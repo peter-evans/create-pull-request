@@ -356,8 +356,9 @@ function createPullRequest(inputs) {
             core.endGroup();
             core.startGroup('Determining the base and head repositories');
             const baseRemote = gitConfigHelper.getGitRemote();
-            // Init the GitHub client
-            const githubHelper = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.token);
+            // Init the GitHub clients
+            const ghBranch = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.gitToken);
+            const ghPull = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.token);
             // Determine the head repository; the target for the pull request branch
             const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin';
             const branchRepository = inputs.pushToFork
@@ -366,8 +367,8 @@ function createPullRequest(inputs) {
             if (inputs.pushToFork) {
                 // Check if the supplied fork is really a fork of the base
                 core.info(`Checking if '${branchRepository}' is a fork of '${baseRemote.repository}'`);
-                const baseParentRepository = yield githubHelper.getRepositoryParent(baseRemote.repository);
-                const branchParentRepository = yield githubHelper.getRepositoryParent(branchRepository);
+                const baseParentRepository = yield ghBranch.getRepositoryParent(baseRemote.repository);
+                const branchParentRepository = yield ghBranch.getRepositoryParent(branchRepository);
                 if (branchParentRepository == null) {
                     throw new Error(`Repository '${branchRepository}' is not a fork. Unable to continue.`);
                 }
@@ -469,7 +470,7 @@ function createPullRequest(inputs) {
                     // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    const pushSignedCommitsResult = yield githubHelper.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
+                    const pushSignedCommitsResult = yield ghBranch.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
                     outputs.set('pull-request-head-sha', pushSignedCommitsResult.sha);
                     outputs.set('pull-request-commits-verified', pushSignedCommitsResult.verified.toString());
                     yield git.checkout('-');
@@ -488,7 +489,7 @@ function createPullRequest(inputs) {
             }
             if (result.hasDiffWithBase) {
                 core.startGroup('Create or update the pull request');
-                const pull = yield githubHelper.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
+                const pull = yield ghPull.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
                 outputs.set('pull-request-number', pull.number.toString());
                 outputs.set('pull-request-url', pull.html_url);
                 if (pull.created) {
