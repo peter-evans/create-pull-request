@@ -2,7 +2,7 @@ name: 'Create Pull Request'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
 inputs:
   token:
-    description: 'GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)'
+    description: 'The token that the action will use to create and update the pull request.'
     default: ${{ github.token }}
   branch-token:
     description: >

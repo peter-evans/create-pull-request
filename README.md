@@ -48,12 +48,10 @@ For repositories belonging to an organization, this setting can be managed by ad
 
 All inputs are **optional**. If not set, sensible defaults will be used.
 
-**Note**: If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for workarounds.
-
 | Name | Description | Default |
 | --- | --- | --- |
-| `token` | `GITHUB_TOKEN` (permissions `contents: write` and `pull-requests: write`) or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
-| `branch-token` | The token that the action will use to create and update the branch. | Defaults to the value of `token` |
+| `token` | The token that the action will use to create and update the pull request. See [token](#token). | `GITHUB_TOKEN` |
+| `branch-token` | The token that the action will use to create and update the branch. See [branch-token](#branch-token). | Defaults to the value of `token` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `add-paths` | A comma or newline-separated list of file paths to commit. Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax. If no paths are specified, all new and modified files are added. See [Add specific paths](#add-specific-paths). | |
 | `commit-message` | The message to use when committing changes. See [commit-message](#commit-message). | `[create-pull-request] automated change` |
@@ -76,6 +74,33 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
 | `maintainer-can-modify` | Indicates whether [maintainers can modify](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) the pull request. | `true` |
+
+#### token
+
+The token input defaults to the repository's `GITHUB_TOKEN`.
+
+> [!IMPORTANT]  
+> If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for further details.
+
+Other token options:
+- Classic [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `repo` scope.
+- Fine-grained [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `contents: write` and `pull-requests: write` scopes.
+- [GitHub App tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) with `contents: write` and `pull-requests: write` scopes.
+
+> [!TIP]  
+> - If pull requests could contain changes to Actions workflows you may also need the `workflows` scope.
+> - When using the repository's `GITHUB_TOKEN`, it's good practice to employ the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) and restrict its [permissions](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token#defining-access-for-the-github_token-permissions).
+>   ```yml
+>   permissions:
+>     contents: write
+>     pull-requests: write
+>   ```
+
+#### branch-token
+
+The action first creates a branch, and then creates a pull request for the branch.
+For some rare use cases it can be useful, or even neccessary, to use different tokens for these operations.
+It is not advisable to use this input unless you know you need to.
 
 #### commit-message
 
