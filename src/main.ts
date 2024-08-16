@@ -28,7 +28,8 @@ async function run(): Promise<void> {
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
-      draft: core.getBooleanInput('draft')
+      draft: core.getBooleanInput('draft'),
+      maintainerCanModify: core.getBooleanInput('maintainer-can-modify')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)
 
