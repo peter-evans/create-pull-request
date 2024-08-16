@@ -249,8 +249,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       } else if (result.action == 'updated') {
         outputs.set('pull-request-operation', 'updated')
       }
-      // Deprecated
-      core.exportVariable('PULL_REQUEST_NUMBER', pull.number)
       core.endGroup()
     } else {
       // There is no longer a diff with the base

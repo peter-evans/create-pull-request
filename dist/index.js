@@ -498,8 +498,6 @@ function createPullRequest(inputs) {
                 else if (result.action == 'updated') {
                     outputs.set('pull-request-operation', 'updated');
                 }
-                // Deprecated
-                core.exportVariable('PULL_REQUEST_NUMBER', pull.number);
                 core.endGroup();
             }
             else {
