@@ -7,7 +7,7 @@ async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
       token: core.getInput('token'),
-      gitToken: core.getInput('git-token'),
+      branchToken: core.getInput('git-token'),
       path: core.getInput('path'),
       addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),
@@ -36,8 +36,8 @@ async function run(): Promise<void> {
     if (!inputs.token) {
       throw new Error(`Input 'token' not supplied. Unable to continue.`)
     }
-    if (!inputs.gitToken) {
-      inputs.gitToken = inputs.token
+    if (!inputs.branchToken) {
+      inputs.branchToken = inputs.token
     }
     if (inputs.bodyPath) {
       if (!utils.fileExistsSync(inputs.bodyPath)) {

@@ -11,7 +11,7 @@ import * as utils from './utils'
 
 export interface Inputs {
   token: string
-  gitToken: string
+  branchToken: string
   path: string
   addPaths: string[]
   commitMessage: string
@@ -48,7 +48,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.startGroup('Determining the base and head repositories')
     const baseRemote = gitConfigHelper.getGitRemote()
     // Init the GitHub clients
-    const ghBranch = new GitHubHelper(baseRemote.hostname, inputs.gitToken)
+    const ghBranch = new GitHubHelper(baseRemote.hostname, inputs.branchToken)
     const ghPull = new GitHubHelper(baseRemote.hostname, inputs.token)
     // Determine the head repository; the target for the pull request branch
     const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin'
@@ -94,7 +94,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     // Configure auth
     if (baseRemote.protocol == 'HTTPS') {
       core.startGroup('Configuring credential for HTTPS authentication')
-      await gitConfigHelper.configureToken(inputs.gitToken)
+      await gitConfigHelper.configureToken(inputs.branchToken)
       core.endGroup()
     }
 

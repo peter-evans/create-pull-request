@@ -357,7 +357,7 @@ function createPullRequest(inputs) {
             core.startGroup('Determining the base and head repositories');
             const baseRemote = gitConfigHelper.getGitRemote();
             // Init the GitHub clients
-            const ghBranch = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.gitToken);
+            const ghBranch = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.branchToken);
             const ghPull = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.token);
             // Determine the head repository; the target for the pull request branch
             const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin';
@@ -385,7 +385,7 @@ function createPullRequest(inputs) {
             // Configure auth
             if (baseRemote.protocol == 'HTTPS') {
                 core.startGroup('Configuring credential for HTTPS authentication');
-                yield gitConfigHelper.configureToken(inputs.gitToken);
+                yield gitConfigHelper.configureToken(inputs.branchToken);
                 core.endGroup();
             }
             core.startGroup('Checking the base repository state');
@@ -1406,7 +1406,7 @@ function run() {
         try {
             const inputs = {
                 token: core.getInput('token'),
-                gitToken: core.getInput('git-token'),
+                branchToken: core.getInput('git-token'),
                 path: core.getInput('path'),
                 addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
@@ -1434,8 +1434,8 @@ function run() {
             if (!inputs.token) {
                 throw new Error(`Input 'token' not supplied. Unable to continue.`);
             }
-            if (!inputs.gitToken) {
-                inputs.gitToken = inputs.token;
+            if (!inputs.branchToken) {
+                inputs.branchToken = inputs.token;
             }
             if (inputs.bodyPath) {
                 if (!utils.fileExistsSync(inputs.bodyPath)) {
