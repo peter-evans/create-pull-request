@@ -7,7 +7,7 @@ async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
       token: core.getInput('token'),
-      branchToken: core.getInput('git-token'),
+      branchToken: core.getInput('branch-token'),
       path: core.getInput('path'),
       addPaths: utils.getInputAsArray('add-paths'),
       commitMessage: core.getInput('commit-message'),

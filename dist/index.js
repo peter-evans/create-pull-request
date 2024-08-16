@@ -1406,7 +1406,7 @@ function run() {
         try {
             const inputs = {
                 token: core.getInput('token'),
-                branchToken: core.getInput('git-token'),
+                branchToken: core.getInput('branch-token'),
                 path: core.getInput('path'),
                 addPaths: utils.getInputAsArray('add-paths'),
                 commitMessage: core.getInput('commit-message'),
