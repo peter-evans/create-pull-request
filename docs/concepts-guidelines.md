@@ -254,14 +254,20 @@ It will use their own fork to push code and create the pull request.
 
 Using a fine-grained [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) or [GitHub App](#authenticating-with-github-app-generated-tokens) with `push-to-fork` can be achieved, but comes with some caveats.
 
-When using `push-to-fork`, the action needs `write` access to two different repositories. The fork, for pushing the branch, and the parent for creating the pull request.
-Unless the fork and parent repositories have the same owner, it won't be possible to create a token scoped to both of them.
-The solution is to scope the token for the fork, and use the `branch-token` input to push the branch.
+When using `push-to-fork`, the action needs permissions for two different repositories.
+It needs `contents: write` for the fork to push the branch, and `pull-requests: write` for the parent repository to create the pull request.
+
+There are two main scenarios:
+1. The parent and fork have different owners. In this case, it's not possible to create a token that is scoped to both repositories so different tokens must be used for each.
+2. The parent and fork both have the same owner. In this case, a token can be scoped to both repositories, but the permissions granted cannot be different. So it would defeat the purpose of using `push-to-fork`, and you might as well just create the pull request directly on the parent repository.
+
+For the first scenario, the solution is to scope the token for the fork, and use the `branch-token` input to push the branch.
 The `token` input will then default to the repository's `GITHUB_TOKEN`, which will be used to create the pull request.
 
-This solution comes with two limitations:
-- The workflow *must* be executing in the parent repository where pull requests will be created.
-- `maintainer-can-modify` *must* be set to `false`, because the `GITHUB_TOKEN` will not have `write` access to the head branch in the fork.
+> [!NOTE]
+> Solution limitations:
+> - Since `GITHUB_TOKEN` will be used to create the pull request, the workflow *must* be executing in the parent repository where the pull request should be created.
+> - `maintainer-can-modify` *must* be set to `false`, because the `GITHUB_TOKEN` will not have `write` access to the head branch in the fork.
 
 The following is an example of pushing to a fork
 ```yaml
