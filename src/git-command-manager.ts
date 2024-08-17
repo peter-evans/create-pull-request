@@ -9,6 +9,7 @@ export type Commit = {
   sha: string
   tree: string
   parents: string[]
+  signed: boolean
   subject: string
   body: string
   changes: {
@@ -158,7 +159,7 @@ export class GitCommandManager {
       '--raw',
       '--cc',
       '--diff-filter=AMD',
-      `--format=%H%n%T%n%P%n%s%n%b%n${endOfBody}`,
+      `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
       ref
     ])
     const lines = output.stdout.split('\n')
@@ -169,8 +170,9 @@ export class GitCommandManager {
       sha: detailLines[0],
       tree: detailLines[1],
       parents: detailLines[2].split(' '),
-      subject: detailLines[3],
-      body: detailLines.slice(4, endOfBodyIndex).join('\n'),
+      signed: detailLines[3] !== 'N',
+      subject: detailLines[4],
+      body: detailLines.slice(5, endOfBodyIndex).join('\n'),
       changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
         const change = line.match(
           /^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/

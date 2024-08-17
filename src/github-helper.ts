@@ -295,6 +295,21 @@ export class GitHubHelper {
     }
   }
 
+  async getCommit(
+    sha: string,
+    branchRepository: string
+  ): Promise<CommitResponse> {
+    const repository = this.parseRepository(branchRepository)
+    const {data: remoteCommit} = await this.octokit.rest.git.getCommit({
+      ...repository,
+      commit_sha: sha
+    })
+    return {
+      sha: remoteCommit.sha,
+      verified: remoteCommit.verification.verified
+    }
+  }
+
   private async createOrUpdateRef(
     branchRepository: string,
     branch: string,

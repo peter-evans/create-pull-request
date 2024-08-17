@@ -454,7 +454,6 @@ function createPullRequest(inputs) {
             const outputs = new Map();
             outputs.set('pull-request-branch', inputs.branch);
             outputs.set('pull-request-operation', 'none');
-            outputs.set('pull-request-commits-verified', 'false');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
             const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
@@ -486,8 +485,6 @@ function createPullRequest(inputs) {
                 }
                 core.endGroup();
             }
-            // If the verified output is not set yet, and there are commits (from result), and the head commit is signed, then:
-            // Get the commit and check verification status
             if (result.hasDiffWithBase) {
                 core.startGroup('Create or update the pull request');
                 const pull = yield ghPull.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);
@@ -518,8 +515,23 @@ function createPullRequest(inputs) {
                     }
                 }
             }
-            // Set outputs
             core.startGroup('Setting outputs');
+            // If the head commit is signed, get its verification status if we don't already know it.
+            // This can happen if the branch wasn't updated (action = 'not-updated'), or GPG commit signing is in use.
+            if (!outputs.has('pull-request-commits-verified') &&
+                result.branchCommits.length > 0 &&
+                result.branchCommits[result.branchCommits.length - 1].signed) {
+                core.info(`Checking verification status of head commit ${result.headSha}`);
+                try {
+                    const headCommit = yield ghBranch.getCommit(result.headSha, branchRepository);
+                    outputs.set('pull-request-commits-verified', headCommit.verified.toString());
+                }
+                catch (error) {
+                    core.warning('Failed to check verification status of head commit.');
+                    core.debug(utils.getErrorMessage(error));
+                }
+            }
+            // Set outputs
             for (const [key, value] of outputs) {
                 core.info(`${key} = ${value}`);
                 core.setOutput(key, value);
@@ -696,7 +708,7 @@ class GitCommandManager {
                 '--raw',
                 '--cc',
                 '--diff-filter=AMD',
-                `--format=%H%n%T%n%P%n%s%n%b%n${endOfBody}`,
+                `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
                 ref
             ]);
             const lines = output.stdout.split('\n');
@@ -706,8 +718,9 @@ class GitCommandManager {
                 sha: detailLines[0],
                 tree: detailLines[1],
                 parents: detailLines[2].split(' '),
-                subject: detailLines[3],
-                body: detailLines.slice(4, endOfBodyIndex).join('\n'),
+                signed: detailLines[3] !== 'N',
+                subject: detailLines[4],
+                body: detailLines.slice(5, endOfBodyIndex).join('\n'),
                 changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
                     const change = line.match(/^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/);
                     if (change) {
@@ -1330,6 +1343,16 @@ class GitHubHelper {
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
             core.info(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
+            return {
+                sha: remoteCommit.sha,
+                verified: remoteCommit.verification.verified
+            };
+        });
+    }
+    getCommit(sha, branchRepository) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const repository = this.parseRepository(branchRepository);
+            const { data: remoteCommit } = yield this.octokit.rest.git.getCommit(Object.assign(Object.assign({}, repository), { commit_sha: sha }));
             return {
                 sha: remoteCommit.sha,
                 verified: remoteCommit.verification.verified

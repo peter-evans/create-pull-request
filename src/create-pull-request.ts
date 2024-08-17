@@ -181,7 +181,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     const outputs = new Map<string, string>()
     outputs.set('pull-request-branch', inputs.branch)
     outputs.set('pull-request-operation', 'none')
-    outputs.set('pull-request-commits-verified', 'false')
 
     // Create or update the pull request branch
     core.startGroup('Create or update the pull request branch')
@@ -234,9 +233,6 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       core.endGroup()
     }
 
-    // If the verified output is not set yet, and there are commits (from result), and the head commit is signed, then:
-    // Get the commit and check verification status
-
     if (result.hasDiffWithBase) {
       core.startGroup('Create or update the pull request')
       const pull = await ghPull.createOrUpdatePullRequest(
@@ -272,8 +268,31 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       }
     }
 
-    // Set outputs
     core.startGroup('Setting outputs')
+    // If the head commit is signed, get its verification status if we don't already know it.
+    // This can happen if the branch wasn't updated (action = 'not-updated'), or GPG commit signing is in use.
+    if (
+      !outputs.has('pull-request-commits-verified') &&
+      result.branchCommits.length > 0 &&
+      result.branchCommits[result.branchCommits.length - 1].signed
+    ) {
+      core.info(`Checking verification status of head commit ${result.headSha}`)
+      try {
+        const headCommit = await ghBranch.getCommit(
+          result.headSha,
+          branchRepository
+        )
+        outputs.set(
+          'pull-request-commits-verified',
+          headCommit.verified.toString()
+        )
+      } catch (error) {
+        core.warning('Failed to check verification status of head commit.')
+        core.debug(utils.getErrorMessage(error))
+      }
+    }
+
+    // Set outputs
     for (const [key, value] of outputs) {
       core.info(`${key} = ${value}`)
       core.setOutput(key, value)
