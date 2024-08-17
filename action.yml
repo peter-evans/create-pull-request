@@ -2,11 +2,11 @@ name: 'Create Pull Request'
 description: 'Creates a pull request for changes to your repository in the actions workspace'
 inputs:
   token:
-    description: 'GITHUB_TOKEN or a `repo` scoped Personal Access Token (PAT)'
+    description: 'The token that the action will use to create and update the pull request.'
     default: ${{ github.token }}
-  git-token:
+  branch-token:
     description: >
-      The Personal Access Token (PAT) that the action will use for git operations.
+      The token that the action will use to create and update the branch.
       Defaults to the value of `token`.
   path:
     description: >
@@ -51,6 +51,9 @@ inputs:
       A fork of the checked out parent repository to which the pull request branch will be pushed.
       e.g. `owner/repo-fork`.
       The pull request will be created to merge the fork's branch into the parent's base.
+  sign-commits:
+    description: 'Sign commits as `github-actions[bot]` when using `GITHUB_TOKEN`, or your own bot when using GitHub App tokens.'
+    default: false
   title:
     description: 'The title of the pull request.'
     default: 'Changes by create-pull-request action'
@@ -74,6 +77,9 @@ inputs:
   draft:
     description: 'Create a draft pull request. It is not possible to change draft status after creation except through the web interface'
     default: false
+  maintainer-can-modify:
+    description: 'Indicates whether maintainers can modify the pull request.'
+    default: true
 outputs:
   pull-request-number:
     description: 'The pull request number'
