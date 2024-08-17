@@ -192,8 +192,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths,
-      inputs.signCommits
+      inputs.addPaths
     )
     outputs.set('pull-request-head-sha', result.headSha)
     // Set the base. It would have been '' if not specified as an input
@@ -234,6 +233,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       }
       core.endGroup()
     }
+
+    // If the verified output is not set yet, and there are commits (from result), and the head commit is signed, then:
+    // Get the commit and check verification status
 
     if (result.hasDiffWithBase) {
       core.startGroup('Create or update the pull request')

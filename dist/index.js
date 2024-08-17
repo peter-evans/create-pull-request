@@ -136,8 +136,8 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git_1, commitMessage_1, base_1, branch_1, branchRemoteName_1, signoff_1, addPaths_1) {
-    return __awaiter(this, arguments, void 0, function* (git, commitMessage, base, branch, branchRemoteName, signoff, addPaths, signCommits = false) {
+function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, addPaths) {
+    return __awaiter(this, void 0, void 0, function* () {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
         // When a commit, we must rebase onto the actual base.
@@ -280,8 +280,7 @@ function createOrUpdateBranch(git_1, commitMessage_1, base_1, branch_1, branchRe
         // Get the base and head SHAs
         result.baseSha = yield git.revParse(base);
         result.headSha = yield git.revParse(branch);
-        // NOTE: This could always be built and returned. Maybe remove when there is confidence in buildBranchCommits.
-        if (signCommits) {
+        if (result.hasDiffWithBase) {
             // Build the branch commits
             result.branchCommits = yield buildBranchCommits(git, base, branch);
         }
@@ -458,7 +457,7 @@ function createPullRequest(inputs) {
             outputs.set('pull-request-commits-verified', 'false');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths, inputs.signCommits);
+            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
             outputs.set('pull-request-head-sha', result.headSha);
             // Set the base. It would have been '' if not specified as an input
             inputs.base = result.base;
@@ -487,6 +486,8 @@ function createPullRequest(inputs) {
                 }
                 core.endGroup();
             }
+            // If the verified output is not set yet, and there are commits (from result), and the head commit is signed, then:
+            // Get the commit and check verification status
             if (result.hasDiffWithBase) {
                 core.startGroup('Create or update the pull request');
                 const pull = yield ghPull.createOrUpdatePullRequest(inputs, baseRemote.repository, branchRepository);

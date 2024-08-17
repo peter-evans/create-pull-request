@@ -144,8 +144,7 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[],
-  signCommits: boolean = false
+  addPaths: string[]
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -316,8 +315,7 @@ export async function createOrUpdateBranch(
   result.baseSha = await git.revParse(base)
   result.headSha = await git.revParse(branch)
 
-  // NOTE: This could always be built and returned. Maybe remove when there is confidence in buildBranchCommits.
-  if (signCommits) {
+  if (result.hasDiffWithBase) {
     // Build the branch commits
     result.branchCommits = await buildBranchCommits(git, base, branch)
   }
