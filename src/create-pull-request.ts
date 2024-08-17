@@ -291,6 +291,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         core.debug(utils.getErrorMessage(error))
       }
     }
+    if (!outputs.has('pull-request-commits-verified')) {
+      outputs.set('pull-request-commits-verified', 'false')
+    }
 
     // Set outputs
     for (const [key, value] of outputs) {
