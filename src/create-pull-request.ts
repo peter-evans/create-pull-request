@@ -249,6 +249,11 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         outputs.set('pull-request-operation', 'created')
       } else if (result.action == 'updated') {
         outputs.set('pull-request-operation', 'updated')
+        // The pull request was updated AND the branch was updated.
+        // Convert back to draft if 'draft: always-true' is set.
+        if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
+          await ghPull.convertToDraft(pull.node_id)
+        }
       }
       core.endGroup()
     } else {

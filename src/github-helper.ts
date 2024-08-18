@@ -215,26 +215,7 @@ export class GitHubHelper {
       }
     }
 
-    // Convert back to draft if 'draft: always-true' is set
-    if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
-      await this.convertToDraft(pull.node_id)
-    }
-
     return pull
-  }
-
-  private async convertToDraft(id: string): Promise<void> {
-    core.info(`Converting pull request to draft`)
-    await this.octokit.graphql({
-      query: `mutation($pullRequestId: ID!) {
-        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
-          pullRequest {
-            isDraft
-          }
-        }
-      }`,
-      pullRequestId: id
-    })
   }
 
   async pushSignedCommits(
@@ -367,5 +348,19 @@ export class GitHubHelper {
         ref: `refs/heads/${branch}`
       })
     }
+  }
+
+  async convertToDraft(id: string): Promise<void> {
+    core.info(`Converting pull request to draft`)
+    await this.octokit.graphql({
+      query: `mutation($pullRequestId: ID!) {
+        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
+          pullRequest {
+            isDraft
+          }
+        }
+      }`,
+      pullRequestId: id
+    })
   }
 }

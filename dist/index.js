@@ -495,6 +495,11 @@ function createPullRequest(inputs) {
                 }
                 else if (result.action == 'updated') {
                     outputs.set('pull-request-operation', 'updated');
+                    // The pull request was updated AND the branch was updated.
+                    // Convert back to draft if 'draft: always-true' is set.
+                    if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
+                        yield ghPull.convertToDraft(pull.node_id);
+                    }
                 }
                 core.endGroup();
             }
@@ -1306,26 +1311,7 @@ class GitHubHelper {
                     throw e;
                 }
             }
-            // Convert back to draft if 'draft: always-true' is set
-            if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
-                yield this.convertToDraft(pull.node_id);
-            }
             return pull;
-        });
-    }
-    convertToDraft(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            core.info(`Converting pull request to draft`);
-            yield this.octokit.graphql({
-                query: `mutation($pullRequestId: ID!) {
-        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
-          pullRequest {
-            isDraft
-          }
-        }
-      }`,
-                pullRequestId: id
-            });
         });
     }
     pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
@@ -1399,6 +1385,21 @@ class GitHubHelper {
                 core.info(`Branch ${branch} does not exist; Creating ref`);
                 yield this.octokit.rest.git.createRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `refs/heads/${branch}` }));
             }
+        });
+    }
+    convertToDraft(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info(`Converting pull request to draft`);
+            yield this.octokit.graphql({
+                query: `mutation($pullRequestId: ID!) {
+        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
+          pullRequest {
+            isDraft
+          }
+        }
+      }`,
+                pullRequestId: id
+            });
         });
     }
 }
