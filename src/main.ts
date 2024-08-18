@@ -3,6 +3,14 @@ import {Inputs, createPullRequest} from './create-pull-request'
 import {inspect} from 'util'
 import * as utils from './utils'
 
+function getDraftInput(): {value: boolean; always: boolean} {
+  if (core.getInput('draft') === 'always-true') {
+    return {value: true, always: true}
+  } else {
+    return {value: core.getBooleanInput('draft'), always: false}
+  }
+}
+
 async function run(): Promise<void> {
   try {
     const inputs: Inputs = {
@@ -28,7 +36,7 @@ async function run(): Promise<void> {
       reviewers: utils.getInputAsArray('reviewers'),
       teamReviewers: utils.getInputAsArray('team-reviewers'),
       milestone: Number(core.getInput('milestone')),
-      draft: core.getBooleanInput('draft'),
+      draft: getDraftInput(),
       maintainerCanModify: core.getBooleanInput('maintainer-can-modify')
     }
     core.debug(`Inputs: ${inspect(inputs)}`)

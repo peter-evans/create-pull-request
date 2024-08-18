@@ -269,7 +269,7 @@ The `token` input will then default to the repository's `GITHUB_TOKEN`, which wi
 > - Since `GITHUB_TOKEN` will be used to create the pull request, the workflow *must* be executing in the parent repository where the pull request should be created.
 > - `maintainer-can-modify` *must* be set to `false`, because the `GITHUB_TOKEN` will not have `write` access to the head branch in the fork.
 
-The following is an example of pushing to a fork
+The following is an example of pushing to a fork using GitHub App tokens.
 ```yaml
       - uses: actions/create-github-app-token@v1
         id: generate-token

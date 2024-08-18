@@ -1217,11 +1217,13 @@ class GitHubHelper {
             // Try to create the pull request
             try {
                 core.info(`Attempting creation of pull request`);
-                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, head_repo: headRepository, base: inputs.base, body: inputs.body, draft: inputs.draft, maintainer_can_modify: inputs.maintainerCanModify }));
+                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, head_repo: headRepository, base: inputs.base, body: inputs.body, draft: inputs.draft.value, maintainer_can_modify: inputs.maintainerCanModify }));
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
                     number: pull.number,
                     html_url: pull.html_url,
+                    node_id: pull.node_id,
+                    draft: pull.draft,
                     created: true
                 };
             }
@@ -1248,6 +1250,8 @@ class GitHubHelper {
             return {
                 number: pull.number,
                 html_url: pull.html_url,
+                node_id: pull.node_id,
+                draft: pull.draft,
                 created: false
             };
         });
@@ -1302,7 +1306,26 @@ class GitHubHelper {
                     throw e;
                 }
             }
+            // Convert back to draft if 'draft: always-true' is set
+            if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
+                yield this.convertToDraft(pull.node_id);
+            }
             return pull;
+        });
+    }
+    convertToDraft(id) {
+        return __awaiter(this, void 0, void 0, function* () {
+            core.info(`Converting pull request to draft`);
+            yield this.octokit.graphql({
+                query: `mutation($pullRequestId: ID!) {
+        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
+          pullRequest {
+            isDraft
+          }
+        }
+      }`,
+                pullRequestId: id
+            });
         });
     }
     pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
@@ -1426,6 +1449,14 @@ const core = __importStar(__nccwpck_require__(2186));
 const create_pull_request_1 = __nccwpck_require__(3780);
 const util_1 = __nccwpck_require__(3837);
 const utils = __importStar(__nccwpck_require__(918));
+function getDraftInput() {
+    if (core.getInput('draft') === 'always-true') {
+        return { value: true, always: true };
+    }
+    else {
+        return { value: core.getBooleanInput('draft'), always: false };
+    }
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -1452,7 +1483,7 @@ function run() {
                 reviewers: utils.getInputAsArray('reviewers'),
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
-                draft: core.getBooleanInput('draft'),
+                draft: getDraftInput(),
                 maintainerCanModify: core.getBooleanInput('maintainer-can-modify')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);

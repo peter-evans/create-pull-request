@@ -32,7 +32,10 @@ export interface Inputs {
   reviewers: string[]
   teamReviewers: string[]
   milestone: number
-  draft: boolean
+  draft: {
+    value: boolean
+    always: boolean
+  }
   maintainerCanModify: boolean
 }
 

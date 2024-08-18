@@ -20,6 +20,8 @@ interface Repository {
 interface Pull {
   number: number
   html_url: string
+  node_id: string
+  draft?: boolean
   created: boolean
 }
 
@@ -78,7 +80,7 @@ export class GitHubHelper {
         head_repo: headRepository,
         base: inputs.base,
         body: inputs.body,
-        draft: inputs.draft,
+        draft: inputs.draft.value,
         maintainer_can_modify: inputs.maintainerCanModify
       })
       core.info(
@@ -87,6 +89,8 @@ export class GitHubHelper {
       return {
         number: pull.number,
         html_url: pull.html_url,
+        node_id: pull.node_id,
+        draft: pull.draft,
         created: true
       }
     } catch (e) {
@@ -127,6 +131,8 @@ export class GitHubHelper {
     return {
       number: pull.number,
       html_url: pull.html_url,
+      node_id: pull.node_id,
+      draft: pull.draft,
       created: false
     }
   }
@@ -209,7 +215,26 @@ export class GitHubHelper {
       }
     }
 
+    // Convert back to draft if 'draft: always-true' is set
+    if (inputs.draft.always && pull.draft !== undefined && !pull.draft) {
+      await this.convertToDraft(pull.node_id)
+    }
+
     return pull
+  }
+
+  private async convertToDraft(id: string): Promise<void> {
+    core.info(`Converting pull request to draft`)
+    await this.octokit.graphql({
+      query: `mutation($pullRequestId: ID!) {
+        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
+          pullRequest {
+            isDraft
+          }
+        }
+      }`,
+      pullRequestId: id
+    })
   }
 
   async pushSignedCommits(
