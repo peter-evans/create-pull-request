@@ -376,6 +376,7 @@ The action can sign commits as `github-actions[bot]` when using the repository's
 > [!IMPORTANT]  
 > - When setting `sign-commits: true` the action will ignore the `committer` and `author` inputs.
 > - If you attempt to use a [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) the action will create the pull request, but commits will *not* be signed. Commit signing is only supported with bot generated tokens.
+> - The GitHub API has a 40MiB limit when creating git blobs. An error will be raised if there are files in the pull request larger than this. If you hit this limit, use [GPG commit signature verification](#gpg-commit-signature-verification) instead.
 
 In this example the `token` input is not supplied, so the action will use the repository's default `GITHUB_TOKEN`. This will sign commits as `github-actions[bot]`.
 ```yaml
