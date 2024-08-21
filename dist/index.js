@@ -1336,10 +1336,16 @@ class GitHubHelper {
                 const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status }) {
                     let sha = null;
                     if (status === 'A' || status === 'M') {
-                        core.info(`Creating blob for file '${path}'`);
-                        const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
-                        sha = blob.sha;
+                        try {
+                            const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
+                            sha = blob.sha;
+                        }
+                        catch (error) {
+                            core.error(`Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`);
+                            throw error;
+                        }
                     }
+                    core.info(`Created blob for file '${path}'`);
                     return {
                         path,
                         mode,
@@ -33498,23 +33504,9 @@ const kWeight = Symbol('kWeight')
 const kMaxWeightPerServer = Symbol('kMaxWeightPerServer')
 const kErrorPenalty = Symbol('kErrorPenalty')
 
-/**
- * Calculate the greatest common divisor of two numbers by
- * using the Euclidean algorithm.
- *
- * @param {number} a
- * @param {number} b
- * @returns {number}
- */
 function getGreatestCommonDivisor (a, b) {
-  if (a === 0) return b
-
-  while (b !== 0) {
-    const t = b
-    b = a % b
-    a = t
-  }
-  return a
+  if (b === 0) return a
+  return getGreatestCommonDivisor(b, a % b)
 }
 
 function defaultFactory (origin, opts) {
@@ -33592,12 +33584,7 @@ class BalancedPool extends PoolBase {
   }
 
   _updateBalancedPoolStats () {
-    let result = 0
-    for (let i = 0; i < this[kClients].length; i++) {
-      result = getGreatestCommonDivisor(this[kClients][i][kWeight], result)
-    }
-
-    this[kGreatestCommonDivisor] = result
+    this[kGreatestCommonDivisor] = this[kClients].map(p => p[kWeight]).reduce(getGreatestCommonDivisor, 0)
   }
 
   removeUpstream (upstream) {
@@ -42784,25 +42771,12 @@ const { kState } = __nccwpck_require__(749)
 const { webidl } = __nccwpck_require__(4890)
 const { Blob } = __nccwpck_require__(2254)
 const assert = __nccwpck_require__(8061)
-const { isErrored, isDisturbed } = __nccwpck_require__(4492)
+const { isErrored } = __nccwpck_require__(3983)
 const { isArrayBuffer } = __nccwpck_require__(3746)
 const { serializeAMimeType } = __nccwpck_require__(7704)
 const { multipartFormDataParser } = __nccwpck_require__(7991)
 
 const textEncoder = new TextEncoder()
-function noop () {}
-
-const hasFinalizationRegistry = globalThis.FinalizationRegistry && process.version.indexOf('v18') !== 0
-let streamRegistry
-
-if (hasFinalizationRegistry) {
-  streamRegistry = new FinalizationRegistry((weakRef) => {
-    const stream = weakRef.deref()
-    if (stream && !stream.locked && !isDisturbed(stream) && !isErrored(stream)) {
-      stream.cancel('Response object has been garbage collected').catch(noop)
-    }
-  })
-}
 
 // https://fetch.spec.whatwg.org/#concept-bodyinit-extract
 function extractBody (object, keepalive = false) {
@@ -43045,17 +43019,13 @@ function safelyExtractBody (object, keepalive = false) {
   return extractBody(object, keepalive)
 }
 
-function cloneBody (instance, body) {
+function cloneBody (body) {
   // To clone a body body, run these steps:
 
   // https://fetch.spec.whatwg.org/#concept-body-clone
 
   // 1. Let « out1, out2 » be the result of teeing body’s stream.
   const [out1, out2] = body.stream.tee()
-
-  if (hasFinalizationRegistry) {
-    streamRegistry.register(instance, new WeakRef(out1))
-  }
 
   // 2. Set body’s stream to out1.
   body.stream = out1
@@ -43199,7 +43169,7 @@ async function consumeBody (object, convertBytesToJSValue, instance) {
 
   // 1. If object is unusable, then return a promise rejected
   //    with a TypeError.
-  if (bodyUnusable(object)) {
+  if (bodyUnusable(object[kState].body)) {
     throw new TypeError('Body is unusable: Body has already been read')
   }
 
@@ -43239,9 +43209,7 @@ async function consumeBody (object, convertBytesToJSValue, instance) {
 }
 
 // https://fetch.spec.whatwg.org/#body-unusable
-function bodyUnusable (object) {
-  const body = object[kState].body
-
+function bodyUnusable (body) {
   // An object including the Body interface mixin is
   // said to be unusable if its body is non-null and
   // its body’s stream is disturbed or locked.
@@ -43283,10 +43251,7 @@ module.exports = {
   extractBody,
   safelyExtractBody,
   cloneBody,
-  mixinBody,
-  streamRegistry,
-  hasFinalizationRegistry,
-  bodyUnusable
+  mixinBody
 }
 
 
@@ -48096,7 +48061,7 @@ module.exports = {
 
 
 
-const { extractBody, mixinBody, cloneBody, bodyUnusable } = __nccwpck_require__(6682)
+const { extractBody, mixinBody, cloneBody } = __nccwpck_require__(6682)
 const { Headers, fill: fillHeaders, HeadersList, setHeadersGuard, getHeadersGuard, setHeadersList, getHeadersList } = __nccwpck_require__(2991)
 const { FinalizationRegistry } = __nccwpck_require__(1922)()
 const util = __nccwpck_require__(3983)
@@ -48651,7 +48616,7 @@ class Request {
     // 40. If initBody is null and inputBody is non-null, then:
     if (initBody == null && inputBody != null) {
       // 1. If input is unusable, then throw a TypeError.
-      if (bodyUnusable(input)) {
+      if (util.isDisturbed(inputBody.stream) || inputBody.stream.locked) {
         throw new TypeError(
           'Cannot construct a Request with a Request object that has already been used.'
         )
@@ -48853,7 +48818,7 @@ class Request {
     webidl.brandCheck(this, Request)
 
     // 1. If this is unusable, then throw a TypeError.
-    if (bodyUnusable(this)) {
+    if (this.bodyUsed || this.body?.locked) {
       throw new TypeError('unusable')
     }
 
@@ -48971,7 +48936,7 @@ function cloneRequest (request) {
   // 2. If request’s body is non-null, set newRequest’s body to the
   // result of cloning request’s body.
   if (request.body != null) {
-    newRequest.body = cloneBody(newRequest, request.body)
+    newRequest.body = cloneBody(request.body)
   }
 
   // 3. Return newRequest.
@@ -49139,7 +49104,7 @@ module.exports = { Request, makeRequest, fromInnerRequest, cloneRequest }
 
 
 const { Headers, HeadersList, fill, getHeadersGuard, setHeadersGuard, setHeadersList } = __nccwpck_require__(2991)
-const { extractBody, cloneBody, mixinBody, hasFinalizationRegistry, streamRegistry, bodyUnusable } = __nccwpck_require__(6682)
+const { extractBody, cloneBody, mixinBody } = __nccwpck_require__(6682)
 const util = __nccwpck_require__(3983)
 const nodeUtil = __nccwpck_require__(7261)
 const { kEnumerableProperty } = util
@@ -49164,8 +49129,23 @@ const { URLSerializer } = __nccwpck_require__(7704)
 const { kConstruct } = __nccwpck_require__(2785)
 const assert = __nccwpck_require__(8061)
 const { types } = __nccwpck_require__(7261)
+const { isDisturbed, isErrored } = __nccwpck_require__(4492)
 
 const textEncoder = new TextEncoder('utf-8')
+
+const hasFinalizationRegistry = globalThis.FinalizationRegistry && process.version.indexOf('v18') !== 0
+let registry
+
+if (hasFinalizationRegistry) {
+  registry = new FinalizationRegistry((weakRef) => {
+    const stream = weakRef.deref()
+    if (stream && !stream.locked && !isDisturbed(stream) && !isErrored(stream)) {
+      stream.cancel('Response object has been garbage collected').catch(noop)
+    }
+  })
+}
+
+function noop () {}
 
 // https://fetch.spec.whatwg.org/#response-class
 class Response {
@@ -49367,7 +49347,7 @@ class Response {
     webidl.brandCheck(this, Response)
 
     // 1. If this is unusable, then throw a TypeError.
-    if (bodyUnusable(this)) {
+    if (this.bodyUsed || this.body?.locked) {
       throw webidl.errors.exception({
         header: 'Response.clone',
         message: 'Body has already been consumed.'
@@ -49450,7 +49430,7 @@ function cloneResponse (response) {
   // 3. If response’s body is non-null, then set newResponse’s body to the
   // result of cloning response’s body.
   if (response.body != null) {
-    newResponse.body = cloneBody(newResponse, response.body)
+    newResponse.body = cloneBody(response.body)
   }
 
   // 4. Return newResponse.
@@ -49655,7 +49635,7 @@ function fromInnerResponse (innerResponse, guard) {
     // a primitive or an object, even undefined. If the held value is an object, the registry keeps
     // a strong reference to it (so it can pass it to the cleanup callback later). Reworded from
     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry
-    streamRegistry.register(response, new WeakRef(innerResponse.body.stream))
+    registry.register(response, new WeakRef(innerResponse.body.stream))
   }
 
   return response

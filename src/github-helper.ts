@@ -255,16 +255,23 @@ export class GitHubHelper {
         commit.changes.map(async ({path, mode, status}) => {
           let sha: string | null = null
           if (status === 'A' || status === 'M') {
-            core.info(`Creating blob for file '${path}'`)
-            const {data: blob} = await blobCreationLimit(() =>
-              this.octokit.rest.git.createBlob({
-                ...repository,
-                content: utils.readFileBase64([repoPath, path]),
-                encoding: 'base64'
-              })
-            )
-            sha = blob.sha
+            try {
+              const {data: blob} = await blobCreationLimit(() =>
+                this.octokit.rest.git.createBlob({
+                  ...repository,
+                  content: utils.readFileBase64([repoPath, path]),
+                  encoding: 'base64'
+                })
+              )
+              sha = blob.sha
+            } catch (error) {
+              core.error(
+                `Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`
+              )
+              throw error
+            }
           }
+          core.info(`Created blob for file '${path}'`)
           return <TreeObject>{
             path,
             mode,
