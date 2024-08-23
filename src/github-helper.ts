@@ -27,6 +27,7 @@ interface Pull {
 
 interface CommitResponse {
   sha: string
+  tree: string
   verified: boolean
 }
 
@@ -227,12 +228,13 @@ export class GitHubHelper {
   ): Promise<CommitResponse> {
     let headCommit: CommitResponse = {
       sha: baseCommit.sha,
+      tree: baseCommit.tree,
       verified: false
     }
     for (const commit of branchCommits) {
       headCommit = await this.createCommit(
         commit,
-        [headCommit.sha],
+        headCommit,
         repoPath,
         branchRepository
       )
@@ -243,13 +245,13 @@ export class GitHubHelper {
 
   private async createCommit(
     commit: Commit,
-    parents: string[],
+    parentCommit: CommitResponse,
     repoPath: string,
     branchRepository: string
   ): Promise<CommitResponse> {
     const repository = this.parseRepository(branchRepository)
-    // In the case of an empty commit, the tree is the same as the parent
-    let treeSha = commit.tree
+    // In the case of an empty commit, the tree references the parent's tree
+    let treeSha = parentCommit.tree
     if (commit.changes.length > 0) {
       core.info(`Creating tree objects for local commit ${commit.sha}`)
       const treeObjects = await Promise.all(
@@ -284,7 +286,7 @@ export class GitHubHelper {
       core.info(`Creating tree for local commit ${commit.sha}`)
       const {data: tree} = await this.octokit.rest.git.createTree({
         ...repository,
-        base_tree: parents[0],
+        base_tree: parentCommit.sha, // but this should probably be tree
         tree: treeObjects
       })
       treeSha = tree.sha
@@ -293,7 +295,7 @@ export class GitHubHelper {
 
     const {data: remoteCommit} = await this.octokit.rest.git.createCommit({
       ...repository,
-      parents: parents,
+      parents: [parentCommit.sha],
       tree: treeSha,
       message: `${commit.subject}\n\n${commit.body}`
     })
@@ -305,6 +307,7 @@ export class GitHubHelper {
     )
     return {
       sha: remoteCommit.sha,
+      tree: remoteCommit.tree.sha,
       verified: remoteCommit.verification.verified
     }
   }
@@ -320,6 +323,7 @@ export class GitHubHelper {
     })
     return {
       sha: remoteCommit.sha,
+      tree: remoteCommit.tree.sha,
       verified: remoteCommit.verification.verified
     }
   }

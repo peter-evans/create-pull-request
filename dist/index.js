@@ -1325,20 +1325,21 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             let headCommit = {
                 sha: baseCommit.sha,
+                tree: baseCommit.tree,
                 verified: false
             };
             for (const commit of branchCommits) {
-                headCommit = yield this.createCommit(commit, [headCommit.sha], repoPath, branchRepository);
+                headCommit = yield this.createCommit(commit, headCommit, repoPath, branchRepository);
             }
             yield this.createOrUpdateRef(branchRepository, branch, headCommit.sha);
             return headCommit;
         });
     }
-    createCommit(commit, parents, repoPath, branchRepository) {
+    createCommit(commit, parentCommit, repoPath, branchRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
-            // In the case of an empty commit, the tree is the same as the parent
-            let treeSha = commit.tree;
+            // In the case of an empty commit, the tree references the parent's tree
+            let treeSha = parentCommit.tree;
             if (commit.changes.length > 0) {
                 core.info(`Creating tree objects for local commit ${commit.sha}`);
                 const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status }) {
@@ -1362,15 +1363,16 @@ class GitHubHelper {
                     };
                 })));
                 core.info(`Creating tree for local commit ${commit.sha}`);
-                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: parents[0], tree: treeObjects }));
+                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: parentCommit.sha, tree: treeObjects }));
                 treeSha = tree.sha;
                 core.info(`Created tree ${treeSha} for local commit ${commit.sha}`);
             }
-            const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: parents, tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
+            const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: [parentCommit.sha], tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
             core.info(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
             return {
                 sha: remoteCommit.sha,
+                tree: remoteCommit.tree.sha,
                 verified: remoteCommit.verification.verified
             };
         });
@@ -1381,6 +1383,7 @@ class GitHubHelper {
             const { data: remoteCommit } = yield this.octokit.rest.git.getCommit(Object.assign(Object.assign({}, repository), { commit_sha: sha }));
             return {
                 sha: remoteCommit.sha,
+                tree: remoteCommit.tree.sha,
                 verified: remoteCommit.verification.verified
             };
         });
