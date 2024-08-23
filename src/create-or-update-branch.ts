@@ -135,7 +135,7 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
-  baseSha: string
+  baseCommit: Commit
   headSha: string
   branchCommits: Commit[]
 }
@@ -161,16 +161,6 @@ export async function createOrUpdateBranch(
   // If the base is not specified it is assumed to be the working base.
   base = base ? base : workingBase
   const baseRemote = 'origin'
-
-  // Set the default return values
-  const result: CreateOrUpdateBranchResult = {
-    action: 'none',
-    base: base,
-    hasDiffWithBase: false,
-    baseSha: '',
-    headSha: '',
-    branchCommits: []
-  }
 
   // Save the working base changes to a temporary branch
   const tempBranch = uuidv4()
@@ -251,6 +241,9 @@ export async function createOrUpdateBranch(
       ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
       : FETCH_DEPTH_MARGIN
 
+  let action = 'none'
+  let hasDiffWithBase = false
+
   // Try to fetch the pull request branch
   if (!(await tryFetch(git, branchRemoteName, branch, fetchDepth))) {
     // The pull request branch does not exist
@@ -258,9 +251,9 @@ export async function createOrUpdateBranch(
     // Create the pull request branch
     await git.checkout(branch, tempBranch)
     // Check if the pull request branch is ahead of the base
-    result.hasDiffWithBase = await isAhead(git, base, branch)
-    if (result.hasDiffWithBase) {
-      result.action = 'created'
+    hasDiffWithBase = await isAhead(git, base, branch)
+    if (hasDiffWithBase) {
+      action = 'created'
       core.info(`Created branch '${branch}'`)
     } else {
       core.info(
@@ -301,26 +294,28 @@ export async function createOrUpdateBranch(
     // If the branch was reset or updated it will be ahead
     // It may be behind if a reset now results in no diff with the base
     if (!(await isEven(git, `${branchRemoteName}/${branch}`, branch))) {
-      result.action = 'updated'
+      action = 'updated'
       core.info(`Updated branch '${branch}'`)
     } else {
-      result.action = 'not-updated'
+      action = 'not-updated'
       core.info(
         `Branch '${branch}' is even with its remote and will not be updated`
       )
     }
 
     // Check if the pull request branch is ahead of the base
-    result.hasDiffWithBase = await isAhead(git, base, branch)
+    hasDiffWithBase = await isAhead(git, base, branch)
   }
 
   // Get the base and head SHAs
-  result.baseSha = await git.revParse(base)
-  result.headSha = await git.revParse(branch)
+  const baseSha = await git.revParse(base)
+  const baseCommit = await git.getCommit(baseSha)
+  const headSha = await git.revParse(branch)
 
-  if (result.hasDiffWithBase) {
+  let branchCommits: Commit[] = []
+  if (hasDiffWithBase) {
     // Build the branch commits
-    result.branchCommits = await buildBranchCommits(git, base, branch)
+    branchCommits = await buildBranchCommits(git, base, branch)
   }
 
   // Delete the temporary branch
@@ -334,5 +329,12 @@ export async function createOrUpdateBranch(
     await git.stashPop()
   }
 
-  return result
+  return {
+    action: action,
+    base: base,
+    hasDiffWithBase: hasDiffWithBase,
+    baseCommit: baseCommit,
+    headSha: headSha,
+    branchCommits: branchCommits
+  }
 }

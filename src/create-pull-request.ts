@@ -212,7 +212,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         await git.checkout(inputs.branch)
         const pushSignedCommitsResult = await ghBranch.pushSignedCommits(
           result.branchCommits,
-          result.baseSha,
+          result.baseCommit,
           repoPath,
           branchRepository,
           inputs.branch
@@ -284,6 +284,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       result.branchCommits.length > 0 &&
       result.branchCommits[result.branchCommits.length - 1].signed
     ) {
+      // Using the local head commit SHA because in this case commits have not been pushed via the API.
       core.info(`Checking verification status of head commit ${result.headSha}`)
       try {
         const headCommit = await ghBranch.getCommit(

@@ -220,13 +220,13 @@ export class GitHubHelper {
 
   async pushSignedCommits(
     branchCommits: Commit[],
-    baseSha: string,
+    baseCommit: Commit,
     repoPath: string,
     branchRepository: string,
     branch: string
   ): Promise<CommitResponse> {
     let headCommit: CommitResponse = {
-      sha: baseSha,
+      sha: baseCommit.sha,
       verified: false
     }
     for (const commit of branchCommits) {
@@ -248,6 +248,7 @@ export class GitHubHelper {
     branchRepository: string
   ): Promise<CommitResponse> {
     const repository = this.parseRepository(branchRepository)
+    // In the case of an empty commit, the tree is the same as the parent
     let treeSha = commit.tree
     if (commit.changes.length > 0) {
       core.info(`Creating tree objects for local commit ${commit.sha}`)

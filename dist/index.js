@@ -152,15 +152,6 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         // If the base is not specified it is assumed to be the working base.
         base = base ? base : workingBase;
         const baseRemote = 'origin';
-        // Set the default return values
-        const result = {
-            action: 'none',
-            base: base,
-            hasDiffWithBase: false,
-            baseSha: '',
-            headSha: '',
-            branchCommits: []
-        };
         // Save the working base changes to a temporary branch
         const tempBranch = (0, uuid_1.v4)();
         yield git.checkout(tempBranch, 'HEAD');
@@ -225,6 +216,8 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         const fetchDepth = tempBranchCommitsAhead > 0
             ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
             : FETCH_DEPTH_MARGIN;
+        let action = 'none';
+        let hasDiffWithBase = false;
         // Try to fetch the pull request branch
         if (!(yield tryFetch(git, branchRemoteName, branch, fetchDepth))) {
             // The pull request branch does not exist
@@ -232,9 +225,9 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // Create the pull request branch
             yield git.checkout(branch, tempBranch);
             // Check if the pull request branch is ahead of the base
-            result.hasDiffWithBase = yield isAhead(git, base, branch);
-            if (result.hasDiffWithBase) {
-                result.action = 'created';
+            hasDiffWithBase = yield isAhead(git, base, branch);
+            if (hasDiffWithBase) {
+                action = 'created';
                 core.info(`Created branch '${branch}'`);
             }
             else {
@@ -270,22 +263,24 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             // If the branch was reset or updated it will be ahead
             // It may be behind if a reset now results in no diff with the base
             if (!(yield isEven(git, `${branchRemoteName}/${branch}`, branch))) {
-                result.action = 'updated';
+                action = 'updated';
                 core.info(`Updated branch '${branch}'`);
             }
             else {
-                result.action = 'not-updated';
+                action = 'not-updated';
                 core.info(`Branch '${branch}' is even with its remote and will not be updated`);
             }
             // Check if the pull request branch is ahead of the base
-            result.hasDiffWithBase = yield isAhead(git, base, branch);
+            hasDiffWithBase = yield isAhead(git, base, branch);
         }
         // Get the base and head SHAs
-        result.baseSha = yield git.revParse(base);
-        result.headSha = yield git.revParse(branch);
-        if (result.hasDiffWithBase) {
+        const baseSha = yield git.revParse(base);
+        const baseCommit = yield git.getCommit(baseSha);
+        const headSha = yield git.revParse(branch);
+        let branchCommits = [];
+        if (hasDiffWithBase) {
             // Build the branch commits
-            result.branchCommits = yield buildBranchCommits(git, base, branch);
+            branchCommits = yield buildBranchCommits(git, base, branch);
         }
         // Delete the temporary branch
         yield git.exec(['branch', '--delete', '--force', tempBranch]);
@@ -295,7 +290,14 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
         if (stashed) {
             yield git.stashPop();
         }
-        return result;
+        return {
+            action: action,
+            base: base,
+            hasDiffWithBase: hasDiffWithBase,
+            baseCommit: baseCommit,
+            headSha: headSha,
+            branchCommits: branchCommits
+        };
     });
 }
 
@@ -471,7 +473,7 @@ function createPullRequest(inputs) {
                     // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    const pushSignedCommitsResult = yield ghBranch.pushSignedCommits(result.branchCommits, result.baseSha, repoPath, branchRepository, inputs.branch);
+                    const pushSignedCommitsResult = yield ghBranch.pushSignedCommits(result.branchCommits, result.baseCommit, repoPath, branchRepository, inputs.branch);
                     outputs.set('pull-request-head-sha', pushSignedCommitsResult.sha);
                     outputs.set('pull-request-commits-verified', pushSignedCommitsResult.verified.toString());
                     yield git.checkout('-');
@@ -529,6 +531,7 @@ function createPullRequest(inputs) {
             if (!outputs.has('pull-request-commits-verified') &&
                 result.branchCommits.length > 0 &&
                 result.branchCommits[result.branchCommits.length - 1].signed) {
+                // Using the local head commit SHA because in this case commits have not been pushed via the API.
                 core.info(`Checking verification status of head commit ${result.headSha}`);
                 try {
                     const headCommit = yield ghBranch.getCommit(result.headSha, branchRepository);
@@ -1318,10 +1321,10 @@ class GitHubHelper {
             return pull;
         });
     }
-    pushSignedCommits(branchCommits, baseSha, repoPath, branchRepository, branch) {
+    pushSignedCommits(branchCommits, baseCommit, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
             let headCommit = {
-                sha: baseSha,
+                sha: baseCommit.sha,
                 verified: false
             };
             for (const commit of branchCommits) {
@@ -1334,6 +1337,7 @@ class GitHubHelper {
     createCommit(commit, parents, repoPath, branchRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
+            // In the case of an empty commit, the tree is the same as the parent
             let treeSha = commit.tree;
             if (commit.changes.length > 0) {
                 core.info(`Creating tree objects for local commit ${commit.sha}`);
