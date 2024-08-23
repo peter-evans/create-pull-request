@@ -283,13 +283,27 @@ export class GitHubHelper {
           }
         })
       )
+
+      const chunkSize = 100
+      const chunkedTreeObjects: TreeObject[][] = Array.from(
+        {length: Math.ceil(treeObjects.length / chunkSize)},
+        (_, i) => treeObjects.slice(i * chunkSize, i * chunkSize + chunkSize)
+      )
+
       core.info(`Creating tree for local commit ${commit.sha}`)
-      const {data: tree} = await this.octokit.rest.git.createTree({
-        ...repository,
-        base_tree: parentCommit.tree,
-        tree: treeObjects
-      })
-      treeSha = tree.sha
+      for (let i = 0; i < chunkedTreeObjects.length; i++) {
+        const {data: tree} = await this.octokit.rest.git.createTree({
+          ...repository,
+          base_tree: treeSha,
+          tree: chunkedTreeObjects[i]
+        })
+        treeSha = tree.sha
+        if (chunkedTreeObjects.length > 1) {
+          core.info(
+            `Created tree ${treeSha} of multipart tree (${i + 1} of ${chunkedTreeObjects.length})`
+          )
+        }
+      }
       core.info(`Created tree ${treeSha} for local commit ${commit.sha}`)
     }
 
