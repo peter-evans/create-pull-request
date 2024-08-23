@@ -1363,7 +1363,7 @@ class GitHubHelper {
                     };
                 })));
                 core.info(`Creating tree for local commit ${commit.sha}`);
-                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: parentCommit.sha, tree: treeObjects }));
+                const { data: tree } = yield this.octokit.rest.git.createTree(Object.assign(Object.assign({}, repository), { base_tree: parentCommit.tree, tree: treeObjects }));
                 treeSha = tree.sha;
                 core.info(`Created tree ${treeSha} for local commit ${commit.sha}`);
             }

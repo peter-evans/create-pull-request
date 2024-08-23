@@ -286,7 +286,7 @@ export class GitHubHelper {
       core.info(`Creating tree for local commit ${commit.sha}`)
       const {data: tree} = await this.octokit.rest.git.createTree({
         ...repository,
-        base_tree: parentCommit.sha, // but this should probably be tree
+        base_tree: parentCommit.tree,
         tree: treeObjects
       })
       treeSha = tree.sha
