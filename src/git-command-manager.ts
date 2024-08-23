@@ -17,6 +17,7 @@ export type Commit = {
     status: 'A' | 'M' | 'D'
     path: string
   }[]
+  unparsedChanges: string[]
 }
 
 export class GitCommandManager {
@@ -158,7 +159,6 @@ export class GitCommandManager {
       'show',
       '--raw',
       '--cc',
-      '--diff-filter=AMD',
       `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
       ref
     ])
@@ -166,6 +166,7 @@ export class GitCommandManager {
     const endOfBodyIndex = lines.lastIndexOf(endOfBody)
     const detailLines = lines.slice(0, endOfBodyIndex)
 
+    const unparsedChanges: string[] = []
     return <Commit>{
       sha: detailLines[0],
       tree: detailLines[1],
@@ -184,9 +185,10 @@ export class GitCommandManager {
             path: change[4]
           }
         } else {
-          throw new Error(`Unexpected line format: ${line}`)
+          unparsedChanges.push(line)
         }
-      })
+      }),
+      unparsedChanges: unparsedChanges
     }
   }
 

@@ -61,6 +61,9 @@ export async function buildBranchCommits(
   for (const sha of shas) {
     const commit = await git.getCommit(sha)
     commits.push(commit)
+    for (const unparsedChange of commit.unparsedChanges) {
+      core.warning(`Skipping unexpected diff entry: ${unparsedChange}`)
+    }
   }
   return commits
 }

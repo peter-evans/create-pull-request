@@ -22,6 +22,7 @@ git config --global user.name "Your Name"
 echo "#test-base" > README.md
 git add .
 git commit -m "initial commit"
+git commit --allow-empty -m "empty commit for tests"
 echo "#test-base :sparkles:" > README.md
 git add .
 git commit -m "add sparkles" -m "Change description:
