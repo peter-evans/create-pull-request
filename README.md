@@ -80,7 +80,13 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 The token input defaults to the repository's `GITHUB_TOKEN`.
 
 > [!IMPORTANT]  
-> If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for further details.
+> - If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for further details.
+> - If using the repository's `GITHUB_TOKEN` and your repository was created after 2nd February 2023, the [default permission is read-only](https://github.blog/changelog/2023-02-02-github-actions-updating-the-default-github_token-permissions-to-read-only/). Elevate the [permissions](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token#defining-access-for-the-github_token-permissions) in your workflow.
+>   ```yml
+>   permissions:
+>     contents: write
+>     pull-requests: write
+>   ```
 
 Other token options:
 - Classic [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `repo` scope.
@@ -88,13 +94,7 @@ Other token options:
 - [GitHub App tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) with `contents: write` and `pull-requests: write` scopes.
 
 > [!TIP]  
-> - If pull requests could contain changes to Actions workflows you may also need the `workflows` scope.
-> - When using the repository's `GITHUB_TOKEN`, it's good practice to employ the [principle of least privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) and restrict its [permissions](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token#defining-access-for-the-github_token-permissions).
->   ```yml
->   permissions:
->     contents: write
->     pull-requests: write
->   ```
+> If pull requests could contain changes to Actions workflows you may also need the `workflows` scope.
 
 #### branch-token
 
