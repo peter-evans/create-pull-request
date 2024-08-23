@@ -259,7 +259,7 @@ It needs `contents: write` for the fork to push the branch, and `pull-requests: 
 
 There are two main scenarios:
 1. The parent and fork have different owners. In this case, it's not possible to create a token that is scoped to both repositories so different tokens must be used for each.
-2. The parent and fork both have the same owner. In this case, a token can be scoped to both repositories, but the permissions granted cannot be different. So it would defeat the purpose of using `push-to-fork`, and you might as well just create the pull request directly on the parent repository.
+2. The parent and fork both have the same owner (i.e. they exist in the same org). In this case, a single token can be scoped to both repositories, but the permissions granted cannot be different. So it would defeat the purpose of using `push-to-fork`, and you might as well just create the pull request directly on the parent repository.
 
 For the first scenario, the solution is to scope the token for the fork, and use the `branch-token` input to push the branch.
 The `token` input will then default to the repository's `GITHUB_TOKEN`, which will be used to create the pull request.
