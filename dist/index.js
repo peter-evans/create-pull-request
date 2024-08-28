@@ -133,6 +133,14 @@ function isEven(git, branch1, branch2) {
             !(yield isBehind(git, branch1, branch2)));
     });
 }
+// Return true if the specified number of commits on branch1 and branch2 have a diff
+function commitsHaveDiff(git, branch1, branch2, depth) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const diff1 = (yield git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])).stdout.trim();
+        const diff2 = (yield git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])).stdout.trim();
+        return diff1 !== diff2;
+    });
+}
 function splitLines(multilineString) {
     return multilineString
         .split('\n')
@@ -241,20 +249,25 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             yield git.checkout(branch);
             // Reset the branch if one of the following conditions is true.
             // - If the branch differs from the recreated temp branch.
+            // - If the number of commits ahead of the base branch differs between the branch and
+            //   temp branch. This catches a case where the base branch has been force pushed to
+            //   a new commit.
             // - If the recreated temp branch is not ahead of the base. This means there will be
             //   no pull request diff after the branch is reset. This will reset any undeleted
             //   branches after merging. In particular, it catches a case where the branch was
             //   squash merged but not deleted. We need to reset to make sure it doesn't appear
             //   to have a diff with the base due to different commits for the same changes.
-            // - If the number of commits ahead of the base branch differs between the branch and
-            //   temp branch. This catches a case where the base branch has been force pushed to
-            //   a new commit.
+            // - If the diff of the commits ahead of the base branch differs between the branch and
+            //   temp branch. This catches a case where changes have been partially merged to the
+            //   base. The overall diff is the same, but the branch needs to be rebased to show
+            //   the correct diff.
+            //
             // For changes on base this reset is equivalent to a rebase of the pull request branch.
             const branchCommitsAhead = yield commitsAhead(git, base, branch);
             if ((yield git.hasDiff([`${branch}..${tempBranch}`])) ||
                 branchCommitsAhead != tempBranchCommitsAhead ||
-                !(tempBranchCommitsAhead > 0) // !isAhead
-            ) {
+                !(tempBranchCommitsAhead > 0) || // !isAhead
+                (yield commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))) {
                 core.info(`Resetting '${branch}'`);
                 // Alternatively, git switch -C branch tempBranch
                 yield git.checkout(branch, tempBranch);

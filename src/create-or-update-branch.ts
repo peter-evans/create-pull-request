@@ -124,6 +124,22 @@ async function isEven(
   )
 }
 
+// Return true if the specified number of commits on branch1 and branch2 have a diff
+async function commitsHaveDiff(
+  git: GitCommandManager,
+  branch1: string,
+  branch2: string,
+  depth: number
+): Promise<boolean> {
+  const diff1 = (
+    await git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])
+  ).stdout.trim()
+  const diff2 = (
+    await git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])
+  ).stdout.trim()
+  return diff1 !== diff2
+}
+
 function splitLines(multilineString: string): string[] {
   return multilineString
     .split('\n')
@@ -270,20 +286,26 @@ export async function createOrUpdateBranch(
 
     // Reset the branch if one of the following conditions is true.
     // - If the branch differs from the recreated temp branch.
+    // - If the number of commits ahead of the base branch differs between the branch and
+    //   temp branch. This catches a case where the base branch has been force pushed to
+    //   a new commit.
     // - If the recreated temp branch is not ahead of the base. This means there will be
     //   no pull request diff after the branch is reset. This will reset any undeleted
     //   branches after merging. In particular, it catches a case where the branch was
     //   squash merged but not deleted. We need to reset to make sure it doesn't appear
     //   to have a diff with the base due to different commits for the same changes.
-    // - If the number of commits ahead of the base branch differs between the branch and
-    //   temp branch. This catches a case where the base branch has been force pushed to
-    //   a new commit.
+    // - If the diff of the commits ahead of the base branch differs between the branch and
+    //   temp branch. This catches a case where changes have been partially merged to the
+    //   base. The overall diff is the same, but the branch needs to be rebased to show
+    //   the correct diff.
+    //
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
     const branchCommitsAhead = await commitsAhead(git, base, branch)
     if (
       (await git.hasDiff([`${branch}..${tempBranch}`])) ||
       branchCommitsAhead != tempBranchCommitsAhead ||
-      !(tempBranchCommitsAhead > 0) // !isAhead
+      !(tempBranchCommitsAhead > 0) || // !isAhead
+      (await commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))
     ) {
       core.info(`Resetting '${branch}'`)
       // Alternatively, git switch -C branch tempBranch
