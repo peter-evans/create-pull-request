@@ -657,6 +657,76 @@ describe('create-or-update-branch tests', () => {
     ).toBeTruthy()
   })
 
+  it('tests create, commit with partial changes on the base, and update', async () => {
+    // This is an edge case where the changes for a single commit are partially merged to the base
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with a partial merge of the changes
+    await createFile(TRACKED_FILE, changes.tracked)
+    const baseCommitMessage = uuidv4()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', baseCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Create the same tracked and untracked file changes
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([
+        _commitMessage,
+        baseCommitMessage,
+        INIT_COMMIT_MESSAGE
+      ])
+    ).toBeTruthy()
+  })
+
   it('tests create, squash merge, and update with identical changes', async () => {
     // Branches that have been squash merged appear to have a diff with the base due to
     // different commits for the same changes. To prevent creating pull requests
@@ -1675,6 +1745,81 @@ describe('create-or-update-branch tests', () => {
     expect(
       await gitLogMatches([
         commits.commitMsgs[0] // fetch depth of base is 1
+      ])
+    ).toBeTruthy()
+  })
+
+  it('tests create, commit with partial changes on the base, and update (WBNB)', async () => {
+    // This is an edge case where the changes for a single commit are partially merged to the base
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with a partial merge of the changes
+    await createFile(TRACKED_FILE, changes.tracked)
+    const baseCommitMessage = uuidv4()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', baseCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create the same tracked and untracked file changes
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([
+        _commitMessage,
+        baseCommitMessage // fetch depth of base is 1
       ])
     ).toBeTruthy()
   })
