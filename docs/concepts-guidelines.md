@@ -92,7 +92,7 @@ In these cases, you *must supply* the `base` input so the action can rebase chan
 Workflows triggered by [`pull_request`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#pull_request) events will by default check out a merge commit. Set the `base` input as follows to base the new pull request on the current pull request's branch.
 
 ```yml
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v7
         with:
           base: ${{ github.head_ref }}
 ```
@@ -100,7 +100,7 @@ Workflows triggered by [`pull_request`](https://docs.github.com/en/actions/refer
 Workflows triggered by [`release`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#release) events will by default check out a tag. For most use cases, you will need to set the `base` input to the branch name of the tagged commit.
 
 ```yml
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v7
         with:
           base: main
 ```
@@ -186,7 +186,7 @@ Checking out a branch from a different repository from where the workflow is exe
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PAT }}
 ```
@@ -216,7 +216,7 @@ How to use SSH (deploy keys) with create-pull-request action:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 ```
 
 ### Push pull request branches to a fork
@@ -241,7 +241,7 @@ It will use their own fork to push code and create the pull request.
 
       # Make changes to pull request here
 
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.MACHINE_USER_PAT }}
           push-to-fork: machine-user/fork-of-repository
@@ -284,7 +284,7 @@ The following is an example of pushing to a fork using GitHub App tokens.
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           branch-token: ${{ steps.generate-token.outputs.token }}
           push-to-fork: owner/fork-of-repo
@@ -329,7 +329,7 @@ GitHub App generated tokens can be configured with fine-grained permissions and 
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
 ```
@@ -357,7 +357,7 @@ In the following example, a pull request is being created in remote repo `owner/
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
 ```
@@ -386,7 +386,7 @@ In this example the `token` input is not supplied, so the action will use the re
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           sign-commits: true
 ```
@@ -405,7 +405,7 @@ In this example, the `token` input is generated using a GitHub App. This will si
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ steps.generate-token.outputs.token }}
           sign-commits: true
@@ -448,7 +448,7 @@ The action can use GPG to sign commits with a GPG key that you generate yourself
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PAT }}
           committer: example <email@example.com>
@@ -478,7 +478,7 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 ```
 
 **Ubuntu container example:**
@@ -501,5 +501,5 @@ jobs:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 ```
