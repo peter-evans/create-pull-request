@@ -3,7 +3,7 @@
 ### Behaviour changes
 
 - Action input `git-token` has been renamed `branch-token`, to be more clear about its purpose. The `branch-token` is the token that the action will use to create and update the branch.
-- The action now handles requests that have been rate-limited by GitHub. Requests hitting a primary rate limit will retry twice, for a total of three attempts. Requests hitting a secondary rate limit will not be tried.
+- The action now handles requests that have been rate-limited by GitHub. Requests hitting a primary rate limit will retry twice, for a total of three attempts. Requests hitting a secondary rate limit will not be retried.
 - The `pull-request-operation` output now returns `none` when no operation was executed.
 - Removed deprecated output environment variable `PULL_REQUEST_NUMBER`. Please use the `pull-request-number` action output instead.
 
