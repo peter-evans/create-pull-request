@@ -1,3 +1,19 @@
+## Updating from `v6` to `v7`
+
+### Behaviour changes
+
+- Action input `git-token` has been renamed `branch-token`, to be more clear about its purpose. The `branch-token` is the token that the action will use to create and update the branch.
+- The action now handles requests that have been rate-limited by GitHub. Requests hitting a primary rate limit will retry twice, for a total of three attempts. Requests hitting a secondary rate limit will not be retried.
+- The `pull-request-operation` output now returns `none` when no operation was executed.
+- Removed deprecated output environment variable `PULL_REQUEST_NUMBER`. Please use the `pull-request-number` action output instead.
+
+### What's new
+
+- The action can now sign commits as `github-actions[bot]` when using `GITHUB_TOKEN`, or your own bot when using [GitHub App tokens](concepts-guidelines.md#authenticating-with-github-app-generated-tokens). See [commit signing](concepts-guidelines.md#commit-signature-verification-for-bots) for details.
+- Action input `draft` now accepts a new value `always-true`. This will set the pull request to draft status when the pull request is updated, as well as on creation.
+- A new action input `maintainer-can-modify` indicates whether [maintainers can modify](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) the pull request. The default is `true`, which retains the existing behaviour of the action.
+- A new output `pull-request-commits-verified` returns `true` or `false`, indicating whether GitHub considers the signature of the branch's commits to be verified.
+
 ## Updating from `v5` to `v6`
 
 ### Behaviour changes

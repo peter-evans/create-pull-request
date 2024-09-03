@@ -32,10 +32,10 @@ Create Pull Request action will:
       # Make changes to pull request here
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 ```
 
-You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v6.x.x`
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v7.x.x`
 
 ### Workflow permissions
 
@@ -48,12 +48,10 @@ For repositories belonging to an organization, this setting can be managed by ad
 
 All inputs are **optional**. If not set, sensible defaults will be used.
 
-**Note**: If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for workarounds.
-
 | Name | Description | Default |
 | --- | --- | --- |
-| `token` | `GITHUB_TOKEN` (permissions `contents: write` and `pull-requests: write`) or a `repo` scoped [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token). | `GITHUB_TOKEN` |
-| `git-token` | The [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) that the action will use for git operations. | Defaults to the value of `token` |
+| `token` | The token that the action will use to create and update the pull request. See [token](#token). | `GITHUB_TOKEN` |
+| `branch-token` | The token that the action will use to create and update the branch. See [branch-token](#branch-token). | Defaults to the value of `token` |
 | `path` | Relative path under `GITHUB_WORKSPACE` to the repository. | `GITHUB_WORKSPACE` |
 | `add-paths` | A comma or newline-separated list of file paths to commit. Paths should follow git's [pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) syntax. If no paths are specified, all new and modified files are added. See [Add specific paths](#add-specific-paths). | |
 | `commit-message` | The message to use when committing changes. See [commit-message](#commit-message). | `[create-pull-request] automated change` |
@@ -65,6 +63,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `branch-suffix` | The branch suffix type when using the alternative branching strategy. Valid values are `random`, `timestamp` and `short-commit-hash`. See [Alternative strategy](#alternative-strategy---always-create-a-new-pull-request-branch) for details. | |
 | `base` | Sets the pull request base branch. | Defaults to the branch checked out in the workflow. |
 | `push-to-fork` | A fork of the checked-out parent repository to which the pull request branch will be pushed. e.g. `owner/repo-fork`. The pull request will be created to merge the fork's branch into the parent's base. See [push pull request branches to a fork](docs/concepts-guidelines.md#push-pull-request-branches-to-a-fork) for details. | |
+| `sign-commits` | Sign commits as `github-actions[bot]` when using `GITHUB_TOKEN`, or your own bot when using [GitHub App tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens). See [commit signing](docs/concepts-guidelines.md#commit-signature-verification-for-bots) for details.  | `false` |
 | `title` | The title of the pull request. | `Changes by create-pull-request action` |
 | `body` | The body of the pull request. | `Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action` |
 | `body-path` | The path to a file containing the pull request body. Takes precedence over `body`. | |
@@ -73,7 +72,35 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `reviewers` | A comma or newline-separated list of reviewers (GitHub usernames) to request a review from. | |
 | `team-reviewers` | A comma or newline-separated list of GitHub teams to request a review from. Note that a `repo` scoped [PAT](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token), or equivalent [GitHub App permissions](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens), are required. | |
 | `milestone` | The number of the milestone to associate this pull request with. | |
-| `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). It is not possible to change draft status after creation except through the web interface. | `false` |
+| `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). Valid values are `true` (only on create), `always-true` (on create and update), and `false`.  | `false` |
+| `maintainer-can-modify` | Indicates whether [maintainers can modify](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) the pull request. | `true` |
+
+#### token
+
+The token input defaults to the repository's `GITHUB_TOKEN`.
+
+> [!IMPORTANT]  
+> - If you want pull requests created by this action to trigger an `on: push` or `on: pull_request` workflow then you cannot use the default `GITHUB_TOKEN`. See the [documentation here](docs/concepts-guidelines.md#triggering-further-workflow-runs) for further details.
+> - If using the repository's `GITHUB_TOKEN` and your repository was created after 2nd February 2023, the [default permission is read-only](https://github.blog/changelog/2023-02-02-github-actions-updating-the-default-github_token-permissions-to-read-only/). Elevate the [permissions](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/controlling-permissions-for-github_token#defining-access-for-the-github_token-permissions) in your workflow.
+>   ```yml
+>   permissions:
+>     contents: write
+>     pull-requests: write
+>   ```
+
+Other token options:
+- Classic [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `repo` scope.
+- Fine-grained [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `contents: write` and `pull-requests: write` scopes.
+- [GitHub App tokens](docs/concepts-guidelines.md#authenticating-with-github-app-generated-tokens) with `contents: write` and `pull-requests: write` scopes.
+
+> [!TIP]  
+> If pull requests could contain changes to Actions workflows you may also need the `workflows` scope.
+
+#### branch-token
+
+The action first creates a branch, and then creates a pull request for the branch.
+For some rare use cases it can be useful, or even neccessary, to use different tokens for these operations.
+It is not advisable to use this input unless you know you need to.
 
 #### commit-message
 
@@ -104,7 +131,7 @@ If you want branches to be deleted immediately on merge then you should use GitH
 For self-hosted runners behind a corporate proxy set the `https_proxy` environment variable.
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         env:
           https_proxy: http://<proxy_address>:<port>
 ```
@@ -115,9 +142,10 @@ The following outputs can be used by subsequent workflow steps.
 
 - `pull-request-number` - The pull request number.
 - `pull-request-url` - The URL of the pull request.
-- `pull-request-operation` - The pull request operation performed by the action, `created`, `updated` or `closed`.
+- `pull-request-operation` - The pull request operation performed by the action, `created`, `updated`, `closed` or `none`.
 - `pull-request-head-sha` - The commit SHA of the pull request branch.
 - `pull-request-branch` - The branch name of the pull request.
+- `pull-request-commits-verified` - Whether GitHub considers the signature of the branch's commits to be verified; `true` or `false`.
 
 Step outputs can be accessed as in the following example.
 Note that in order to read the step outputs the action step must have an id.
@@ -125,7 +153,7 @@ Note that in order to read the step outputs the action step must have an id.
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
       - name: Check outputs
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
@@ -188,7 +216,7 @@ File changes that do not match one of the paths will be stashed and restored aft
 
 ```yml
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           add-paths: |
             *.java
@@ -215,7 +243,7 @@ Note that the repository must be checked out on a branch with a remote, it won't
       - name: Uncommitted change
         run: date +%s > report.txt
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 ```
 
 ### Create a project card
@@ -225,7 +253,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
 ```yml
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
 
       - name: Create or Update Project Card
         if: ${{ steps.cpr.outputs.pull-request-number }}
@@ -260,7 +288,7 @@ jobs:
 
       - name: Create Pull Request
         id: cpr
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.PAT }}
           commit-message: Update report

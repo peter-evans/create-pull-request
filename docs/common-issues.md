@@ -37,7 +37,7 @@ So the straightforward solution is to just not install them during the workflow 
 
 - If hooks are automatically enabled by a framework, use an option provided by the framework to disable them. For example, for Husky users, they can be disabled with the `--ignore-scripts` flag, or by setting the `HUSKY` environment variable when the action runs.
   ```yml
-  uses: peter-evans/create-pull-request@v6
+  uses: peter-evans/create-pull-request@v7
   env:
     HUSKY: '0'
   ```

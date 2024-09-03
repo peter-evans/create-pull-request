@@ -5,6 +5,21 @@ import * as path from 'path'
 
 const tagsRefSpec = '+refs/tags/*:refs/tags/*'
 
+export type Commit = {
+  sha: string
+  tree: string
+  parents: string[]
+  signed: boolean
+  subject: string
+  body: string
+  changes: {
+    mode: string
+    status: 'A' | 'M' | 'D'
+    path: string
+  }[]
+  unparsedChanges: string[]
+}
+
 export class GitCommandManager {
   private gitPath: string
   private workingDirectory: string
@@ -136,6 +151,45 @@ export class GitCommandManager {
     }
 
     await this.exec(args)
+  }
+
+  async getCommit(ref: string): Promise<Commit> {
+    const endOfBody = '###EOB###'
+    const output = await this.exec([
+      'show',
+      '--raw',
+      '--cc',
+      `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
+      ref
+    ])
+    const lines = output.stdout.split('\n')
+    const endOfBodyIndex = lines.lastIndexOf(endOfBody)
+    const detailLines = lines.slice(0, endOfBodyIndex)
+
+    const unparsedChanges: string[] = []
+    return <Commit>{
+      sha: detailLines[0],
+      tree: detailLines[1],
+      parents: detailLines[2].split(' '),
+      signed: detailLines[3] !== 'N',
+      subject: detailLines[4],
+      body: detailLines.slice(5, endOfBodyIndex).join('\n'),
+      changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
+        const change = line.match(
+          /^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/
+        )
+        if (change) {
+          return {
+            mode: change[3] === 'D' ? change[1] : change[2],
+            status: change[3],
+            path: change[4]
+          }
+        } else {
+          unparsedChanges.push(line)
+        }
+      }),
+      unparsedChanges: unparsedChanges
+    }
   }
 
   async getConfigValue(configKey: string, configValue = '.'): Promise<string> {

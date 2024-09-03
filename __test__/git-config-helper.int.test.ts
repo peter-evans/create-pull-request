@@ -7,7 +7,6 @@ const extraheaderConfigKey = 'http.https://127.0.0.1/.extraheader'
 
 describe('git-config-helper integration tests', () => {
   let git: GitCommandManager
-  let gitConfigHelper: GitConfigHelper
 
   beforeAll(async () => {
     git = await GitCommandManager.create(REPO_PATH)

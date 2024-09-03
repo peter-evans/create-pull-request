@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import {GitCommandManager} from './git-command-manager'
+import {GitCommandManager, Commit} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
 
 const CHERRYPICK_EMPTY =
@@ -45,6 +45,27 @@ export async function tryFetch(
   } catch {
     return false
   }
+}
+
+export async function buildBranchCommits(
+  git: GitCommandManager,
+  base: string,
+  branch: string
+): Promise<Commit[]> {
+  const output = await git.exec(['log', '--format=%H', `${base}..${branch}`])
+  const shas = output.stdout
+    .split('\n')
+    .filter(x => x !== '')
+    .reverse()
+  const commits: Commit[] = []
+  for (const sha of shas) {
+    const commit = await git.getCommit(sha)
+    commits.push(commit)
+    for (const unparsedChange of commit.unparsedChanges) {
+      core.warning(`Skipping unexpected diff entry: ${unparsedChange}`)
+    }
+  }
+  return commits
 }
 
 // Return the number of commits that branch2 is ahead of branch1
@@ -103,6 +124,22 @@ async function isEven(
   )
 }
 
+// Return true if the specified number of commits on branch1 and branch2 have a diff
+async function commitsHaveDiff(
+  git: GitCommandManager,
+  branch1: string,
+  branch2: string,
+  depth: number
+): Promise<boolean> {
+  const diff1 = (
+    await git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])
+  ).stdout.trim()
+  const diff2 = (
+    await git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])
+  ).stdout.trim()
+  return diff1 !== diff2
+}
+
 function splitLines(multilineString: string): string[] {
   return multilineString
     .split('\n')
@@ -114,7 +151,9 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
+  baseCommit: Commit
   headSha: string
+  branchCommits: Commit[]
 }
 
 export async function createOrUpdateBranch(
@@ -138,14 +177,6 @@ export async function createOrUpdateBranch(
   // If the base is not specified it is assumed to be the working base.
   base = base ? base : workingBase
   const baseRemote = 'origin'
-
-  // Set the default return values
-  const result: CreateOrUpdateBranchResult = {
-    action: 'none',
-    base: base,
-    hasDiffWithBase: false,
-    headSha: ''
-  }
 
   // Save the working base changes to a temporary branch
   const tempBranch = uuidv4()
@@ -226,6 +257,9 @@ export async function createOrUpdateBranch(
       ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
       : FETCH_DEPTH_MARGIN
 
+  let action = 'none'
+  let hasDiffWithBase = false
+
   // Try to fetch the pull request branch
   if (!(await tryFetch(git, branchRemoteName, branch, fetchDepth))) {
     // The pull request branch does not exist
@@ -233,9 +267,9 @@ export async function createOrUpdateBranch(
     // Create the pull request branch
     await git.checkout(branch, tempBranch)
     // Check if the pull request branch is ahead of the base
-    result.hasDiffWithBase = await isAhead(git, base, branch)
-    if (result.hasDiffWithBase) {
-      result.action = 'created'
+    hasDiffWithBase = await isAhead(git, base, branch)
+    if (hasDiffWithBase) {
+      action = 'created'
       core.info(`Created branch '${branch}'`)
     } else {
       core.info(
@@ -252,20 +286,26 @@ export async function createOrUpdateBranch(
 
     // Reset the branch if one of the following conditions is true.
     // - If the branch differs from the recreated temp branch.
+    // - If the number of commits ahead of the base branch differs between the branch and
+    //   temp branch. This catches a case where the base branch has been force pushed to
+    //   a new commit.
     // - If the recreated temp branch is not ahead of the base. This means there will be
     //   no pull request diff after the branch is reset. This will reset any undeleted
     //   branches after merging. In particular, it catches a case where the branch was
     //   squash merged but not deleted. We need to reset to make sure it doesn't appear
     //   to have a diff with the base due to different commits for the same changes.
-    // - If the number of commits ahead of the base branch differs between the branch and
-    //   temp branch. This catches a case where the base branch has been force pushed to
-    //   a new commit.
+    // - If the diff of the commits ahead of the base branch differs between the branch and
+    //   temp branch. This catches a case where changes have been partially merged to the
+    //   base. The overall diff is the same, but the branch needs to be rebased to show
+    //   the correct diff.
+    //
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
     const branchCommitsAhead = await commitsAhead(git, base, branch)
     if (
       (await git.hasDiff([`${branch}..${tempBranch}`])) ||
       branchCommitsAhead != tempBranchCommitsAhead ||
-      !(tempBranchCommitsAhead > 0) // !isAhead
+      !(tempBranchCommitsAhead > 0) || // !isAhead
+      (await commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))
     ) {
       core.info(`Resetting '${branch}'`)
       // Alternatively, git switch -C branch tempBranch
@@ -276,21 +316,29 @@ export async function createOrUpdateBranch(
     // If the branch was reset or updated it will be ahead
     // It may be behind if a reset now results in no diff with the base
     if (!(await isEven(git, `${branchRemoteName}/${branch}`, branch))) {
-      result.action = 'updated'
+      action = 'updated'
       core.info(`Updated branch '${branch}'`)
     } else {
-      result.action = 'not-updated'
+      action = 'not-updated'
       core.info(
         `Branch '${branch}' is even with its remote and will not be updated`
       )
     }
 
     // Check if the pull request branch is ahead of the base
-    result.hasDiffWithBase = await isAhead(git, base, branch)
+    hasDiffWithBase = await isAhead(git, base, branch)
   }
 
-  // Get the pull request branch SHA
-  result.headSha = await git.revParse('HEAD')
+  // Get the base and head SHAs
+  const baseSha = await git.revParse(base)
+  const baseCommit = await git.getCommit(baseSha)
+  const headSha = await git.revParse(branch)
+
+  let branchCommits: Commit[] = []
+  if (hasDiffWithBase) {
+    // Build the branch commits
+    branchCommits = await buildBranchCommits(git, base, branch)
+  }
 
   // Delete the temporary branch
   await git.exec(['branch', '--delete', '--force', tempBranch])
@@ -303,5 +351,12 @@ export async function createOrUpdateBranch(
     await git.stashPop()
   }
 
-  return result
+  return {
+    action: action,
+    base: base,
+    hasDiffWithBase: hasDiffWithBase,
+    baseCommit: baseCommit,
+    headSha: headSha,
+    branchCommits: branchCommits
+  }
 }

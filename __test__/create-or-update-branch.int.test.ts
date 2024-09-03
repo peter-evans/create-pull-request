@@ -1,7 +1,8 @@
 import {
   createOrUpdateBranch,
   tryFetch,
-  getWorkingBaseAndType
+  getWorkingBaseAndType,
+  buildBranchCommits
 } from '../lib/create-or-update-branch'
 import * as fs from 'fs'
 import {GitCommandManager} from '../lib/git-command-manager'
@@ -227,6 +228,77 @@ describe('create-or-update-branch tests', () => {
     const [workingBase, workingBaseType] = await getWorkingBaseAndType(git)
     expect(workingBase).toEqual(headSha)
     expect(workingBaseType).toEqual('commit')
+  })
+
+  it('tests buildBranchCommits with no diff', async () => {
+    await git.checkout(BRANCH, BASE)
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+    expect(branchCommits.length).toEqual(0)
+  })
+
+  it('tests buildBranchCommits with addition and modification', async () => {
+    await git.checkout(BRANCH, BASE)
+    await createChanges()
+    const UNTRACKED_EXE_FILE = 'a/script.sh'
+    const filepath = path.join(REPO_PATH, UNTRACKED_EXE_FILE)
+    await fs.promises.writeFile(filepath, '#!/usr/bin/env bash', {mode: 0o755})
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(1)
+    expect(branchCommits[0].subject).toEqual('Test changes')
+    expect(branchCommits[0].changes.length).toEqual(3)
+    expect(branchCommits[0].changes).toEqual([
+      {mode: '100755', path: UNTRACKED_EXE_FILE, status: 'A'},
+      {mode: '100644', path: TRACKED_FILE, status: 'M'},
+      {mode: '100644', path: UNTRACKED_FILE, status: 'A'}
+    ])
+  })
+
+  it('tests buildBranchCommits with addition and deletion', async () => {
+    await git.checkout(BRANCH, BASE)
+    await createChanges()
+    const TRACKED_FILE_NEW_PATH = 'c/tracked-file.txt'
+    const filepath = path.join(REPO_PATH, TRACKED_FILE_NEW_PATH)
+    await fs.promises.mkdir(path.dirname(filepath), {recursive: true})
+    await fs.promises.rename(path.join(REPO_PATH, TRACKED_FILE), filepath)
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', 'Test changes'])
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(1)
+    expect(branchCommits[0].subject).toEqual('Test changes')
+    expect(branchCommits[0].changes.length).toEqual(3)
+    expect(branchCommits[0].changes).toEqual([
+      {mode: '100644', path: TRACKED_FILE, status: 'D'},
+      {mode: '100644', path: UNTRACKED_FILE, status: 'A'},
+      {mode: '100644', path: TRACKED_FILE_NEW_PATH, status: 'A'}
+    ])
+  })
+
+  it('tests buildBranchCommits with multiple commits', async () => {
+    await git.checkout(BRANCH, BASE)
+    for (let i = 0; i < 3; i++) {
+      await createChanges()
+      await git.exec(['add', '-A'])
+      await git.commit(['-m', `Test changes ${i}`])
+    }
+
+    const branchCommits = await buildBranchCommits(git, BASE, BRANCH)
+
+    expect(branchCommits.length).toEqual(3)
+    for (let i = 0; i < 3; i++) {
+      expect(branchCommits[i].subject).toEqual(`Test changes ${i}`)
+      expect(branchCommits[i].changes.length).toEqual(2)
+      const untrackedFileStatus = i == 0 ? 'A' : 'M'
+      expect(branchCommits[i].changes).toEqual([
+        {mode: '100644', path: TRACKED_FILE, status: 'M'},
+        {mode: '100644', path: UNTRACKED_FILE, status: untrackedFileStatus}
+      ])
+    }
   })
 
   it('tests no changes resulting in no new branch being created', async () => {
@@ -582,6 +654,76 @@ describe('create-or-update-branch tests', () => {
     expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
     expect(
       await gitLogMatches([...commits.commitMsgs, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+  })
+
+  it('tests create, commit with partial changes on the base, and update', async () => {
+    // This is an edge case where the changes for a single commit are partially merged to the base
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with a partial merge of the changes
+    await createFile(TRACKED_FILE, changes.tracked)
+    const baseCommitMessage = uuidv4()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', baseCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Create the same tracked and untracked file changes
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      '',
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([
+        _commitMessage,
+        baseCommitMessage,
+        INIT_COMMIT_MESSAGE
+      ])
     ).toBeTruthy()
   })
 
@@ -1603,6 +1745,81 @@ describe('create-or-update-branch tests', () => {
     expect(
       await gitLogMatches([
         commits.commitMsgs[0] // fetch depth of base is 1
+      ])
+    ).toBeTruthy()
+  })
+
+  it('tests create, commit with partial changes on the base, and update (WBNB)', async () => {
+    // This is an edge case where the changes for a single commit are partially merged to the base
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create tracked and untracked file changes
+    const changes = await createChanges()
+    const commitMessage = uuidv4()
+    const result = await createOrUpdateBranch(
+      git,
+      commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(result.action).toEqual('created')
+    expect(await getFileContent(TRACKED_FILE)).toEqual(changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(changes.untracked)
+    expect(
+      await gitLogMatches([commitMessage, INIT_COMMIT_MESSAGE])
+    ).toBeTruthy()
+
+    // Push pull request branch to remote
+    await git.push([
+      '--force-with-lease',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${BRANCH}`
+    ])
+
+    await afterTest(false)
+    await beforeTest()
+
+    // Create a commit on the base with a partial merge of the changes
+    await createFile(TRACKED_FILE, changes.tracked)
+    const baseCommitMessage = uuidv4()
+    await git.exec(['add', '-A'])
+    await git.commit(['-m', baseCommitMessage])
+    await git.push([
+      '--force',
+      REMOTE_NAME,
+      `HEAD:refs/heads/${DEFAULT_BRANCH}`
+    ])
+
+    // Set the working base to a branch that is not the pull request base
+    await git.checkout(NOT_BASE_BRANCH)
+
+    // Create the same tracked and untracked file changes
+    const _changes = await createChanges(changes.tracked, changes.untracked)
+    const _commitMessage = uuidv4()
+    const _result = await createOrUpdateBranch(
+      git,
+      _commitMessage,
+      BASE,
+      BRANCH,
+      REMOTE_NAME,
+      false,
+      ADD_PATHS_DEFAULT
+    )
+    await git.checkout(BRANCH)
+    expect(_result.action).toEqual('updated')
+    expect(_result.hasDiffWithBase).toBeTruthy()
+    expect(await getFileContent(TRACKED_FILE)).toEqual(_changes.tracked)
+    expect(await getFileContent(UNTRACKED_FILE)).toEqual(_changes.untracked)
+    expect(
+      await gitLogMatches([
+        _commitMessage,
+        baseCommitMessage // fetch depth of base is 1
       ])
     ).toBeTruthy()
   })
