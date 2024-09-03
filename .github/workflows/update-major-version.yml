@@ -11,8 +11,8 @@ on:
         type: choice
         description: The major version tag to update
         options:
-          - v5
           - v6
+          - v7
 
 jobs:
   tag:
