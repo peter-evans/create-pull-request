@@ -21,7 +21,7 @@ Create Pull Request action will:
 
 - [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
-- [Updating to v6](docs/updating.md)
+- [Updating to v7](docs/updating.md)
 - [Common issues](docs/common-issues.md)
 
 ## Usage
@@ -246,6 +246,7 @@ Note that the repository must be checked out on a branch with a remote, it won't
         uses: peter-evans/create-pull-request@v7
 ```
 
+<!--
 ### Create a project card
 
 To create a project card for the pull request, pass the `pull-request-number` step output to [create-or-update-project-card](https://github.com/peter-evans/create-or-update-project-card) action.
@@ -263,6 +264,7 @@ To create a project card for the pull request, pass the `pull-request-number` st
           column-name: My column
           issue-number: ${{ steps.cpr.outputs.pull-request-number }}
 ```
+-->
 
 ### Auto-merge
 
