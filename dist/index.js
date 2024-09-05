@@ -46,6 +46,7 @@ exports.buildBranchCommits = buildBranchCommits;
 exports.createOrUpdateBranch = createOrUpdateBranch;
 const core = __importStar(__nccwpck_require__(2186));
 const uuid_1 = __nccwpck_require__(5840);
+const utils = __importStar(__nccwpck_require__(918));
 const CHERRYPICK_EMPTY = 'The previous cherry-pick is now empty, possibly due to conflict resolution.';
 const NOTHING_TO_COMMIT = 'nothing to commit, working tree clean';
 const FETCH_DEPTH_MARGIN = 10;
@@ -136,9 +137,19 @@ function isEven(git, branch1, branch2) {
 // Return true if the specified number of commits on branch1 and branch2 have a diff
 function commitsHaveDiff(git, branch1, branch2, depth) {
     return __awaiter(this, void 0, void 0, function* () {
-        const diff1 = (yield git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])).stdout.trim();
-        const diff2 = (yield git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])).stdout.trim();
-        return diff1 !== diff2;
+        // Some action use cases lead to the depth being a very large number and the diff fails.
+        // I've made this check optional for now because it was a fix for an edge case that is
+        // very rare, anyway.
+        try {
+            const diff1 = (yield git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])).stdout.trim();
+            const diff2 = (yield git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])).stdout.trim();
+            return diff1 !== diff2;
+        }
+        catch (error) {
+            core.info('Failed optional check of commits diff; Skipping.');
+            core.debug(utils.getErrorMessage(error));
+            return false;
+        }
     });
 }
 function splitLines(multilineString) {
