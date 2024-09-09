@@ -246,26 +246,6 @@ Note that the repository must be checked out on a branch with a remote, it won't
         uses: peter-evans/create-pull-request@v7
 ```
 
-<!--
-### Create a project card
-
-To create a project card for the pull request, pass the `pull-request-number` step output to [create-or-update-project-card](https://github.com/peter-evans/create-or-update-project-card) action.
-
-```yml
-      - name: Create Pull Request
-        id: cpr
-        uses: peter-evans/create-pull-request@v7
-
-      - name: Create or Update Project Card
-        if: ${{ steps.cpr.outputs.pull-request-number }}
-        uses: peter-evans/create-or-update-project-card@v2
-        with:
-          project-name: My project
-          column-name: My column
-          issue-number: ${{ steps.cpr.outputs.pull-request-number }}
-```
--->
-
 ### Auto-merge
 
 Auto-merge can be enabled on a pull request allowing it to be automatically merged once requirements have been satisfied.
