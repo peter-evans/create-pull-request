@@ -41,6 +41,6 @@ describe('git-command-manager integration tests', () => {
     expect(headCommit.changes).toEqual([
       {mode: '100644', status: 'A', path: 'README.md'},
       {mode: '100644', status: 'D', path: 'README_TEMP.md'}
-    ])    
+    ])
   })
 })
