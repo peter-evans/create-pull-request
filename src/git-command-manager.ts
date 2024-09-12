@@ -159,6 +159,7 @@ export class GitCommandManager {
       'show',
       '--raw',
       '--cc',
+      '--no-renames',
       `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
       ref
     ])

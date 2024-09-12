@@ -19,14 +19,17 @@ git clone git://127.0.0.1/repos/test-base.git /git/local/repos/test-base
 cd /git/local/repos/test-base
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
-echo "#test-base" > README.md
+echo "#test-base" > README_TEMP.md
 git add .
 git commit -m "initial commit"
 git commit --allow-empty -m "empty commit for tests"
-echo "#test-base :sparkles:" > README.md
+echo "#test-base :sparkles:" > README_TEMP.md
 git add .
 git commit -m "add sparkles" -m "Change description:
-- updates README.md to add sparkles to the title"
+- updates README_TEMP.md to add sparkles to the title"
+mv README_TEMP.md README.md
+git add .
+git commit -m "rename readme"
 git push -u
 git log -1 --pretty=oneline
 git config --global --unset user.email
