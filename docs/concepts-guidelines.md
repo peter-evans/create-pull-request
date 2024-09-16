@@ -303,7 +303,7 @@ GitHub App generated tokens can be configured with fine-grained permissions and 
     - Uncheck `Active` under `Webhook`. You do not need to enter a `Webhook URL`.
     - Under `Repository permissions: Contents` select `Access: Read & write`.
     - Under `Repository permissions: Pull requests` select `Access: Read & write`.
-    - Under `Repository permissions: Workflows` select `Access: Read-only`.
+    - Under `Repository permissions: Workflows` select `Access: Read & write`.
       - **NOTE**: Only needed if pull requests could contain changes to Actions workflows.
     - Under `Organization permissions: Members` select `Access: Read-only`.
       - **NOTE**: Only needed if you would like add teams as reviewers to PRs.
