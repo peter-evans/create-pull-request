@@ -160,6 +160,7 @@ export class GitCommandManager {
       '--raw',
       '--cc',
       '--no-renames',
+      '--no-abbrev',
       `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
       ref
     ])
@@ -177,7 +178,7 @@ export class GitCommandManager {
       body: detailLines.slice(5, endOfBodyIndex).join('\n'),
       changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
         const change = line.match(
-          /^:(\d{6}) (\d{6}) \w{7} \w{7} ([AMD])\s+(.*)$/
+          /^:(\d{6}) (\d{6}) \w{40} \w{40} ([AMD])\s+(.*)$/
         )
         if (change) {
           return {
