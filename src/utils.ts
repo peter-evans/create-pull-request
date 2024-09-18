@@ -127,7 +127,13 @@ export function readFile(path: string): string {
 }
 
 export function readFileBase64(pathParts: string[]): string {
-  return fs.readFileSync(path.resolve(...pathParts)).toString('base64')
+  const resolvedPath = path.resolve(...pathParts)
+  if (fs.lstatSync(resolvedPath).isSymbolicLink()) {
+    return fs
+      .readlinkSync(resolvedPath, {encoding: 'buffer'})
+      .toString('base64')
+  }
+  return fs.readFileSync(resolvedPath).toString('base64')
 }
 
 /* eslint-disable  @typescript-eslint/no-explicit-any */
