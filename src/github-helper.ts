@@ -35,7 +35,7 @@ type TreeObject = {
   path: string
   mode: '100644' | '100755' | '040000' | '160000' | '120000'
   sha: string | null
-  type: 'blob'
+  type: 'blob' | 'commit'
 }
 
 export class GitHubHelper {
@@ -255,31 +255,44 @@ export class GitHubHelper {
     if (commit.changes.length > 0) {
       core.info(`Creating tree objects for local commit ${commit.sha}`)
       const treeObjects = await Promise.all(
-        commit.changes.map(async ({path, mode, status}) => {
-          let sha: string | null = null
-          if (status === 'A' || status === 'M') {
-            try {
-              const {data: blob} = await blobCreationLimit(() =>
-                this.octokit.rest.git.createBlob({
-                  ...repository,
-                  content: utils.readFileBase64([repoPath, path]),
-                  encoding: 'base64'
-                })
-              )
-              sha = blob.sha
-            } catch (error) {
-              core.error(
-                `Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`
-              )
-              throw error
+        commit.changes.map(async ({path, mode, status, dstSha}) => {
+          if (mode === '160000') {
+            // submodule
+            core.info(`Creating tree object for submodule commit at '${path}'`)
+            return <TreeObject>{
+              path,
+              mode,
+              sha: dstSha,
+              type: 'commit'
             }
-          }
-          core.info(`Created blob for file '${path}'`)
-          return <TreeObject>{
-            path,
-            mode,
-            sha,
-            type: 'blob'
+          } else {
+            let sha: string | null = null
+            if (status === 'A' || status === 'M') {
+              try {
+                const {data: blob} = await blobCreationLimit(() =>
+                  this.octokit.rest.git.createBlob({
+                    ...repository,
+                    content: utils.readFileBase64([repoPath, path]),
+                    encoding: 'base64'
+                  })
+                )
+                sha = blob.sha
+              } catch (error) {
+                core.error(
+                  `Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`
+                )
+                throw error
+              }
+            }
+            core.info(
+              `Creating tree object for blob at '${path}' with status '${status}'`
+            )
+            return <TreeObject>{
+              path,
+              mode,
+              sha,
+              type: 'blob'
+            }
           }
         })
       )
