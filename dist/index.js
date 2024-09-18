@@ -1369,25 +1369,36 @@ class GitHubHelper {
             let treeSha = parentCommit.tree;
             if (commit.changes.length > 0) {
                 core.info(`Creating tree objects for local commit ${commit.sha}`);
-                const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status }) {
-                    let sha = null;
-                    if (status === 'A' || status === 'M') {
-                        try {
-                            const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
-                            sha = blob.sha;
-                        }
-                        catch (error) {
-                            core.error(`Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`);
-                            throw error;
-                        }
+                const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status, dstSha }) {
+                    if (mode === '160000') {
+                        // submodule
+                        return {
+                            path,
+                            mode,
+                            sha: dstSha,
+                            type: 'commit'
+                        };
                     }
-                    core.info(`Created blob for file '${path}'`);
-                    return {
-                        path,
-                        mode,
-                        sha,
-                        type: 'blob'
-                    };
+                    else {
+                        let sha = null;
+                        if (status === 'A' || status === 'M') {
+                            try {
+                                const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
+                                sha = blob.sha;
+                                core.info(`Created blob for file '${path}'`);
+                            }
+                            catch (error) {
+                                core.error(`Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`);
+                                throw error;
+                            }
+                        }
+                        return {
+                            path,
+                            mode,
+                            sha,
+                            type: 'blob'
+                        };
+                    }
                 })));
                 const chunkSize = 100;
                 const chunkedTreeObjects = Array.from({ length: Math.ceil(treeObjects.length / chunkSize) }, (_, i) => treeObjects.slice(i * chunkSize, i * chunkSize + chunkSize));
