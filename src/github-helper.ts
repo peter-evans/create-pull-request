@@ -258,6 +258,7 @@ export class GitHubHelper {
         commit.changes.map(async ({path, mode, status, dstSha}) => {
           if (mode === '160000') {
             // submodule
+            core.info(`Creating tree object for submodule commit at '${path}'`)
             return <TreeObject>{
               path,
               mode,
@@ -276,7 +277,6 @@ export class GitHubHelper {
                   })
                 )
                 sha = blob.sha
-                core.info(`Created blob for file '${path}'`)
               } catch (error) {
                 core.error(
                   `Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`
@@ -284,6 +284,9 @@ export class GitHubHelper {
                 throw error
               }
             }
+            core.info(
+              `Creating tree object for blob at '${path}' with status '${status}'`
+            )
             return <TreeObject>{
               path,
               mode,

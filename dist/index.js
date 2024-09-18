@@ -1372,6 +1372,7 @@ class GitHubHelper {
                 const treeObjects = yield Promise.all(commit.changes.map((_a) => __awaiter(this, [_a], void 0, function* ({ path, mode, status, dstSha }) {
                     if (mode === '160000') {
                         // submodule
+                        core.info(`Creating tree object for submodule commit at '${path}'`);
                         return {
                             path,
                             mode,
@@ -1385,13 +1386,13 @@ class GitHubHelper {
                             try {
                                 const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
                                 sha = blob.sha;
-                                core.info(`Created blob for file '${path}'`);
                             }
                             catch (error) {
                                 core.error(`Error creating blob for file '${path}': ${utils.getErrorMessage(error)}`);
                                 throw error;
                             }
                         }
+                        core.info(`Creating tree object for blob at '${path}' with status '${status}'`);
                         return {
                             path,
                             mode,
