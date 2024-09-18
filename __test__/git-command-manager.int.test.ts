@@ -18,9 +18,9 @@ describe('git-command-manager integration tests', () => {
 
     expect(initialCommit.subject).toEqual('initial commit')
     expect(initialCommit.signed).toBeFalsy()
-    expect(initialCommit.changes).toEqual([
-      {mode: '100644', status: 'A', path: 'README_TEMP.md'}
-    ])
+    expect(initialCommit.changes[0].mode).toEqual('100644')
+    expect(initialCommit.changes[0].status).toEqual('A')
+    expect(initialCommit.changes[0].path).toEqual('README_TEMP.md')
 
     expect(emptyCommit.subject).toEqual('empty commit for tests')
     expect(emptyCommit.tree).toEqual(initialCommit.tree) // empty commits have no tree and reference the parent's
@@ -31,16 +31,18 @@ describe('git-command-manager integration tests', () => {
     expect(modifiedCommit.subject).toEqual('add sparkles')
     expect(modifiedCommit.parents[0]).toEqual(emptyCommit.sha)
     expect(modifiedCommit.signed).toBeFalsy()
-    expect(modifiedCommit.changes).toEqual([
-      {mode: '100644', status: 'M', path: 'README_TEMP.md'}
-    ])
+    expect(modifiedCommit.changes[0].mode).toEqual('100644')
+    expect(modifiedCommit.changes[0].status).toEqual('M')
+    expect(modifiedCommit.changes[0].path).toEqual('README_TEMP.md')
 
     expect(headCommit.subject).toEqual('rename readme')
     expect(headCommit.parents[0]).toEqual(modifiedCommit.sha)
     expect(headCommit.signed).toBeFalsy()
-    expect(headCommit.changes).toEqual([
-      {mode: '100644', status: 'A', path: 'README.md'},
-      {mode: '100644', status: 'D', path: 'README_TEMP.md'}
-    ])
+    expect(headCommit.changes[0].mode).toEqual('100644')
+    expect(headCommit.changes[0].status).toEqual('A')
+    expect(headCommit.changes[0].path).toEqual('README.md')
+    expect(headCommit.changes[1].mode).toEqual('100644')
+    expect(headCommit.changes[1].status).toEqual('D')
+    expect(headCommit.changes[1].path).toEqual('README_TEMP.md')
   })
 })

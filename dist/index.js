@@ -762,12 +762,13 @@ class GitCommandManager {
                 subject: detailLines[4],
                 body: detailLines.slice(5, endOfBodyIndex).join('\n'),
                 changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
-                    const change = line.match(/^:(\d{6}) (\d{6}) \w{40} \w{40} ([AMD])\s+(.*)$/);
+                    const change = line.match(/^:(\d{6}) (\d{6}) \w{40} (\w{40}) ([AMD])\s+(.*)$/);
                     if (change) {
                         return {
-                            mode: change[3] === 'D' ? change[1] : change[2],
-                            status: change[3],
-                            path: change[4]
+                            mode: change[4] === 'D' ? change[1] : change[2],
+                            dstSha: change[3],
+                            status: change[4],
+                            path: change[5]
                         };
                     }
                     else {

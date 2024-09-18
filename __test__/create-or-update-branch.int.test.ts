@@ -250,11 +250,15 @@ describe('create-or-update-branch tests', () => {
     expect(branchCommits.length).toEqual(1)
     expect(branchCommits[0].subject).toEqual('Test changes')
     expect(branchCommits[0].changes.length).toEqual(3)
-    expect(branchCommits[0].changes).toEqual([
-      {mode: '100755', path: UNTRACKED_EXE_FILE, status: 'A'},
-      {mode: '100644', path: TRACKED_FILE, status: 'M'},
-      {mode: '100644', path: UNTRACKED_FILE, status: 'A'}
-    ])
+    expect(branchCommits[0].changes[0].mode).toEqual('100755')
+    expect(branchCommits[0].changes[0].path).toEqual(UNTRACKED_EXE_FILE)
+    expect(branchCommits[0].changes[0].status).toEqual('A')
+    expect(branchCommits[0].changes[1].mode).toEqual('100644')
+    expect(branchCommits[0].changes[1].path).toEqual(TRACKED_FILE)
+    expect(branchCommits[0].changes[1].status).toEqual('M')
+    expect(branchCommits[0].changes[2].mode).toEqual('100644')
+    expect(branchCommits[0].changes[2].path).toEqual(UNTRACKED_FILE)
+    expect(branchCommits[0].changes[2].status).toEqual('A')
   })
 
   it('tests buildBranchCommits with addition and deletion', async () => {
@@ -272,11 +276,15 @@ describe('create-or-update-branch tests', () => {
     expect(branchCommits.length).toEqual(1)
     expect(branchCommits[0].subject).toEqual('Test changes')
     expect(branchCommits[0].changes.length).toEqual(3)
-    expect(branchCommits[0].changes).toEqual([
-      {mode: '100644', path: TRACKED_FILE, status: 'D'},
-      {mode: '100644', path: UNTRACKED_FILE, status: 'A'},
-      {mode: '100644', path: TRACKED_FILE_NEW_PATH, status: 'A'}
-    ])
+    expect(branchCommits[0].changes[0].mode).toEqual('100644')
+    expect(branchCommits[0].changes[0].path).toEqual(TRACKED_FILE)
+    expect(branchCommits[0].changes[0].status).toEqual('D')
+    expect(branchCommits[0].changes[1].mode).toEqual('100644')
+    expect(branchCommits[0].changes[1].path).toEqual(UNTRACKED_FILE)
+    expect(branchCommits[0].changes[1].status).toEqual('A')
+    expect(branchCommits[0].changes[2].mode).toEqual('100644')
+    expect(branchCommits[0].changes[2].path).toEqual(TRACKED_FILE_NEW_PATH)
+    expect(branchCommits[0].changes[2].status).toEqual('A')
   })
 
   it('tests buildBranchCommits with multiple commits', async () => {
@@ -294,10 +302,13 @@ describe('create-or-update-branch tests', () => {
       expect(branchCommits[i].subject).toEqual(`Test changes ${i}`)
       expect(branchCommits[i].changes.length).toEqual(2)
       const untrackedFileStatus = i == 0 ? 'A' : 'M'
-      expect(branchCommits[i].changes).toEqual([
-        {mode: '100644', path: TRACKED_FILE, status: 'M'},
-        {mode: '100644', path: UNTRACKED_FILE, status: untrackedFileStatus}
-      ])
+
+      expect(branchCommits[i].changes[0].mode).toEqual('100644')
+      expect(branchCommits[i].changes[0].path).toEqual(TRACKED_FILE)
+      expect(branchCommits[i].changes[0].status).toEqual('M')
+      expect(branchCommits[i].changes[1].mode).toEqual('100644')
+      expect(branchCommits[i].changes[1].path).toEqual(UNTRACKED_FILE)
+      expect(branchCommits[i].changes[1].status).toEqual(untrackedFileStatus)
     }
   })
 
