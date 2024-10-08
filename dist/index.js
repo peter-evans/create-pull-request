@@ -62110,7 +62110,10 @@ function throttling(octokit, octokitOptions) {
   if (!enabled) {
     return {};
   }
-  const common = { connection, timeout };
+  const common = { timeout };
+  if (typeof connection !== "undefined") {
+    common.connection = connection;
+  }
   if (groups.global == null) {
     createGroups(Bottleneck, common);
   }
@@ -62151,7 +62154,7 @@ function throttling(octokit, octokitOptions) {
     const [state2, request, options] = info.args;
     const { pathname } = new URL(options.url, "http://github.test");
     const shouldRetryGraphQL = pathname.startsWith("/graphql") && error.status !== 401;
-    if (!(shouldRetryGraphQL || error.status === 403)) {
+    if (!(shouldRetryGraphQL || error.status === 403 || error.status === 429)) {
       return;
     }
     const retryCount = ~~request.retryCount;
