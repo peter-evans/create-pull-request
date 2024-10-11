@@ -255,6 +255,7 @@ export async function createOrUpdateBranch(
       }
     }
     // Reset the temp branch to the working index
+    // Fix is to change to temp branch instead of recreating
     await git.checkout(tempBranch)
     // Reset the base
     await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
