@@ -37,7 +37,7 @@
     "@octokit/plugin-throttling": "^9.3.2",
     "p-limit": "^6.1.0",
     "proxy-from-env": "^1.1.0",
-    "undici": "^6.19.8",
+    "undici": "^6.20.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
