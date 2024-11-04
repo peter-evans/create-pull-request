@@ -35,9 +35,9 @@
     "@octokit/plugin-paginate-rest": "^11.3.5",
     "@octokit/plugin-rest-endpoint-methods": "^13.2.6",
     "@octokit/plugin-throttling": "^9.3.2",
+    "node-fetch-native": "^1.6.4",
     "p-limit": "^6.1.0",
     "proxy-from-env": "^1.1.0",
-    "undici": "^6.20.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -58,6 +58,7 @@
     "js-yaml": "^4.1.0",
     "prettier": "^3.3.3",
     "ts-jest": "^29.2.5",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "undici": "^6.20.1"
   }
 }
