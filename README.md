@@ -99,7 +99,7 @@ Other token options:
 #### branch-token
 
 The action first creates a branch, and then creates a pull request for the branch.
-For some rare use cases it can be useful, or even neccessary, to use different tokens for these operations.
+For some rare use cases it can be useful, or even necessary, to use different tokens for these operations.
 It is not advisable to use this input unless you know you need to.
 
 #### commit-message
