@@ -231,7 +231,7 @@ It will use their own fork to push code and create the pull request.
 
 1. Create a new GitHub user and login.
 2. Fork the repository that you will be creating pull requests in.
-3. Create a Classic [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `repo` scope.
+3. Create a Classic [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) with `repo` [and `workflow`](https://github.com/peter-evans/create-pull-request/issues/3510) scopes.
 4. Logout and log back into your main user account.
 5. Add a secret to your repository containing the above PAT.
 6. As shown in the following example workflow, set the `push-to-fork` input to the full repository name of the fork.
