@@ -227,11 +227,9 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
           await git.stashPop()
         }
       } else {
-        await git.push([
-          '--force-with-lease',
-          branchRemoteName,
-          `${inputs.branch}:refs/heads/${inputs.branch}`
-        ])
+        await git.push(
+          result.wasRebased ? [`--force-with-lease`, branchRemoteName, inputs.branch] : []
+        )
       }
       core.endGroup()
     }

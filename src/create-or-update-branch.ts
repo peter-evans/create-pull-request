@@ -161,6 +161,7 @@ interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
+  wasRebased: boolean
   baseCommit: Commit
   headSha: string
   branchCommits: Commit[]
@@ -184,14 +185,30 @@ export async function createOrUpdateBranch(
     throw new Error(`When in 'detached HEAD' state, 'base' must be supplied.`)
   }
 
-  // If the base is not specified it is assumed to be the working base.
-  base = base ? base : workingBase
+  let action = 'none'
+  let hasDiffWithBase = false
   const baseRemote = 'origin'
 
-  // Save the working base changes to a temporary branch
-  const tempBranch = uuidv4()
-  await git.checkout(tempBranch, 'HEAD')
-  // Commit any uncommitted changes
+  if (workingBase != branch) {
+    if (!(await tryFetch(git, branchRemoteName, branch, 0))) {
+      // The pull request branch does not exist
+      core.info(`Pull request branch '${branch}' does not exist yet.`)
+      // Create the pull request branch
+      await git.checkout(branch, base)
+      action = 'created'
+      core.info(`Created branch '${branch}'`)
+      // Check if the pull request branch is ahead of the base
+    } else {
+      // The pull request branch exists
+      core.info(
+        `Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`
+      )
+      // Checkout the pull request branch
+      await git.checkout(branch)
+    }
+  }
+
+  // Commit any changes
   if (await git.isDirty(true, addPaths)) {
     core.info('Uncommitted changes found. Adding a commit.')
     const aopts = ['add']
@@ -215,129 +232,21 @@ export async function createOrUpdateBranch(
     }
   }
 
-  // Stash any uncommitted tracked and untracked changes
-  const stashed = await git.stashPush(['--include-untracked'])
-
-  // Reset the working base
-  // Commits made during the workflow will be removed
-  if (workingBaseType == WorkingBaseType.Branch) {
-    core.info(`Resetting working base branch '${workingBase}'`)
-    await git.checkout(workingBase)
-    await git.exec(['reset', '--hard', `${baseRemote}/${workingBase}`])
+  // Check if the pull request branch is behind the base branch
+  let wasRebased = false;
+  await git.exec(['fetch', baseRemote, base])
+  if (await isBehind(git, base, branch)) {
+    // Rebase the current branch onto the base branch
+    core.info(`Pull request branch '${branch}' is behind base branch '${base}'.`)
+    await git.exec(['pull', '--rebase', baseRemote, base])
+    core.info(`Rebased '${branch}' commits ontop of '${base}'.`)
+    wasRebased = true;
   }
 
-  // If the working base is not the base, rebase the temp branch commits
-  // This will also be true if the working base type is a commit
-  if (workingBase != base) {
-    core.info(
-      `Rebasing commits made to ${workingBaseType} '${workingBase}' on to base branch '${base}'`
-    )
-    const fetchArgs = ['--force']
-    if (branchRemoteName != 'fork') {
-      // If pushing to a fork we cannot shallow fetch otherwise the 'shallow update not allowed' error occurs
-      fetchArgs.push('--depth=1')
-    }
-    // Checkout the actual base
-    await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
-    await git.checkout(base)
-    // Cherrypick commits from the temporary branch starting from the working base
-    const commits = await git.revList(
-      [`${workingBase}..${tempBranch}`, '.'],
-      ['--reverse']
-    )
-    for (const commit of splitLines(commits)) {
-      const result = await git.cherryPick(
-        ['--strategy=recursive', '--strategy-option=theirs', commit],
-        true
-      )
-      if (result.exitCode != 0 && !result.stderr.includes(CHERRYPICK_EMPTY)) {
-        throw new Error(`Unexpected error: ${result.stderr}`)
-      }
-    }
-    // Reset the temp branch to the working index
-    await git.checkout(tempBranch, 'HEAD')
-    // Reset the base
-    await git.fetch([`${base}:${base}`], baseRemote, fetchArgs)
-  }
+  hasDiffWithBase = await isAhead(git, base, branch)
 
-  // Determine the fetch depth for the pull request branch (best effort)
-  const tempBranchCommitsAhead = await commitsAhead(git, base, tempBranch)
-  const fetchDepth =
-    tempBranchCommitsAhead > 0
-      ? tempBranchCommitsAhead + FETCH_DEPTH_MARGIN
-      : FETCH_DEPTH_MARGIN
-
-  let action = 'none'
-  let hasDiffWithBase = false
-
-  // Try to fetch the pull request branch
-  if (!(await tryFetch(git, branchRemoteName, branch, fetchDepth))) {
-    // The pull request branch does not exist
-    core.info(`Pull request branch '${branch}' does not exist yet.`)
-    // Create the pull request branch
-    await git.checkout(branch, tempBranch)
-    // Check if the pull request branch is ahead of the base
-    hasDiffWithBase = await isAhead(git, base, branch)
-    if (hasDiffWithBase) {
-      action = 'created'
-      core.info(`Created branch '${branch}'`)
-    } else {
-      core.info(
-        `Branch '${branch}' is not ahead of base '${base}' and will not be created`
-      )
-    }
-  } else {
-    // The pull request branch exists
-    core.info(
-      `Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`
-    )
-    // Checkout the pull request branch
-    await git.checkout(branch)
-
-    // Reset the branch if one of the following conditions is true.
-    // - If the branch differs from the recreated temp branch.
-    // - If the number of commits ahead of the base branch differs between the branch and
-    //   temp branch. This catches a case where the base branch has been force pushed to
-    //   a new commit.
-    // - If the recreated temp branch is not ahead of the base. This means there will be
-    //   no pull request diff after the branch is reset. This will reset any undeleted
-    //   branches after merging. In particular, it catches a case where the branch was
-    //   squash merged but not deleted. We need to reset to make sure it doesn't appear
-    //   to have a diff with the base due to different commits for the same changes.
-    // - If the diff of the commits ahead of the base branch differs between the branch and
-    //   temp branch. This catches a case where changes have been partially merged to the
-    //   base. The overall diff is the same, but the branch needs to be rebased to show
-    //   the correct diff.
-    //
-    // For changes on base this reset is equivalent to a rebase of the pull request branch.
-    const branchCommitsAhead = await commitsAhead(git, base, branch)
-    if (
-      (await git.hasDiff([`${branch}..${tempBranch}`])) ||
-      branchCommitsAhead != tempBranchCommitsAhead ||
-      !(tempBranchCommitsAhead > 0) || // !isAhead
-      (await commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))
-    ) {
-      core.info(`Resetting '${branch}'`)
-      // Alternatively, git switch -C branch tempBranch
-      await git.checkout(branch, tempBranch)
-    }
-
-    // Check if the pull request branch has been updated
-    // If the branch was reset or updated it will be ahead
-    // It may be behind if a reset now results in no diff with the base
-    if (!(await isEven(git, `${branchRemoteName}/${branch}`, branch))) {
-      action = 'updated'
-      core.info(`Updated branch '${branch}'`)
-    } else {
-      action = 'not-updated'
-      core.info(
-        `Branch '${branch}' is even with its remote and will not be updated`
-      )
-    }
-
-    // Check if the pull request branch is ahead of the base
-    hasDiffWithBase = await isAhead(git, base, branch)
-  }
+  // If the base is not specified it is assumed to be the working base.
+  base = base ? base : workingBase
 
   // Get the base and head SHAs
   const baseSha = await git.revParse(base)
@@ -346,25 +255,16 @@ export async function createOrUpdateBranch(
 
   let branchCommits: Commit[] = []
   if (hasDiffWithBase) {
+    action = 'updated'
     // Build the branch commits
     branchCommits = await buildBranchCommits(git, base, branch)
-  }
-
-  // Delete the temporary branch
-  await git.exec(['branch', '--delete', '--force', tempBranch])
-
-  // Checkout the working base to leave the local repository as it was found
-  await git.checkout(workingBase)
-
-  // Restore any stashed changes
-  if (stashed) {
-    await git.stashPop()
   }
 
   return {
     action: action,
     base: base,
     hasDiffWithBase: hasDiffWithBase,
+    wasRebased: wasRebased,
     baseCommit: baseCommit,
     headSha: headSha,
     branchCommits: branchCommits
