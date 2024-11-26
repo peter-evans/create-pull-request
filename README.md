@@ -16,7 +16,6 @@ Create Pull Request action will:
    - commits made during the workflow that have not been pushed
 2. Commit all changes to a new branch, or update an existing pull request branch.
 3. Create or update a pull request to merge the branch into the base&mdash;the branch checked out in the workflow.
-   or update an existing open pull request for that branch.
 
 ## Documentation
 
