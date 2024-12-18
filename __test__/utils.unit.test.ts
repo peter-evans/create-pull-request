@@ -37,6 +37,40 @@ describe('utils tests', () => {
     expect(array[2]).toEqual('team3')
   })
 
+  test('getTitleBodyFromCommitMessage works for single-line', async () => {
+    const {title, body} = utils.getTitleBodyFromCommitMessage(
+      'This is a commit message'
+    )
+    expect(title).toEqual('This is a commit message')
+    expect(body).toEqual('')
+  })
+
+  test('getTitleBodyFromCommitMessage works for multi-line', async () => {
+    const {title, body} = utils.getTitleBodyFromCommitMessage(
+      'This is a commit message\n' +
+        'That is not properly formatted with blank line\n' +
+        'between title and body'
+    )
+    expect(title).toEqual('This is a commit message')
+    expect(body).toEqual(
+      'That is not properly formatted with blank line\n' +
+        'between title and body'
+    )
+  })
+
+  test('getTitleBodyFromCommitMessage works for title with body', async () => {
+    const {title, body} = utils.getTitleBodyFromCommitMessage(
+      'This is a commit message\n' +
+        '\n' +
+        'That IS properly formatted with blank line\n' +
+        'between title and body'
+    )
+    expect(title).toEqual('This is a commit message')
+    expect(body).toEqual(
+      'That IS properly formatted with blank line\n' + 'between title and body'
+    )
+  })
+
   test('getRepoPath successfully returns the path to the repository', async () => {
     expect(utils.getRepoPath()).toEqual(process.env['GITHUB_WORKSPACE'])
     expect(utils.getRepoPath('foo')).toEqual(

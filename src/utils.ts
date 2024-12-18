@@ -26,6 +26,18 @@ export function stripOrgPrefixFromTeams(teams: string[]): string[] {
   })
 }
 
+export function getTitleBodyFromCommitMessage(commitMessage: string): {
+  title: string
+  body: string
+} {
+  const lines = commitMessage.split('\n')
+
+  return {
+    title: lines[0] ?? '',
+    body: lines.slice(1).join('\n').trim()
+  }
+}
+
 export function getRepoPath(relativePath?: string): string {
   let githubWorkspacePath = process.env['GITHUB_WORKSPACE']
   if (!githubWorkspacePath) {

@@ -44,6 +44,18 @@ async function run(): Promise<void> {
     if (!inputs.token) {
       throw new Error(`Input 'token' not supplied. Unable to continue.`)
     }
+    if (
+      inputs.commitMessage &&
+      inputs.commitMessage !== '' &&
+      inputs.body === '' &&
+      inputs.bodyPath === ''
+    ) {
+      const {title, body} = utils.getTitleBodyFromCommitMessage(
+        inputs.commitMessage
+      )
+      inputs.title = title
+      inputs.body = body
+    }
     if (!inputs.branchToken) {
       inputs.branchToken = inputs.token
     }
