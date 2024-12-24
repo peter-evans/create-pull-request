@@ -35664,7 +35664,8 @@ __nccwpck_require__.r(__webpack_exports__);
 
 // EXPORTS
 __nccwpck_require__.d(__webpack_exports__, {
-  "default": () => (/* binding */ pLimit)
+  "default": () => (/* binding */ pLimit),
+  limitFunction: () => (/* binding */ limitFunction)
 });
 
 ;// CONCATENATED MODULE: ./node_modules/yocto-queue/index.js
@@ -35838,6 +35839,13 @@ function pLimit(concurrency) {
 	});
 
 	return generator;
+}
+
+function limitFunction(function_, option) {
+	const {concurrency} = option;
+	const limit = pLimit(concurrency);
+
+	return (...arguments_) => limit(() => function_(...arguments_));
 }
 
 function validateConcurrency(concurrency) {
