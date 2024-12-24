@@ -36,7 +36,7 @@
     "@octokit/plugin-rest-endpoint-methods": "^13.2.6",
     "@octokit/plugin-throttling": "^9.3.2",
     "node-fetch-native": "^1.6.4",
-    "p-limit": "^6.1.0",
+    "p-limit": "^6.2.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
