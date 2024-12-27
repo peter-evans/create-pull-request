@@ -157,6 +157,8 @@ export class GitCommandManager {
   async getCommit(ref: string): Promise<Commit> {
     const endOfBody = '###EOB###'
     const output = await this.exec([
+      '-c',
+      'core.quotePath=false',
       'show',
       '--raw',
       '--cc',
