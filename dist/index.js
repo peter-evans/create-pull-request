@@ -772,6 +772,8 @@ class GitCommandManager {
         return __awaiter(this, void 0, void 0, function* () {
             const endOfBody = '###EOB###';
             const output = yield this.exec([
+                '-c',
+                'core.quotePath=false',
                 'show',
                 '--raw',
                 '--cc',
