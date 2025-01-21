@@ -22,7 +22,7 @@
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Using a markdown template](#using-a-markdown-template)
   - [Debugging GitHub Actions](#debugging-github-actions)
-
+  - [Show an annotation message for a created pull request](#show-an-annotation-message-for-a-created-pull-request)
 
 ## Use case: Create a pull request to update X on push
 
@@ -444,7 +444,7 @@ An `on: repository_dispatch` workflow can be triggered from another workflow wit
 This is a pattern that lends itself to automated code linting and fixing. A pull request can be created to fix or modify something during an `on: pull_request` workflow. The pull request containing the fix will be raised with the original pull request as the base. This can be then be merged to update the original pull request and pass any required tests.
 
 Note that due to [token restrictions on public repository forks](https://docs.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token#permissions-for-the-github_token), workflows for this use case do not work for pull requests raised from forks.
-Private repositories can be configured to [enable workflows](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) from forks to run without restriction. 
+Private repositories can be configured to [enable workflows](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) from forks to run without restriction.
 
 ### autopep8
 
@@ -503,7 +503,7 @@ For workflows using `on: push` you may want to ignore push events for tags and o
 on:
   push:
     branches:
-      - '**' 
+      - '**'
 ```
 
 If you have a workflow that contains jobs to handle push events on branches as well as tags, you can make sure that the job where you use `create-pull-request` action only executes when `github.ref` is a branch by using an `if` condition as follows.
@@ -611,4 +611,31 @@ To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in th
         env:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
+```
+
+### Show an annotation message for a created pull request
+
+Showing an annotation message for a created or updated pull request allows you to confirm the pull request easily, such as by visiting the link. This can be achieved by adding a step that uses the [`notice` workflow command](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions?tool=bash#setting-a-notice-message).
+
+For example:
+
+```yml
+- name: Create Pull Request
+  id: cpr
+  uses: peter-evans/create-pull-request@v7
+
+- name: Show message for created Pull Request
+  if: ${{ steps.cpr.outputs.pull-request-url && steps.cpr.outputs.pull-request-operation != 'none' }}
+  shell: bash
+  env:
+    PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+    PR_OPERATION: ${{ steps.cpr.outputs.pull-request-operation }}
+  run: |
+    echo "::notice::${PR_URL} was ${PR_OPERATION}."
+```
+
+In this example, when a pull request is created, you will be able to see the following message on an action run page (e.g., `/actions/runs/12812393039`):
+
+```
+https://github.com/peter-evans/create-pull-request/pull/1 was created.
 ```
