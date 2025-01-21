@@ -22,7 +22,7 @@
   - [Dynamic configuration using variables](#dynamic-configuration-using-variables)
   - [Using a markdown template](#using-a-markdown-template)
   - [Debugging GitHub Actions](#debugging-github-actions)
-
+  - [Show an annotation message for a created pull request](#show-an-annotation-message-for-a-created-pull-request)
 
 ## Use case: Create a pull request to update X on push
 
@@ -611,4 +611,31 @@ To enable step debug logging set the secret `ACTIONS_STEP_DEBUG` to `true` in th
         env:
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
         run: echo "$MATRIX_CONTEXT"
+```
+
+### Show an annotation message for a created pull request
+
+Showing an annotation message for a created or updated pull request allows you to confirm the pull request easily, such as by visiting the link. This can be achieved by adding a step that uses the [`notice` workflow command](https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/workflow-commands-for-github-actions?tool=bash#setting-a-notice-message).
+
+For example:
+
+```yml
+- name: Create Pull Request
+  id: cpr
+  uses: peter-evans/create-pull-request@v7
+
+- name: Show message for created Pull Request
+  if: ${{ steps.cpr.outputs.pull-request-url && steps.cpr.outputs.pull-request-operation != 'none' }}
+  shell: bash
+  env:
+    PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+    PR_OPERATION: ${{ steps.cpr.outputs.pull-request-operation }}
+  run: |
+    echo "::notice::${PR_URL} was ${PR_OPERATION}."
+```
+
+In this example, when a pull request is created, you will be able to see the following message on an action run page (e.g., `/actions/runs/12812393039`):
+
+```
+https://github.com/peter-evans/create-pull-request/pull/1 was created.
 ```
