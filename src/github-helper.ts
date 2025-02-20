@@ -272,7 +272,7 @@ export class GitHubHelper {
             let sha: string | null = null
             if (status === 'A' || status === 'M') {
               try {
-                const {data: blob} = await blobCreationLimit(() =>
+                const {data: blob} = await blobCreationLimit(async () =>
                   this.octokit.rest.git.createBlob({
                     ...repository,
                     content: await git.showFileAtRefBase64(commit.sha, path),
