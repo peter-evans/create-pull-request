@@ -21,6 +21,10 @@ export type Commit = {
   unparsedChanges: string[]
 }
 
+export type ExecOpts = {
+  allowAllExitCodes?: boolean,
+}
+
 export class GitCommandManager {
   private gitPath: string
   private workingDirectory: string
@@ -66,7 +70,7 @@ export class GitCommandManager {
       args.push(...options)
     }
 
-    return await this.exec(args, allowAllExitCodes)
+    return await this.exec(args, {allowAllExitCodes: allowAllExitCodes})
   }
 
   async commit(
@@ -82,7 +86,7 @@ export class GitCommandManager {
       args.push(...options)
     }
 
-    return await this.exec(args, allowAllExitCodes)
+    return await this.exec(args, {allowAllExitCodes: allowAllExitCodes})
   }
 
   async config(
@@ -113,7 +117,7 @@ export class GitCommandManager {
         configKey,
         configValue
       ],
-      true
+      {allowAllExitCodes: true}
     )
     return output.exitCode === 0
   }
@@ -222,7 +226,7 @@ export class GitCommandManager {
     if (options) {
       args.push(...options)
     }
-    const output = await this.exec(args, true)
+    const output = await this.exec(args, {allowAllExitCodes: true})
     return output.exitCode === 1
   }
 
@@ -332,7 +336,7 @@ export class GitCommandManager {
         configKey,
         configValue
       ],
-      true
+      {allowAllExitCodes: true}
     )
     return output.exitCode === 0
   }
@@ -340,7 +344,7 @@ export class GitCommandManager {
   async tryGetRemoteUrl(): Promise<string> {
     const output = await this.exec(
       ['config', '--local', '--get', 'remote.origin.url'],
-      true
+      {allowAllExitCodes: true}
     )
 
     if (output.exitCode !== 0) {
@@ -355,7 +359,7 @@ export class GitCommandManager {
     return stdout
   }
 
-  async exec(args: string[], allowAllExitCodes = false): Promise<GitOutput> {
+  async exec(args: string[], opts: ExecOpts = {}): Promise<GitOutput> {
     const result = new GitOutput()
 
     const env = {}
@@ -369,7 +373,7 @@ export class GitCommandManager {
     const options = {
       cwd: this.workingDirectory,
       env,
-      ignoreReturnCode: allowAllExitCodes,
+      ignoreReturnCode: opts.allowAllExitCodes ?? false,
       listeners: {
         stdout: (data: Buffer) => {
           stdout.push(data.toString())
