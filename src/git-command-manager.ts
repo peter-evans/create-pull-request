@@ -360,7 +360,7 @@ export class GitCommandManager {
     return stdout
   }
 
-  async exec(args: string[], opts: ExecOpts = {}): Promise<GitOutput> {
+  async exec(args: string[], { encoding = 'utf8', allowAllExitCodes = false }: ExecOpts = {}): Promise<GitOutput> {
     const result = new GitOutput()
 
     const env = {}
@@ -368,26 +368,30 @@ export class GitCommandManager {
       env[key] = process.env[key]
     }
 
-    const stdout: string[] = []
-    const stderr: string[] = []
+    const stdout: Buffer[] = []
+    let stdoutLength = 0
+    const stderr: Buffer[] = []
+    let stderrLength = 0
 
     const options = {
       cwd: this.workingDirectory,
       env,
-      ignoreReturnCode: opts.allowAllExitCodes ?? false,
+      ignoreReturnCode: allowAllExitCodes,
       listeners: {
         stdout: (data: Buffer) => {
-          stdout.push(data.toString(opts.encoding ?? 'utf8'))
+          stdout.push(data)
+          stdoutLength += data.length
         },
         stderr: (data: Buffer) => {
-          stderr.push(data.toString(opts.encoding ?? 'utf8'))
+          stderr.push(data)
+          stderrLength += data.length
         }
       }
     }
 
     result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options)
-    result.stdout = stdout.join('')
-    result.stderr = stderr.join('')
+    result.stdout = Buffer.concat(stdout, stdoutLength).toString(encoding)
+    result.stderr = Buffer.concat(stderr, stderrLength).toString(encoding)
     return result
   }
 }

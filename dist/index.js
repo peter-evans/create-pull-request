@@ -964,33 +964,34 @@ class GitCommandManager {
         });
     }
     exec(args_1) {
-        return __awaiter(this, arguments, void 0, function* (args, opts = {}) {
-            var _a;
+        return __awaiter(this, arguments, void 0, function* (args, { encoding = 'utf8', allowAllExitCodes = false } = {}) {
             const result = new GitOutput();
             const env = {};
             for (const key of Object.keys(process.env)) {
                 env[key] = process.env[key];
             }
             const stdout = [];
+            let stdoutLength = 0;
             const stderr = [];
+            let stderrLength = 0;
             const options = {
                 cwd: this.workingDirectory,
                 env,
-                ignoreReturnCode: (_a = opts.allowAllExitCodes) !== null && _a !== void 0 ? _a : false,
+                ignoreReturnCode: allowAllExitCodes,
                 listeners: {
                     stdout: (data) => {
-                        var _a;
-                        stdout.push(data.toString((_a = opts.encoding) !== null && _a !== void 0 ? _a : 'utf8'));
+                        stdout.push(data);
+                        stdoutLength += data.length;
                     },
                     stderr: (data) => {
-                        var _a;
-                        stderr.push(data.toString((_a = opts.encoding) !== null && _a !== void 0 ? _a : 'utf8'));
+                        stderr.push(data);
+                        stderrLength += data.length;
                     }
                 }
             };
             result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
-            result.stdout = stdout.join('');
-            result.stderr = stderr.join('');
+            result.stdout = Buffer.concat(stdout, stdoutLength).toString(encoding);
+            result.stderr = Buffer.concat(stderr, stderrLength).toString(encoding);
             return result;
         });
     }
