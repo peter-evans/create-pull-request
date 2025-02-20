@@ -278,6 +278,12 @@ export class GitCommandManager {
     return output.stdout.trim()
   }
 
+  async showFileAtRef(ref: string, path: string): Promise<string> {
+    const args = ['show', `${ref}:${path}`]
+    const output = await this.exec(args)
+    return output.stdout.trim()
+  }
+
   async stashPush(options?: string[]): Promise<boolean> {
     const args = ['stash', 'push']
     if (options) {
