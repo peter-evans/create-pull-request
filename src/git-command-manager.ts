@@ -22,7 +22,8 @@ export type Commit = {
 }
 
 export type ExecOpts = {
-  allowAllExitCodes?: boolean,
+  allowAllExitCodes?: boolean
+  encoding?: 'utf8' | 'base64'
 }
 
 export class GitCommandManager {
@@ -282,9 +283,9 @@ export class GitCommandManager {
     return output.stdout.trim()
   }
 
-  async showFileAtRef(ref: string, path: string): Promise<string> {
+  async showFileAtRefBase64(ref: string, path: string): Promise<string> {
     const args = ['show', `${ref}:${path}`]
-    const output = await this.exec(args)
+    const output = await this.exec(args, {encoding: 'base64'})
     return output.stdout.trim()
   }
 
@@ -376,10 +377,10 @@ export class GitCommandManager {
       ignoreReturnCode: opts.allowAllExitCodes ?? false,
       listeners: {
         stdout: (data: Buffer) => {
-          stdout.push(data.toString())
+          stdout.push(data.toString(opts.encoding ?? 'utf8'))
         },
         stderr: (data: Buffer) => {
-          stderr.push(data.toString())
+          stderr.push(data.toString(opts.encoding ?? 'utf8'))
         }
       }
     }

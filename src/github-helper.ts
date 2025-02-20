@@ -275,7 +275,7 @@ export class GitHubHelper {
                 const {data: blob} = await blobCreationLimit(() =>
                   this.octokit.rest.git.createBlob({
                     ...repository,
-                    content: git.showFileAtRef(commit.sha, path),
+                    content: await git.showFileAtRefBase64(commit.sha, path),
                     encoding: 'base64'
                   })
                 )
