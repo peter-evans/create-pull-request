@@ -21,6 +21,11 @@ export type Commit = {
   unparsedChanges: string[]
 }
 
+export type ExecOpts = {
+  allowAllExitCodes?: boolean
+  encoding?: 'utf8' | 'base64'
+}
+
 export class GitCommandManager {
   private gitPath: string
   private workingDirectory: string
@@ -66,7 +71,7 @@ export class GitCommandManager {
       args.push(...options)
     }
 
-    return await this.exec(args, allowAllExitCodes)
+    return await this.exec(args, {allowAllExitCodes: allowAllExitCodes})
   }
 
   async commit(
@@ -82,7 +87,7 @@ export class GitCommandManager {
       args.push(...options)
     }
 
-    return await this.exec(args, allowAllExitCodes)
+    return await this.exec(args, {allowAllExitCodes: allowAllExitCodes})
   }
 
   async config(
@@ -113,7 +118,7 @@ export class GitCommandManager {
         configKey,
         configValue
       ],
-      true
+      {allowAllExitCodes: true}
     )
     return output.exitCode === 0
   }
@@ -222,7 +227,7 @@ export class GitCommandManager {
     if (options) {
       args.push(...options)
     }
-    const output = await this.exec(args, true)
+    const output = await this.exec(args, {allowAllExitCodes: true})
     return output.exitCode === 1
   }
 
@@ -278,6 +283,12 @@ export class GitCommandManager {
     return output.stdout.trim()
   }
 
+  async showFileAtRefBase64(ref: string, path: string): Promise<string> {
+    const args = ['show', `${ref}:${path}`]
+    const output = await this.exec(args, {encoding: 'base64'})
+    return output.stdout.trim()
+  }
+
   async stashPush(options?: string[]): Promise<boolean> {
     const args = ['stash', 'push']
     if (options) {
@@ -326,7 +337,7 @@ export class GitCommandManager {
         configKey,
         configValue
       ],
-      true
+      {allowAllExitCodes: true}
     )
     return output.exitCode === 0
   }
@@ -334,7 +345,7 @@ export class GitCommandManager {
   async tryGetRemoteUrl(): Promise<string> {
     const output = await this.exec(
       ['config', '--local', '--get', 'remote.origin.url'],
-      true
+      {allowAllExitCodes: true}
     )
 
     if (output.exitCode !== 0) {
@@ -349,7 +360,10 @@ export class GitCommandManager {
     return stdout
   }
 
-  async exec(args: string[], allowAllExitCodes = false): Promise<GitOutput> {
+  async exec(
+    args: string[],
+    {encoding = 'utf8', allowAllExitCodes = false}: ExecOpts = {}
+  ): Promise<GitOutput> {
     const result = new GitOutput()
 
     const env = {}
@@ -357,8 +371,10 @@ export class GitCommandManager {
       env[key] = process.env[key]
     }
 
-    const stdout: string[] = []
-    const stderr: string[] = []
+    const stdout: Buffer[] = []
+    let stdoutLength = 0
+    const stderr: Buffer[] = []
+    let stderrLength = 0
 
     const options = {
       cwd: this.workingDirectory,
@@ -366,17 +382,19 @@ export class GitCommandManager {
       ignoreReturnCode: allowAllExitCodes,
       listeners: {
         stdout: (data: Buffer) => {
-          stdout.push(data.toString())
+          stdout.push(data)
+          stdoutLength += data.length
         },
         stderr: (data: Buffer) => {
-          stderr.push(data.toString())
+          stderr.push(data)
+          stderrLength += data.length
         }
       }
     }
 
     result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options)
-    result.stdout = stdout.join('')
-    result.stderr = stderr.join('')
+    result.stdout = Buffer.concat(stdout, stdoutLength).toString(encoding)
+    result.stderr = Buffer.concat(stderr, stderrLength).toString(encoding)
     return result
   }
 }

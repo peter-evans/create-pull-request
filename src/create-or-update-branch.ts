@@ -19,7 +19,7 @@ export async function getWorkingBaseAndType(
 ): Promise<[string, WorkingBaseType]> {
   const symbolicRefResult = await git.exec(
     ['symbolic-ref', 'HEAD', '--short'],
-    true
+    {allowAllExitCodes: true}
   )
   if (symbolicRefResult.exitCode == 0) {
     // A ref is checked out
@@ -200,7 +200,7 @@ export async function createOrUpdateBranch(
     } else {
       aopts.push('-A')
     }
-    await git.exec(aopts, true)
+    await git.exec(aopts, {allowAllExitCodes: true})
     const popts = ['-m', commitMessage]
     if (signoff) {
       popts.push('--signoff')

@@ -211,6 +211,7 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
         const stashed = await git.stashPush(['--include-untracked'])
         await git.checkout(inputs.branch)
         const pushSignedCommitsResult = await ghBranch.pushSignedCommits(
+          git,
           result.branchCommits,
           result.baseCommit,
           repoPath,

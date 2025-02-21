@@ -67,7 +67,7 @@ var WorkingBaseType;
 })(WorkingBaseType || (exports.WorkingBaseType = WorkingBaseType = {}));
 function getWorkingBaseAndType(git) {
     return __awaiter(this, void 0, void 0, function* () {
-        const symbolicRefResult = yield git.exec(['symbolic-ref', 'HEAD', '--short'], true);
+        const symbolicRefResult = yield git.exec(['symbolic-ref', 'HEAD', '--short'], { allowAllExitCodes: true });
         if (symbolicRefResult.exitCode == 0) {
             // A ref is checked out
             return [symbolicRefResult.stdout.trim(), WorkingBaseType.Branch];
@@ -194,7 +194,7 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             else {
                 aopts.push('-A');
             }
-            yield git.exec(aopts, true);
+            yield git.exec(aopts, { allowAllExitCodes: true });
             const popts = ['-m', commitMessage];
             if (signoff) {
                 popts.push('--signoff');
@@ -517,7 +517,7 @@ function createPullRequest(inputs) {
                     // Create signed commits via the GitHub API
                     const stashed = yield git.stashPush(['--include-untracked']);
                     yield git.checkout(inputs.branch);
-                    const pushSignedCommitsResult = yield ghBranch.pushSignedCommits(result.branchCommits, result.baseCommit, repoPath, branchRepository, inputs.branch);
+                    const pushSignedCommitsResult = yield ghBranch.pushSignedCommits(git, result.branchCommits, result.baseCommit, repoPath, branchRepository, inputs.branch);
                     outputs.set('pull-request-head-sha', pushSignedCommitsResult.sha);
                     outputs.set('pull-request-commits-verified', pushSignedCommitsResult.verified.toString());
                     yield git.checkout('-');
@@ -704,7 +704,7 @@ class GitCommandManager {
             if (options) {
                 args.push(...options);
             }
-            return yield this.exec(args, allowAllExitCodes);
+            return yield this.exec(args, { allowAllExitCodes: allowAllExitCodes });
         });
     }
     commit(options_1) {
@@ -716,7 +716,7 @@ class GitCommandManager {
             if (options) {
                 args.push(...options);
             }
-            return yield this.exec(args, allowAllExitCodes);
+            return yield this.exec(args, { allowAllExitCodes: allowAllExitCodes });
         });
     }
     config(configKey, configValue, globalConfig, add) {
@@ -738,7 +738,7 @@ class GitCommandManager {
                 '--get-regexp',
                 configKey,
                 configValue
-            ], true);
+            ], { allowAllExitCodes: true });
             return output.exitCode === 0;
         });
     }
@@ -835,7 +835,7 @@ class GitCommandManager {
             if (options) {
                 args.push(...options);
             }
-            const output = yield this.exec(args, true);
+            const output = yield this.exec(args, { allowAllExitCodes: true });
             return output.exitCode === 1;
         });
     }
@@ -892,6 +892,13 @@ class GitCommandManager {
             return output.stdout.trim();
         });
     }
+    showFileAtRefBase64(ref, path) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['show', `${ref}:${path}`];
+            const output = yield this.exec(args, { encoding: 'base64' });
+            return output.stdout.trim();
+        });
+    }
     stashPush(options) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['stash', 'push'];
@@ -939,13 +946,13 @@ class GitCommandManager {
                 '--unset',
                 configKey,
                 configValue
-            ], true);
+            ], { allowAllExitCodes: true });
             return output.exitCode === 0;
         });
     }
     tryGetRemoteUrl() {
         return __awaiter(this, void 0, void 0, function* () {
-            const output = yield this.exec(['config', '--local', '--get', 'remote.origin.url'], true);
+            const output = yield this.exec(['config', '--local', '--get', 'remote.origin.url'], { allowAllExitCodes: true });
             if (output.exitCode !== 0) {
                 return '';
             }
@@ -957,30 +964,34 @@ class GitCommandManager {
         });
     }
     exec(args_1) {
-        return __awaiter(this, arguments, void 0, function* (args, allowAllExitCodes = false) {
+        return __awaiter(this, arguments, void 0, function* (args, { encoding = 'utf8', allowAllExitCodes = false } = {}) {
             const result = new GitOutput();
             const env = {};
             for (const key of Object.keys(process.env)) {
                 env[key] = process.env[key];
             }
             const stdout = [];
+            let stdoutLength = 0;
             const stderr = [];
+            let stderrLength = 0;
             const options = {
                 cwd: this.workingDirectory,
                 env,
                 ignoreReturnCode: allowAllExitCodes,
                 listeners: {
                     stdout: (data) => {
-                        stdout.push(data.toString());
+                        stdout.push(data);
+                        stdoutLength += data.length;
                     },
                     stderr: (data) => {
-                        stderr.push(data.toString());
+                        stderr.push(data);
+                        stderrLength += data.length;
                     }
                 }
             };
             result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
-            result.stdout = stdout.join('');
-            result.stderr = stderr.join('');
+            result.stdout = Buffer.concat(stdout, stdoutLength).toString(encoding);
+            result.stderr = Buffer.concat(stderr, stderrLength).toString(encoding);
             return result;
         });
     }
@@ -1400,7 +1411,7 @@ class GitHubHelper {
             return pull;
         });
     }
-    pushSignedCommits(branchCommits, baseCommit, repoPath, branchRepository, branch) {
+    pushSignedCommits(git, branchCommits, baseCommit, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
             let headCommit = {
                 sha: baseCommit.sha,
@@ -1408,13 +1419,13 @@ class GitHubHelper {
                 verified: false
             };
             for (const commit of branchCommits) {
-                headCommit = yield this.createCommit(commit, headCommit, repoPath, branchRepository);
+                headCommit = yield this.createCommit(git, commit, headCommit, repoPath, branchRepository);
             }
             yield this.createOrUpdateRef(branchRepository, branch, headCommit.sha);
             return headCommit;
         });
     }
-    createCommit(commit, parentCommit, repoPath, branchRepository) {
+    createCommit(git, commit, parentCommit, repoPath, branchRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
             // In the case of an empty commit, the tree references the parent's tree
@@ -1436,7 +1447,9 @@ class GitHubHelper {
                         let sha = null;
                         if (status === 'A' || status === 'M') {
                             try {
-                                const { data: blob } = yield blobCreationLimit(() => this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: utils.readFileBase64([repoPath, path]), encoding: 'base64' })));
+                                const { data: blob } = yield blobCreationLimit(() => __awaiter(this, void 0, void 0, function* () {
+                                    return this.octokit.rest.git.createBlob(Object.assign(Object.assign({}, repository), { content: yield git.showFileAtRefBase64(commit.sha, path), encoding: 'base64' }));
+                                }));
                                 sha = blob.sha;
                             }
                             catch (error) {
@@ -1763,7 +1776,6 @@ exports.randomString = randomString;
 exports.parseDisplayNameEmail = parseDisplayNameEmail;
 exports.fileExistsSync = fileExistsSync;
 exports.readFile = readFile;
-exports.readFileBase64 = readFileBase64;
 exports.getErrorMessage = getErrorMessage;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
@@ -1852,15 +1864,6 @@ function fileExistsSync(path) {
 }
 function readFile(path) {
     return fs.readFileSync(path, 'utf-8');
-}
-function readFileBase64(pathParts) {
-    const resolvedPath = path.resolve(...pathParts);
-    if (fs.lstatSync(resolvedPath).isSymbolicLink()) {
-        return fs
-            .readlinkSync(resolvedPath, { encoding: 'buffer' })
-            .toString('base64');
-    }
-    return fs.readFileSync(resolvedPath).toString('base64');
 }
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 function hasErrorCode(error) {
