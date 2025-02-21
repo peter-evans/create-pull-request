@@ -360,7 +360,10 @@ export class GitCommandManager {
     return stdout
   }
 
-  async exec(args: string[], { encoding = 'utf8', allowAllExitCodes = false }: ExecOpts = {}): Promise<GitOutput> {
+  async exec(
+    args: string[],
+    {encoding = 'utf8', allowAllExitCodes = false}: ExecOpts = {}
+  ): Promise<GitOutput> {
     const result = new GitOutput()
 
     const env = {}
