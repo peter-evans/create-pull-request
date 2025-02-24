@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
-import {Commit} from './git-command-manager'
+import {Commit, GitCommandManager} from './git-command-manager'
 import {Octokit, OctokitOptions, throttleOptions} from './octokit-client'
 import pLimit from 'p-limit'
 import * as utils from './utils'
@@ -220,6 +220,7 @@ export class GitHubHelper {
   }
 
   async pushSignedCommits(
+    git: GitCommandManager,
     branchCommits: Commit[],
     baseCommit: Commit,
     repoPath: string,
@@ -233,6 +234,7 @@ export class GitHubHelper {
     }
     for (const commit of branchCommits) {
       headCommit = await this.createCommit(
+        git,
         commit,
         headCommit,
         repoPath,
@@ -244,6 +246,7 @@ export class GitHubHelper {
   }
 
   private async createCommit(
+    git: GitCommandManager,
     commit: Commit,
     parentCommit: CommitResponse,
     repoPath: string,
@@ -269,10 +272,10 @@ export class GitHubHelper {
             let sha: string | null = null
             if (status === 'A' || status === 'M') {
               try {
-                const {data: blob} = await blobCreationLimit(() =>
+                const {data: blob} = await blobCreationLimit(async () =>
                   this.octokit.rest.git.createBlob({
                     ...repository,
-                    content: utils.readFileBase64([repoPath, path]),
+                    content: await git.showFileAtRefBase64(commit.sha, path),
                     encoding: 'base64'
                   })
                 )
