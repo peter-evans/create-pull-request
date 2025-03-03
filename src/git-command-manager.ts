@@ -2,6 +2,7 @@ import * as exec from '@actions/exec'
 import * as io from '@actions/io'
 import * as utils from './utils'
 import * as path from 'path'
+import stream, {Writable} from 'stream'
 
 const tagsRefSpec = '+refs/tags/*:refs/tags/*'
 
@@ -24,6 +25,7 @@ export type Commit = {
 export type ExecOpts = {
   allowAllExitCodes?: boolean
   encoding?: 'utf8' | 'base64'
+  suppressGitCmdOutput?: boolean
 }
 
 export class GitCommandManager {
@@ -161,17 +163,20 @@ export class GitCommandManager {
 
   async getCommit(ref: string): Promise<Commit> {
     const endOfBody = '###EOB###'
-    const output = await this.exec([
-      '-c',
-      'core.quotePath=false',
-      'show',
-      '--raw',
-      '--cc',
-      '--no-renames',
-      '--no-abbrev',
-      `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
-      ref
-    ])
+    const output = await this.exec(
+      [
+        '-c',
+        'core.quotePath=false',
+        'show',
+        '--raw',
+        '--cc',
+        '--no-renames',
+        '--no-abbrev',
+        `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
+        ref
+      ],
+      {suppressGitCmdOutput: true}
+    )
     const lines = output.stdout.split('\n')
     const endOfBodyIndex = lines.lastIndexOf(endOfBody)
     const detailLines = lines.slice(0, endOfBodyIndex)
@@ -285,7 +290,10 @@ export class GitCommandManager {
 
   async showFileAtRefBase64(ref: string, path: string): Promise<string> {
     const args = ['show', `${ref}:${path}`]
-    const output = await this.exec(args, {encoding: 'base64'})
+    const output = await this.exec(args, {
+      encoding: 'base64',
+      suppressGitCmdOutput: true
+    })
     return output.stdout.trim()
   }
 
@@ -362,9 +370,18 @@ export class GitCommandManager {
 
   async exec(
     args: string[],
-    {encoding = 'utf8', allowAllExitCodes = false}: ExecOpts = {}
+    {
+      encoding = 'utf8',
+      allowAllExitCodes = false,
+      suppressGitCmdOutput = false
+    }: ExecOpts = {}
   ): Promise<GitOutput> {
     const result = new GitOutput()
+
+    if (process.env['CPR_SHOW_GIT_CMD_OUTPUT']) {
+      // debug mode overrides the suppressGitCmdOutput option
+      suppressGitCmdOutput = false
+    }
 
     const env = {}
     for (const key of Object.keys(process.env)) {
@@ -389,7 +406,9 @@ export class GitCommandManager {
           stderr.push(data)
           stderrLength += data.length
         }
-      }
+      },
+      outStream: outStreamHandler(process.stdout, suppressGitCmdOutput),
+      errStream: outStreamHandler(process.stderr, suppressGitCmdOutput)
     }
 
     result.exitCode = await exec.exec(`"${this.gitPath}"`, args, options)
@@ -403,4 +422,25 @@ class GitOutput {
   stdout = ''
   stderr = ''
   exitCode = 0
+}
+
+const outStreamHandler = (
+  outStream: Writable,
+  suppressGitCmdOutput: boolean
+): Writable => {
+  return new stream.Writable({
+    write(chunk, _, next) {
+      if (suppressGitCmdOutput) {
+        const lines = chunk.toString().trimEnd().split('\n')
+        for (const line of lines) {
+          if (line.startsWith('[command]')) {
+            outStream.write(`${line}\n`)
+          }
+        }
+      } else {
+        outStream.write(chunk)
+      }
+      next()
+    }
+  })
 }
