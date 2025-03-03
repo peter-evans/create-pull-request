@@ -899,7 +899,10 @@ class GitCommandManager {
     showFileAtRefBase64(ref, path) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['show', `${ref}:${path}`];
-            const output = yield this.exec(args, { encoding: 'base64', suppressGitCmdOutput: true });
+            const output = yield this.exec(args, {
+                encoding: 'base64',
+                suppressGitCmdOutput: true
+            });
             return output.stdout.trim();
         });
     }
@@ -1032,23 +1035,6 @@ const outStreamHandler = (outStream, suppressGitCmdOutput) => {
         }
     });
 };
-// const errStream = (suppressGitCmdOutput: boolean): Writable => {
-//   return new stream.Writable({
-//     write(chunk, _, next) {
-//       if (suppressGitCmdOutput) {
-//         const lines = chunk.toString().trimEnd().split('\n')
-//         for (const line of lines) {
-//           if (line.startsWith('[command]')) {
-//             process.stderr.write(`${line}\n`)
-//           }
-//         }
-//       } else {
-//         process.stderr.write(chunk)
-//       }
-//       next()
-//     }
-//   })
-// }
 
 
 /***/ }),
