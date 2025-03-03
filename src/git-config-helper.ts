@@ -5,7 +5,7 @@ import * as path from 'path'
 import {URL} from 'url'
 import * as utils from './utils'
 
-interface GitRemote {
+export interface GitRemote {
   hostname: string
   protocol: string
   repository: string
