@@ -157,7 +157,7 @@ function splitLines(multilineString: string): string[] {
     .filter(x => x !== '')
 }
 
-interface CreateOrUpdateBranchResult {
+export interface CreateOrUpdateBranchResult {
   action: string
   base: string
   hasDiffWithBase: boolean
