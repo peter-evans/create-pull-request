@@ -660,12 +660,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitCommandManager = void 0;
 const exec = __importStar(__nccwpck_require__(5236));
 const io = __importStar(__nccwpck_require__(4994));
 const utils = __importStar(__nccwpck_require__(9277));
 const path = __importStar(__nccwpck_require__(6928));
+const stream_1 = __importDefault(__nccwpck_require__(2203));
 const tagsRefSpec = '+refs/tags/*:refs/tags/*';
 class GitCommandManager {
     constructor(workingDirectory, gitPath) {
@@ -781,7 +785,7 @@ class GitCommandManager {
                 '--no-abbrev',
                 `--format=%H%n%T%n%P%n%G?%n%s%n%b%n${endOfBody}`,
                 ref
-            ]);
+            ], { suppressGitCmdOutput: true });
             const lines = output.stdout.split('\n');
             const endOfBodyIndex = lines.lastIndexOf(endOfBody);
             const detailLines = lines.slice(0, endOfBodyIndex);
@@ -895,7 +899,10 @@ class GitCommandManager {
     showFileAtRefBase64(ref, path) {
         return __awaiter(this, void 0, void 0, function* () {
             const args = ['show', `${ref}:${path}`];
-            const output = yield this.exec(args, { encoding: 'base64' });
+            const output = yield this.exec(args, {
+                encoding: 'base64',
+                suppressGitCmdOutput: true
+            });
             return output.stdout.trim();
         });
     }
@@ -964,8 +971,12 @@ class GitCommandManager {
         });
     }
     exec(args_1) {
-        return __awaiter(this, arguments, void 0, function* (args, { encoding = 'utf8', allowAllExitCodes = false } = {}) {
+        return __awaiter(this, arguments, void 0, function* (args, { encoding = 'utf8', allowAllExitCodes = false, suppressGitCmdOutput = false } = {}) {
             const result = new GitOutput();
+            if (process.env['CPR_SHOW_GIT_CMD_OUTPUT']) {
+                // debug mode overrides the suppressGitCmdOutput option
+                suppressGitCmdOutput = false;
+            }
             const env = {};
             for (const key of Object.keys(process.env)) {
                 env[key] = process.env[key];
@@ -987,7 +998,9 @@ class GitCommandManager {
                         stderr.push(data);
                         stderrLength += data.length;
                     }
-                }
+                },
+                outStream: outStreamHandler(process.stdout, suppressGitCmdOutput),
+                errStream: outStreamHandler(process.stderr, suppressGitCmdOutput)
             };
             result.exitCode = yield exec.exec(`"${this.gitPath}"`, args, options);
             result.stdout = Buffer.concat(stdout, stdoutLength).toString(encoding);
@@ -1004,6 +1017,24 @@ class GitOutput {
         this.exitCode = 0;
     }
 }
+const outStreamHandler = (outStream, suppressGitCmdOutput) => {
+    return new stream_1.default.Writable({
+        write(chunk, _, next) {
+            if (suppressGitCmdOutput) {
+                const lines = chunk.toString().trimEnd().split('\n');
+                for (const line of lines) {
+                    if (line.startsWith('[command]')) {
+                        outStream.write(`${line}\n`);
+                    }
+                }
+            }
+            else {
+                outStream.write(chunk);
+            }
+            next();
+        }
+    });
+};
 
 
 /***/ }),
