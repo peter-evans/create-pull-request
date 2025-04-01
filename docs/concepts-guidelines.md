@@ -197,8 +197,9 @@ Checking out a branch from a different repository from where the workflow is exe
 Allowing the action to push with a configured deploy key will trigger `on: push` workflows. This makes it an alternative to using a PAT to trigger checks for pull requests.
 
 > [!NOTE]
-> You cannot use deploy keys alone to [create a pull request in a remote repository](#creating-pull-requests-in-a-remote-repository) because then using a PAT would become a requirement.
+> - You cannot use deploy keys alone to [create a pull request in a remote repository](#creating-pull-requests-in-a-remote-repository) because then using a PAT would become a requirement.
 > This method only makes sense if creating a pull request in the repository where the workflow is running.
+> - You cannot use deploy keys with [commit signature verification for bots](#commit-signature-verification-for-bots) (`sign-commits: true`).
 
 How to use SSH (deploy keys) with create-pull-request action:
 
