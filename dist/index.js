@@ -32896,7 +32896,8 @@ var NON_VARIABLE_OPTIONS = [
   "headers",
   "request",
   "query",
-  "mediaType"
+  "mediaType",
+  "operationName"
 ];
 var FORBIDDEN_VARIABLE_OPTIONS = ["query", "method", "url"];
 var GHES_V3_SUFFIX_REGEX = /\/api\/v3\/?$/;
@@ -33031,7 +33032,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/core/dist-src/version.js
-const version_VERSION = "6.1.4";
+const version_VERSION = "6.1.5";
 
 
 ;// CONCATENATED MODULE: ./node_modules/@octokit/core/dist-src/index.js
