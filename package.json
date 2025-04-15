@@ -31,7 +31,7 @@
   "dependencies": {
     "@actions/core": "^1.11.1",
     "@actions/exec": "^1.1.1",
-    "@octokit/core": "^6.1.4",
+    "@octokit/core": "^6.1.5",
     "@octokit/plugin-paginate-rest": "^11.6.0",
     "@octokit/plugin-rest-endpoint-methods": "^13.5.0",
     "@octokit/plugin-throttling": "^9.6.1",
