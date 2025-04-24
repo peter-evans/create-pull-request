@@ -2,7 +2,7 @@
 [![CI](https://github.com/peter-evans/create-pull-request/workflows/CI/badge.svg)](https://github.com/peter-evans/create-pull-request/actions?query=workflow%3ACI)
 [![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Create%20Pull%20Request-blue.svg?colorA=24292e&colorB=0366d6&style=flat&longCache=true&logo=github)](https://github.com/marketplace/actions/create-pull-request)
 
-A GitHub action to create a pull request for changes to your repository in the actions workspace.
+A GitHub action to create a pull request for changes to your repository in the actions workspace. This action also supports GHES and Gitea instances.
 
 Changes to a repository in the Actions workspace persist between steps in a workflow.
 This action is designed to be used in conjunction with other steps that modify or add files to your repository.
@@ -33,6 +33,25 @@ Create Pull Request action will:
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
+```
+
+### Usage with Gitea or GHES
+
+If you're using this action with Gitea, you need to specify the Gitea hostname using the `github-server-url` parameter:
+
+```yml
+      - name: Create Pull Request
+        continue-on-error: true
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          github-server-url: gitea.mediatek.inc
+          base: master
+          branch: chore/pre-commit-hooks
+          title: "chore: Update pre-commit hooks"
+          body: "Update versions of pre-commit hooks to latest version."
+          commit-message: "chore: update pre-commit hooks"
+          delete-branch: true
 ```
 
 You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v7.x.x`
@@ -74,6 +93,7 @@ All inputs are **optional**. If not set, sensible defaults will be used.
 | `milestone` | The number of the milestone to associate this pull request with. | |
 | `draft` | Create a [draft pull request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#draft-pull-requests). Valid values are `true` (only on create), `always-true` (on create and update), and `false`.  | `false` |
 | `maintainer-can-modify` | Indicates whether [maintainers can modify](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/allowing-changes-to-a-pull-request-branch-created-from-a-fork) the pull request. | `true` |
+| `github-server-url` | A comma-separated list of GHES/Gitea hostnames (e.g., 'gitea.example.com,gitea.company.org'). Required when using this action with Gitea instances. | |
 
 #### token
 

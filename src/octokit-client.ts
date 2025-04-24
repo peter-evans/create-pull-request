@@ -38,3 +38,26 @@ function autoProxyAgent(octokit: OctokitCore) {
     options.request.fetch = fetch
   })
 }
+
+// Determine if a hostname is a Gitea instance
+export function isGitea(hostname: string): boolean {
+  return process.env.GITEA_INSTANCES
+    ? process.env.GITEA_INSTANCES.split(',').includes(hostname)
+    : false
+}
+
+// Get the API base URL for a given hostname
+export function getApiBaseUrl(hostname: string): string {
+  // For GitHub, we'll use their standard API endpoint
+  if (hostname === 'github.com') {
+    return 'https://api.github.com'
+  }
+
+  // For Gitea, we need to modify the API path
+  if (isGitea(hostname)) {
+    return `https://${hostname}/api/v1`
+  }
+
+  // For GitHub Enterprise or other GitHub-compatible APIs
+  return `https://${hostname}/api/v3`
+}

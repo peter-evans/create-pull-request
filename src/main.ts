@@ -11,8 +11,30 @@ function getDraftInput(): {value: boolean; always: boolean} {
   }
 }
 
+// Set Gitea instances from environment variable or input
+function configureGiteaInstances() {
+  // First check if there's already an environment variable
+  if (!process.env.GITEA_INSTANCES) {
+    // If not, check if it was provided as input
+    const giteaInstancesInput = core.getInput('github-server-url')
+    if (giteaInstancesInput) {
+      core.info(
+        `Setting GITEA_INSTANCES environment variable to: ${giteaInstancesInput}`
+      )
+      process.env.GITEA_INSTANCES = giteaInstancesInput
+    }
+  }
+
+  if (process.env.GITEA_INSTANCES) {
+    core.info(`Configured Gitea instances: ${process.env.GITEA_INSTANCES}`)
+  }
+}
+
 async function run(): Promise<void> {
   try {
+    // Configure Gitea instances before anything else
+    configureGiteaInstances()
+
     const inputs: Inputs = {
       token: core.getInput('token'),
       branchToken: core.getInput('branch-token'),
@@ -44,9 +66,11 @@ async function run(): Promise<void> {
     if (!inputs.token) {
       throw new Error(`Input 'token' not supplied. Unable to continue.`)
     }
+
     if (!inputs.branchToken) {
       inputs.branchToken = inputs.token
     }
+
     if (inputs.bodyPath) {
       if (!utils.fileExistsSync(inputs.bodyPath)) {
         throw new Error(`File '${inputs.bodyPath}' does not exist.`)
@@ -54,6 +78,7 @@ async function run(): Promise<void> {
       // Update the body input with the contents of the file
       inputs.body = utils.readFile(inputs.bodyPath)
     }
+
     // 65536 characters is the maximum allowed for the pull request body.
     if (inputs.body.length > 65536) {
       core.warning(

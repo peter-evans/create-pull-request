@@ -82,6 +82,10 @@ inputs:
   maintainer-can-modify:
     description: 'Indicates whether maintainers can modify the pull request.'
     default: true
+  github-server-url:
+    description: >
+      A comma-separated list of Gitea hostnames (e.g., 'gitea.example.com,gitea.company.org').
+      Required when using this action with Gitea instances.
 outputs:
   pull-request-number:
     description: 'The pull request number'

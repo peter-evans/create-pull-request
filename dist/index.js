@@ -1327,11 +1327,12 @@ class GitHubHelper {
         if (token) {
             options.auth = `${token}`;
         }
-        if (githubServerHostname !== 'github.com') {
-            options.baseUrl = `https://${githubServerHostname}/api/v3`;
-        }
-        else {
-            options.baseUrl = 'https://api.github.com';
+        // Check if this is a Gitea instance
+        this.isGiteaInstance = (0, octokit_client_1.isGitea)(githubServerHostname);
+        // Set the appropriate API base URL for GitHub or Gitea
+        options.baseUrl = (0, octokit_client_1.getApiBaseUrl)(githubServerHostname);
+        if (this.isGiteaInstance) {
+            core.info(`Detected Gitea instance at ${githubServerHostname}. Using API endpoint ${options.baseUrl}`);
         }
         options.throttle = octokit_client_1.throttleOptions;
         this.octokit = new octokit_client_1.Octokit(options);
@@ -1347,10 +1348,21 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             const [headOwner] = headRepository.split('/');
             const headBranch = `${headOwner}:${inputs.branch}`;
+            // For Gitea, the head branch format is different - it's just the branch name
+            const giteaHeadBranch = this.isGiteaInstance ? inputs.branch : headBranch;
             // Try to create the pull request
             try {
                 core.info(`Attempting creation of pull request`);
-                const { data: pull } = yield this.octokit.rest.pulls.create(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: headBranch, head_repo: headRepository, base: inputs.base, body: inputs.body, draft: inputs.draft.value, maintainer_can_modify: inputs.maintainerCanModify }));
+                const createParams = Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { title: inputs.title, head: this.isGiteaInstance ? giteaHeadBranch : headBranch, base: inputs.base, body: inputs.body, maintainer_can_modify: inputs.maintainerCanModify });
+                // Add draft parameter only for GitHub (Gitea doesn't support draft PRs via the API)
+                if (!this.isGiteaInstance) {
+                    Object.assign(createParams, { draft: inputs.draft.value });
+                }
+                // For Gitea, if using fork, we need to specify the head_repo
+                if (this.isGiteaInstance && inputs.pushToFork) {
+                    Object.assign(createParams, { head_repo: headRepository });
+                }
+                const { data: pull } = yield this.octokit.rest.pulls.create(createParams);
                 core.info(`Created pull request #${pull.number} (${headBranch} => ${inputs.base})`);
                 return {
                     number: pull.number,
@@ -1376,7 +1388,7 @@ class GitHubHelper {
             }
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
-            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: this.isGiteaInstance ? giteaHeadBranch : headBranch, base: inputs.base }));
             core.info(`Attempting update of pull request`);
             const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
@@ -1391,11 +1403,22 @@ class GitHubHelper {
     }
     getRepositoryParent(headRepository) {
         return __awaiter(this, void 0, void 0, function* () {
-            const { data: headRepo } = yield this.octokit.rest.repos.get(Object.assign({}, this.parseRepository(headRepository)));
-            if (!headRepo.parent) {
-                return null;
+            try {
+                const { data: headRepo } = yield this.octokit.rest.repos.get(Object.assign({}, this.parseRepository(headRepository)));
+                if (!headRepo.parent) {
+                    return null;
+                }
+                return headRepo.parent.full_name;
             }
-            return headRepo.parent.full_name;
+            catch (error) {
+                // Gitea may not have the same parent repository structure
+                // Fall back to null if this fails
+                if (this.isGiteaInstance) {
+                    core.warning(`Unable to determine parent repository for ${headRepository}. This is expected for Gitea.`);
+                    return null;
+                }
+                throw error;
+            }
         });
     }
     createOrUpdatePullRequest(inputs, baseRepository, headRepository) {
@@ -1415,35 +1438,73 @@ class GitHubHelper {
             // Apply assignees
             if (inputs.assignees.length > 0) {
                 core.info(`Applying assignees '${inputs.assignees}'`);
-                yield this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
-            }
-            // Request reviewers and team reviewers
-            const requestReviewersParams = {};
-            if (inputs.reviewers.length > 0) {
-                requestReviewersParams['reviewers'] = inputs.reviewers;
-                core.info(`Requesting reviewers '${inputs.reviewers}'`);
-            }
-            if (inputs.teamReviewers.length > 0) {
-                const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers);
-                requestReviewersParams['team_reviewers'] = teams;
-                core.info(`Requesting team reviewers '${teams}'`);
-            }
-            if (Object.keys(requestReviewersParams).length > 0) {
-                try {
-                    yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
-                }
-                catch (e) {
-                    if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
-                        core.error(`Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`);
+                // Gitea has different assignee handling
+                if (this.isGiteaInstance) {
+                    try {
+                        for (const assignee of inputs.assignees) {
+                            yield this.octokit.request('POST /repos/{owner}/{repo}/issues/{issue_number}/assignees', Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: [assignee] }));
+                        }
                     }
-                    throw e;
+                    catch (error) {
+                        core.warning(`Error assigning users in Gitea: ${utils.getErrorMessage(error)}`);
+                    }
                 }
+                else {
+                    // GitHub standard API
+                    yield this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
+                }
+            }
+            // Skip reviewers functionality for Gitea as it might not be compatible
+            if (!this.isGiteaInstance &&
+                (inputs.reviewers.length > 0 || inputs.teamReviewers.length > 0)) {
+                const requestReviewersParams = {};
+                if (inputs.reviewers.length > 0) {
+                    requestReviewersParams['reviewers'] = inputs.reviewers;
+                    core.info(`Requesting reviewers '${inputs.reviewers}'`);
+                }
+                if (inputs.teamReviewers.length > 0) {
+                    const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers);
+                    requestReviewersParams['team_reviewers'] = teams;
+                    core.info(`Requesting team reviewers '${teams}'`);
+                }
+                if (Object.keys(requestReviewersParams).length > 0) {
+                    try {
+                        yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
+                    }
+                    catch (e) {
+                        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+                            core.error(`Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`);
+                        }
+                        throw e;
+                    }
+                }
+            }
+            else if (this.isGiteaInstance &&
+                (inputs.reviewers.length > 0 || inputs.teamReviewers.length > 0)) {
+                core.warning('Reviewer assignment is not supported for Gitea instances');
             }
             return pull;
         });
     }
     pushSignedCommits(git, branchCommits, baseCommit, repoPath, branchRepository, branch) {
         return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            // For Gitea, fall back to standard Git push if signed commits are not supported
+            if (this.isGiteaInstance) {
+                core.warning('Signed commits via API may not be fully supported in Gitea. Falling back to standard Git push.');
+                yield git.push([
+                    '--force-with-lease',
+                    'origin',
+                    `${branch}:refs/heads/${branch}`
+                ]);
+                // Return a simplified commit response
+                return {
+                    sha: ((_a = branchCommits[branchCommits.length - 1]) === null || _a === void 0 ? void 0 : _a.sha) || baseCommit.sha,
+                    tree: ((_b = branchCommits[branchCommits.length - 1]) === null || _b === void 0 ? void 0 : _b.tree) || baseCommit.tree,
+                    verified: false
+                };
+            }
+            // Original GitHub implementation
             let headCommit = {
                 sha: baseCommit.sha,
                 tree: baseCommit.tree,
@@ -1511,43 +1572,89 @@ class GitHubHelper {
             }
             const { data: remoteCommit } = yield this.octokit.rest.git.createCommit(Object.assign(Object.assign({}, repository), { parents: [parentCommit.sha], tree: treeSha, message: `${commit.subject}\n\n${commit.body}` }));
             core.info(`Created commit ${remoteCommit.sha} for local commit ${commit.sha}`);
-            core.info(`Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`);
+            // Gitea might not have the same verification structure
+            let verified = false;
+            if (remoteCommit.verification &&
+                typeof remoteCommit.verification.verified !== 'undefined') {
+                verified = remoteCommit.verification.verified;
+                core.info(`Commit verified: ${verified}; reason: ${remoteCommit.verification.reason || 'unknown'}`);
+            }
+            else {
+                core.info('Commit verification information not available');
+            }
             return {
                 sha: remoteCommit.sha,
                 tree: remoteCommit.tree.sha,
-                verified: remoteCommit.verification.verified
+                verified: verified
             };
         });
     }
     getCommit(sha, branchRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
-            const { data: remoteCommit } = yield this.octokit.rest.git.getCommit(Object.assign(Object.assign({}, repository), { commit_sha: sha }));
-            return {
-                sha: remoteCommit.sha,
-                tree: remoteCommit.tree.sha,
-                verified: remoteCommit.verification.verified
-            };
+            try {
+                const { data: remoteCommit } = yield this.octokit.rest.git.getCommit(Object.assign(Object.assign({}, repository), { commit_sha: sha }));
+                // Handle different verification structure between GitHub and Gitea
+                let verified = false;
+                if (remoteCommit.verification &&
+                    typeof remoteCommit.verification.verified !== 'undefined') {
+                    verified = remoteCommit.verification.verified;
+                }
+                return {
+                    sha: remoteCommit.sha,
+                    tree: remoteCommit.tree.sha,
+                    verified: verified
+                };
+            }
+            catch (error) {
+                if (this.isGiteaInstance) {
+                    core.warning(`Unable to get commit details from Gitea. This might be expected: ${utils.getErrorMessage(error)}`);
+                    // Return a placeholder response
+                    return {
+                        sha: sha,
+                        tree: '', // We don't know the tree SHA
+                        verified: false
+                    };
+                }
+                throw error;
+            }
         });
     }
     createOrUpdateRef(branchRepository, branch, newHead) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
-            const branchExists = yield this.octokit.rest.repos
-                .getBranch(Object.assign(Object.assign({}, repository), { branch: branch }))
-                .then(() => true, () => false);
+            // Check if branch exists
+            let branchExists = false;
+            try {
+                yield this.octokit.rest.repos.getBranch(Object.assign(Object.assign({}, repository), { branch: branch }));
+                branchExists = true;
+            }
+            catch (_a) {
+                branchExists = false;
+            }
             if (branchExists) {
                 core.info(`Branch ${branch} exists; Updating ref`);
                 yield this.octokit.rest.git.updateRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `heads/${branch}`, force: true }));
             }
             else {
                 core.info(`Branch ${branch} does not exist; Creating ref`);
-                yield this.octokit.rest.git.createRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `refs/heads/${branch}` }));
+                try {
+                    yield this.octokit.rest.git.createRef(Object.assign(Object.assign({}, repository), { sha: newHead, ref: `refs/heads/${branch}` }));
+                }
+                catch (error) {
+                    core.error(`Failed to create branch: ${utils.getErrorMessage(error)}`);
+                    throw error;
+                }
             }
         });
     }
     convertToDraft(id) {
         return __awaiter(this, void 0, void 0, function* () {
+            // Skip for Gitea since GraphQL API likely isn't compatible
+            if (this.isGiteaInstance) {
+                core.warning('Draft pull requests are not supported in Gitea via the GraphQL API');
+                return;
+            }
             core.info(`Converting pull request to draft`);
             yield this.octokit.graphql({
                 query: `mutation($pullRequestId: ID!) {
@@ -1627,9 +1734,26 @@ function getDraftInput() {
         return { value: core.getBooleanInput('draft'), always: false };
     }
 }
+// Set Gitea instances from environment variable or input
+function configureGiteaInstances() {
+    // First check if there's already an environment variable
+    if (!process.env.GITEA_INSTANCES) {
+        // If not, check if it was provided as input
+        const giteaInstancesInput = core.getInput('github-server-url');
+        if (giteaInstancesInput) {
+            core.info(`Setting GITEA_INSTANCES environment variable to: ${giteaInstancesInput}`);
+            process.env.GITEA_INSTANCES = giteaInstancesInput;
+        }
+    }
+    if (process.env.GITEA_INSTANCES) {
+        core.info(`Configured Gitea instances: ${process.env.GITEA_INSTANCES}`);
+    }
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
+            // Configure Gitea instances before anything else
+            configureGiteaInstances();
             const inputs = {
                 token: core.getInput('token'),
                 branchToken: core.getInput('branch-token'),
@@ -1727,6 +1851,8 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.throttleOptions = exports.Octokit = void 0;
+exports.isGitea = isGitea;
+exports.getApiBaseUrl = getApiBaseUrl;
 const core = __importStar(__nccwpck_require__(7484));
 const core_1 = __nccwpck_require__(767);
 const plugin_paginate_rest_1 = __nccwpck_require__(3779);
@@ -1753,6 +1879,25 @@ function autoProxyAgent(octokit) {
     octokit.hook.before('request', options => {
         options.request.fetch = proxy_1.fetch;
     });
+}
+// Determine if a hostname is a Gitea instance
+function isGitea(hostname) {
+    return process.env.GITEA_INSTANCES
+        ? process.env.GITEA_INSTANCES.split(',').includes(hostname)
+        : false;
+}
+// Get the API base URL for a given hostname
+function getApiBaseUrl(hostname) {
+    // For GitHub, we'll use their standard API endpoint
+    if (hostname === 'github.com') {
+        return 'https://api.github.com';
+    }
+    // For Gitea, we need to modify the API path
+    if (isGitea(hostname)) {
+        return `https://${hostname}/api/v1`;
+    }
+    // For GitHub Enterprise or other GitHub-compatible APIs
+    return `https://${hostname}/api/v3`;
 }
 
 

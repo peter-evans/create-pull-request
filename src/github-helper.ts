@@ -1,7 +1,13 @@
 import * as core from '@actions/core'
 import {Inputs} from './create-pull-request'
 import {Commit, GitCommandManager} from './git-command-manager'
-import {Octokit, OctokitOptions, throttleOptions} from './octokit-client'
+import {
+  Octokit,
+  OctokitOptions,
+  throttleOptions,
+  isGitea,
+  getApiBaseUrl
+} from './octokit-client'
 import pLimit from 'p-limit'
 import * as utils from './utils'
 
@@ -9,7 +15,6 @@ const ERROR_PR_ALREADY_EXISTS = 'A pull request already exists for'
 const ERROR_PR_REVIEW_TOKEN_SCOPE =
   'Validation Failed: "Could not resolve to a node with the global id of'
 const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`
-
 const blobCreationLimit = pLimit(8)
 
 interface Repository {
@@ -40,17 +45,26 @@ type TreeObject = {
 
 export class GitHubHelper {
   private octokit: InstanceType<typeof Octokit>
+  private isGiteaInstance: boolean
 
   constructor(githubServerHostname: string, token: string) {
     const options: OctokitOptions = {}
     if (token) {
       options.auth = `${token}`
     }
-    if (githubServerHostname !== 'github.com') {
-      options.baseUrl = `https://${githubServerHostname}/api/v3`
-    } else {
-      options.baseUrl = 'https://api.github.com'
+
+    // Check if this is a Gitea instance
+    this.isGiteaInstance = isGitea(githubServerHostname)
+
+    // Set the appropriate API base URL for GitHub or Gitea
+    options.baseUrl = getApiBaseUrl(githubServerHostname)
+
+    if (this.isGiteaInstance) {
+      core.info(
+        `Detected Gitea instance at ${githubServerHostname}. Using API endpoint ${options.baseUrl}`
+      )
     }
+
     options.throttle = throttleOptions
     this.octokit = new Octokit(options)
   }
@@ -71,19 +85,33 @@ export class GitHubHelper {
     const [headOwner] = headRepository.split('/')
     const headBranch = `${headOwner}:${inputs.branch}`
 
+    // For Gitea, the head branch format is different - it's just the branch name
+    const giteaHeadBranch = this.isGiteaInstance ? inputs.branch : headBranch
+
     // Try to create the pull request
     try {
       core.info(`Attempting creation of pull request`)
-      const {data: pull} = await this.octokit.rest.pulls.create({
+      const createParams = {
         ...this.parseRepository(baseRepository),
         title: inputs.title,
-        head: headBranch,
-        head_repo: headRepository,
+        head: this.isGiteaInstance ? giteaHeadBranch : headBranch,
         base: inputs.base,
         body: inputs.body,
-        draft: inputs.draft.value,
         maintainer_can_modify: inputs.maintainerCanModify
-      })
+      }
+
+      // Add draft parameter only for GitHub (Gitea doesn't support draft PRs via the API)
+      if (!this.isGiteaInstance) {
+        Object.assign(createParams, {draft: inputs.draft.value})
+      }
+
+      // For Gitea, if using fork, we need to specify the head_repo
+      if (this.isGiteaInstance && inputs.pushToFork) {
+        Object.assign(createParams, {head_repo: headRepository})
+      }
+
+      const {data: pull} = await this.octokit.rest.pulls.create(createParams)
+
       core.info(
         `Created pull request #${pull.number} (${headBranch} => ${inputs.base})`
       )
@@ -116,9 +144,10 @@ export class GitHubHelper {
     const {data: pulls} = await this.octokit.rest.pulls.list({
       ...this.parseRepository(baseRepository),
       state: 'open',
-      head: headBranch,
+      head: this.isGiteaInstance ? giteaHeadBranch : headBranch,
       base: inputs.base
     })
+
     core.info(`Attempting update of pull request`)
     const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),
@@ -126,9 +155,11 @@ export class GitHubHelper {
       title: inputs.title,
       body: inputs.body
     })
+
     core.info(
       `Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`
     )
+
     return {
       number: pull.number,
       html_url: pull.html_url,
@@ -139,13 +170,27 @@ export class GitHubHelper {
   }
 
   async getRepositoryParent(headRepository: string): Promise<string | null> {
-    const {data: headRepo} = await this.octokit.rest.repos.get({
-      ...this.parseRepository(headRepository)
-    })
-    if (!headRepo.parent) {
-      return null
+    try {
+      const {data: headRepo} = await this.octokit.rest.repos.get({
+        ...this.parseRepository(headRepository)
+      })
+
+      if (!headRepo.parent) {
+        return null
+      }
+
+      return headRepo.parent.full_name
+    } catch (error) {
+      // Gitea may not have the same parent repository structure
+      // Fall back to null if this fails
+      if (this.isGiteaInstance) {
+        core.warning(
+          `Unable to determine parent repository for ${headRepository}. This is expected for Gitea.`
+        )
+        return null
+      }
+      throw error
     }
-    return headRepo.parent.full_name
   }
 
   async createOrUpdatePullRequest(
@@ -169,6 +214,7 @@ export class GitHubHelper {
         milestone: inputs.milestone
       })
     }
+
     // Apply labels
     if (inputs.labels.length > 0) {
       core.info(`Applying labels '${inputs.labels}'`)
@@ -178,42 +224,74 @@ export class GitHubHelper {
         labels: inputs.labels
       })
     }
+
     // Apply assignees
     if (inputs.assignees.length > 0) {
       core.info(`Applying assignees '${inputs.assignees}'`)
-      await this.octokit.rest.issues.addAssignees({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        assignees: inputs.assignees
-      })
-    }
-
-    // Request reviewers and team reviewers
-    const requestReviewersParams = {}
-    if (inputs.reviewers.length > 0) {
-      requestReviewersParams['reviewers'] = inputs.reviewers
-      core.info(`Requesting reviewers '${inputs.reviewers}'`)
-    }
-    if (inputs.teamReviewers.length > 0) {
-      const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers)
-      requestReviewersParams['team_reviewers'] = teams
-      core.info(`Requesting team reviewers '${teams}'`)
-    }
-    if (Object.keys(requestReviewersParams).length > 0) {
-      try {
-        await this.octokit.rest.pulls.requestReviewers({
-          ...this.parseRepository(baseRepository),
-          pull_number: pull.number,
-          ...requestReviewersParams
-        })
-      } catch (e) {
-        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
-          core.error(
-            `Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`
+      // Gitea has different assignee handling
+      if (this.isGiteaInstance) {
+        try {
+          for (const assignee of inputs.assignees) {
+            await this.octokit.request(
+              'POST /repos/{owner}/{repo}/issues/{issue_number}/assignees',
+              {
+                ...this.parseRepository(baseRepository),
+                issue_number: pull.number,
+                assignees: [assignee]
+              }
+            )
+          }
+        } catch (error) {
+          core.warning(
+            `Error assigning users in Gitea: ${utils.getErrorMessage(error)}`
           )
         }
-        throw e
+      } else {
+        // GitHub standard API
+        await this.octokit.rest.issues.addAssignees({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          assignees: inputs.assignees
+        })
       }
+    }
+
+    // Skip reviewers functionality for Gitea as it might not be compatible
+    if (
+      !this.isGiteaInstance &&
+      (inputs.reviewers.length > 0 || inputs.teamReviewers.length > 0)
+    ) {
+      const requestReviewersParams = {}
+      if (inputs.reviewers.length > 0) {
+        requestReviewersParams['reviewers'] = inputs.reviewers
+        core.info(`Requesting reviewers '${inputs.reviewers}'`)
+      }
+      if (inputs.teamReviewers.length > 0) {
+        const teams = utils.stripOrgPrefixFromTeams(inputs.teamReviewers)
+        requestReviewersParams['team_reviewers'] = teams
+        core.info(`Requesting team reviewers '${teams}'`)
+      }
+      if (Object.keys(requestReviewersParams).length > 0) {
+        try {
+          await this.octokit.rest.pulls.requestReviewers({
+            ...this.parseRepository(baseRepository),
+            pull_number: pull.number,
+            ...requestReviewersParams
+          })
+        } catch (e) {
+          if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+            core.error(
+              `Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`
+            )
+          }
+          throw e
+        }
+      }
+    } else if (
+      this.isGiteaInstance &&
+      (inputs.reviewers.length > 0 || inputs.teamReviewers.length > 0)
+    ) {
+      core.warning('Reviewer assignment is not supported for Gitea instances')
     }
 
     return pull
@@ -227,11 +305,32 @@ export class GitHubHelper {
     branchRepository: string,
     branch: string
   ): Promise<CommitResponse> {
+    // For Gitea, fall back to standard Git push if signed commits are not supported
+    if (this.isGiteaInstance) {
+      core.warning(
+        'Signed commits via API may not be fully supported in Gitea. Falling back to standard Git push.'
+      )
+      await git.push([
+        '--force-with-lease',
+        'origin',
+        `${branch}:refs/heads/${branch}`
+      ])
+
+      // Return a simplified commit response
+      return {
+        sha: branchCommits[branchCommits.length - 1]?.sha || baseCommit.sha,
+        tree: branchCommits[branchCommits.length - 1]?.tree || baseCommit.tree,
+        verified: false
+      }
+    }
+
+    // Original GitHub implementation
     let headCommit: CommitResponse = {
       sha: baseCommit.sha,
       tree: baseCommit.tree,
       verified: false
     }
+
     for (const commit of branchCommits) {
       headCommit = await this.createCommit(
         git,
@@ -241,6 +340,7 @@ export class GitHubHelper {
         branchRepository
       )
     }
+
     await this.createOrUpdateRef(branchRepository, branch, headCommit.sha)
     return headCommit
   }
@@ -255,6 +355,7 @@ export class GitHubHelper {
     const repository = this.parseRepository(branchRepository)
     // In the case of an empty commit, the tree references the parent's tree
     let treeSha = parentCommit.tree
+
     if (commit.changes.length > 0) {
       core.info(`Creating tree objects for local commit ${commit.sha}`)
       const treeObjects = await Promise.all(
@@ -329,16 +430,29 @@ export class GitHubHelper {
       tree: treeSha,
       message: `${commit.subject}\n\n${commit.body}`
     })
+
     core.info(
       `Created commit ${remoteCommit.sha} for local commit ${commit.sha}`
     )
-    core.info(
-      `Commit verified: ${remoteCommit.verification.verified}; reason: ${remoteCommit.verification.reason}`
-    )
+
+    // Gitea might not have the same verification structure
+    let verified = false
+    if (
+      remoteCommit.verification &&
+      typeof remoteCommit.verification.verified !== 'undefined'
+    ) {
+      verified = remoteCommit.verification.verified
+      core.info(
+        `Commit verified: ${verified}; reason: ${remoteCommit.verification.reason || 'unknown'}`
+      )
+    } else {
+      core.info('Commit verification information not available')
+    }
+
     return {
       sha: remoteCommit.sha,
       tree: remoteCommit.tree.sha,
-      verified: remoteCommit.verification.verified
+      verified: verified
     }
   }
 
@@ -347,14 +461,40 @@ export class GitHubHelper {
     branchRepository: string
   ): Promise<CommitResponse> {
     const repository = this.parseRepository(branchRepository)
-    const {data: remoteCommit} = await this.octokit.rest.git.getCommit({
-      ...repository,
-      commit_sha: sha
-    })
-    return {
-      sha: remoteCommit.sha,
-      tree: remoteCommit.tree.sha,
-      verified: remoteCommit.verification.verified
+
+    try {
+      const {data: remoteCommit} = await this.octokit.rest.git.getCommit({
+        ...repository,
+        commit_sha: sha
+      })
+
+      // Handle different verification structure between GitHub and Gitea
+      let verified = false
+      if (
+        remoteCommit.verification &&
+        typeof remoteCommit.verification.verified !== 'undefined'
+      ) {
+        verified = remoteCommit.verification.verified
+      }
+
+      return {
+        sha: remoteCommit.sha,
+        tree: remoteCommit.tree.sha,
+        verified: verified
+      }
+    } catch (error) {
+      if (this.isGiteaInstance) {
+        core.warning(
+          `Unable to get commit details from Gitea. This might be expected: ${utils.getErrorMessage(error)}`
+        )
+        // Return a placeholder response
+        return {
+          sha: sha,
+          tree: '', // We don't know the tree SHA
+          verified: false
+        }
+      }
+      throw error
     }
   }
 
@@ -364,15 +504,18 @@ export class GitHubHelper {
     newHead: string
   ) {
     const repository = this.parseRepository(branchRepository)
-    const branchExists = await this.octokit.rest.repos
-      .getBranch({
+
+    // Check if branch exists
+    let branchExists = false
+    try {
+      await this.octokit.rest.repos.getBranch({
         ...repository,
         branch: branch
       })
-      .then(
-        () => true,
-        () => false
-      )
+      branchExists = true
+    } catch {
+      branchExists = false
+    }
 
     if (branchExists) {
       core.info(`Branch ${branch} exists; Updating ref`)
@@ -384,15 +527,28 @@ export class GitHubHelper {
       })
     } else {
       core.info(`Branch ${branch} does not exist; Creating ref`)
-      await this.octokit.rest.git.createRef({
-        ...repository,
-        sha: newHead,
-        ref: `refs/heads/${branch}`
-      })
+      try {
+        await this.octokit.rest.git.createRef({
+          ...repository,
+          sha: newHead,
+          ref: `refs/heads/${branch}`
+        })
+      } catch (error) {
+        core.error(`Failed to create branch: ${utils.getErrorMessage(error)}`)
+        throw error
+      }
     }
   }
 
   async convertToDraft(id: string): Promise<void> {
+    // Skip for Gitea since GraphQL API likely isn't compatible
+    if (this.isGiteaInstance) {
+      core.warning(
+        'Draft pull requests are not supported in Gitea via the GraphQL API'
+      )
+      return
+    }
+
     core.info(`Converting pull request to draft`)
     await this.octokit.graphql({
       query: `mutation($pullRequestId: ID!) {
