@@ -25,7 +25,7 @@ This document covers terminology, how the action works, general usage guidelines
 
 ## Terminology
 
-[Pull requests](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#about-pull-requests) are proposed changes to a repository branch that can be reviewed by a repository's collaborators before being accepted or rejected. 
+[Pull requests](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests#about-pull-requests) are proposed changes to a repository branch that can be reviewed by a repository's collaborators before being accepted or rejected.
 
 A pull request references two branches:
 
@@ -150,7 +150,7 @@ There are a number of workarounds with different pros and cons.
 
 - Use the default `GITHUB_TOKEN` and allow the action to create pull requests that have no checks enabled. Manually close pull requests and immediately reopen them. This will enable `on: pull_request` workflows to run and be added as checks. To prevent merging of pull requests without checks erroneously, use [branch protection rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests).
 
-- Create draft pull requests by setting the `draft: always-true` input, and configure your workflow to trigger `on: ready_for_review`. The workflow will run when users manually click the "Ready for review" button on the draft pull requests. If the pull request is updated by the action, the `always-true` mode ensures that the pull request will be converted back to a draft.
+- Create draft pull requests by setting the `draft: always-true` input, and configure your workflow to trigger `ready_for_review` in `on: pull_request`. The workflow will run when users manually click the "Ready for review" button on the draft pull requests. If the pull request is updated by the action, the `always-true` mode ensures that the pull request will be converted back to a draft.
 
 - Use a [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) created on an account that has write access to the repository that pull requests are being created in. This is the standard workaround and [recommended by GitHub](https://docs.github.com/en/actions/using-workflows/triggering-a-workflow#triggering-a-workflow-from-a-workflow). It's advisable to use a dedicated [machine account](https://docs.github.com/en/github/site-policy/github-terms-of-service#3-account-requirements) that has collaborator access to the repository, rather than creating a PAT on a personal user account. Also note that because the account that owns the PAT will be the creator of pull requests, that user account will be unable to perform actions such as request changes or approve the pull request.
 
@@ -374,7 +374,7 @@ The action supports two methods to sign commits, [commit signature verification 
 
 The action can sign commits as `github-actions[bot]` when using the repository's default `GITHUB_TOKEN`, or your own bot when using [GitHub App tokens](#authenticating-with-github-app-generated-tokens).
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
 > - When setting `sign-commits: true` the action will ignore the `committer` and `author` inputs.
 > - If you attempt to use a [Personal Access Token (PAT)](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) the action will create the pull request, but commits will *not* be signed. Commit signing is only supported with bot generated tokens.
 > - The GitHub API has a 40MiB limit when creating git blobs. An error will be raised if there are files in the pull request larger than this. If you hit this limit, use [GPG commit signature verification](#gpg-commit-signature-verification) instead.
