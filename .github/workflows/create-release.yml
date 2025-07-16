@@ -8,6 +8,8 @@ jobs:
   create-github-release:
     runs-on: ubuntu-latest
     if: github.event.repository.fork == false
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Create GitHub release
