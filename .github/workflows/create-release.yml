@@ -7,6 +7,7 @@ on:
 jobs:
   create-github-release:
     runs-on: ubuntu-latest
+    if: github.event.repository.fork == false
     steps:
       - uses: actions/checkout@v4
       - name: Create GitHub release
@@ -14,4 +15,4 @@ jobs:
           gh release create ${{ github.ref_name }} \
           --title "Create Pull Request ${{ github.ref_name }}" --generate-notes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_BOT_TOKEN }}
