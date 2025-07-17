@@ -272,7 +272,7 @@ The `token` input will then default to the repository's `GITHUB_TOKEN`, which wi
 
 The following is an example of pushing to a fork using GitHub App tokens.
 ```yaml
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: generate-token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -319,7 +319,7 @@ GitHub App generated tokens can be configured with fine-grained permissions and 
 
 ```yaml
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: generate-token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -342,7 +342,7 @@ For this case a token must be generated from the GitHub App installation of the 
 In the following example, a pull request is being created in remote repo `owner/repo`.
 ```yaml
     steps:
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: generate-token
         with:
           app-id: ${{ secrets.APP_ID }}
@@ -397,7 +397,7 @@ In this example, the `token` input is generated using a GitHub App. This will si
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/create-github-app-token@v1
+      - uses: actions/create-github-app-token@v2
         id: generate-token
         with:
           app-id: ${{ secrets.APP_ID }}
