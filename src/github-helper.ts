@@ -119,10 +119,39 @@ export class GitHubHelper {
       head: headBranch,
       base: inputs.base
     })
+    let existingPullNumber: number | undefined = undefined
+    if (pulls?.length === 0 || pulls === null || pulls === undefined) {
+      core.error(
+        `Failed to fetch existing pull request details through API - fetching all pull requests to manually check`
+      )
+      for await (const response of this.octokit.paginate.iterator(
+        this.octokit.rest.pulls.list,
+        {
+          ...this.parseRepository(baseRepository),
+          state: 'open',
+          base: inputs.base
+        }
+      )) {
+        const existingPull = response.data.find(
+          pull => pull.head.label === headBranch
+        )
+        if (existingPull !== undefined) {
+          existingPullNumber = existingPull.number
+          break
+        }
+      }
+    } else {
+      existingPullNumber = pulls[0].number
+    }
+    if (existingPullNumber === undefined) {
+      throw new Error(
+        `A pull request already exists for ${headBranch} but couldn't acquire the pull number`
+      )
+    }
     core.info(`Attempting update of pull request`)
     const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),
-      pull_number: pulls[0].number,
+      pull_number: existingPullNumber,
       title: inputs.title,
       body: inputs.body
     })
