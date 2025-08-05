@@ -35,7 +35,7 @@
     "@octokit/plugin-paginate-rest": "^11.6.0",
     "@octokit/plugin-rest-endpoint-methods": "^13.5.0",
     "@octokit/plugin-throttling": "^9.6.1",
-    "node-fetch-native": "^1.6.6",
+    "node-fetch-native": "^1.6.7",
     "p-limit": "^6.2.0",
     "uuid": "^9.0.1"
   },
