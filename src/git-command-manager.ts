@@ -189,21 +189,27 @@ export class GitCommandManager {
       signed: detailLines[3] !== 'N',
       subject: detailLines[4],
       body: detailLines.slice(5, endOfBodyIndex).join('\n'),
-      changes: lines.slice(endOfBodyIndex + 2, -1).map(line => {
-        const change = line.match(
-          /^:(\d{6}) (\d{6}) \w{40} (\w{40}) ([AMD])\s+(.*)$/
-        )
-        if (change) {
-          return {
-            mode: change[4] === 'D' ? change[1] : change[2],
-            dstSha: change[3],
-            status: change[4],
-            path: change[5]
+      changes: lines
+        .slice(endOfBodyIndex + 2, -1)
+        .map(line => {
+          const change = line.match(
+            /^:(\d{6}) (\d{6}) \w{40} (\w{40}) ([AMD])\s+(.*)$/
+          )
+          if (change) {
+            return {
+              mode: change[4] === 'D' ? change[1] : change[2],
+              dstSha: change[3],
+              status: change[4],
+              path: change[5]
+            }
+          } else {
+            unparsedChanges.push(line)
+            return undefined
           }
-        } else {
-          unparsedChanges.push(line)
-        }
-      }),
+        })
+        .filter(
+          (change): change is NonNullable<typeof change> => change !== undefined
+        ),
       unparsedChanges: unparsedChanges
     }
   }
