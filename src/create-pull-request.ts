@@ -238,6 +238,33 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     }
 
     if (result.hasDiffWithBase) {
+      // Default PR title and body from commit message for single-commit PRs
+      // This mimics GitHub's web interface behavior
+      const defaultTitle = 'Changes by create-pull-request action'
+      const defaultBody =
+        'Automated changes by [create-pull-request](https://github.com/peter-evans/create-pull-request) GitHub action'
+
+      if (result.branchCommits.length === 1) {
+        const commit = result.branchCommits[0]
+        // Use commit subject as title if title is at default value
+        if (inputs.title === defaultTitle) {
+          inputs.title = commit.subject
+          core.info(
+            `Defaulting pull request title to commit subject: '${inputs.title}'`
+          )
+        }
+        // Use commit body as PR body if body is at default value
+        if (inputs.body === defaultBody) {
+          // Use commit body if it exists, otherwise keep the default
+          if (commit.body && commit.body.trim().length > 0) {
+            inputs.body = commit.body
+            core.info(
+              `Defaulting pull request body to commit body (${commit.body.length} characters)`
+            )
+          }
+        }
+      }
+
       core.startGroup('Create or update the pull request')
       const pull = await ghPull.createOrUpdatePullRequest(
         inputs,
