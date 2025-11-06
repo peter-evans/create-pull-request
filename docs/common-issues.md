@@ -1,12 +1,66 @@
 # Common issues
 
 - [Troubleshooting](#troubleshooting)
+  - [Command substitution in action inputs](#command-substitution-in-action-inputs)
   - [Create using an existing branch as the PR branch](#create-using-an-existing-branch-as-the-pr-branch)
 - [Frequently requested features](#use-case-create-a-pull-request-to-update-x-on-release)
   - [Disable force updates to existing PR branches](#disable-force-updates-to-existing-pr-branches)
   - [Add a no-verify option to bypass git hooks](#add-a-no-verify-option-to-bypass-git-hooks)
 
 ## Troubleshooting
+
+### Command substitution in action inputs
+
+Shell command substitution (e.g., `$(date)`, backticks, or other shell expansions) does not work directly in GitHub Actions workflow inputs. This is a limitation of how GitHub Actions processes YAML inputs—they are treated as literal strings, not executed as shell commands.
+
+**This will NOT work:**
+```yml
+- name: Create Pull Request
+  uses: peter-evans/create-pull-request@v7
+  with:
+    commit-message: "Update Daily $(date -u +'%B %d, %Y')"
+    title: "Update Daily $(date -u +'%B %d, %Y')"
+```
+
+The `$(date -u +'%B %d, %Y')` will appear literally in your commit message and PR title instead of being replaced with the actual date.
+
+**Solution 1: Use a separate shell step with outputs (Recommended)**
+
+Execute the shell command in a separate step and pass the result to the action using GitHub Actions outputs:
+
+```yml
+- name: Set PR variables
+  id: vars
+  run: |
+    echo "date=$(date -u +'%B %d, %Y')" >> $GITHUB_OUTPUT
+    echo "commit_msg=Update Daily $(date -u +'%B %d, %Y')" >> $GITHUB_OUTPUT
+
+- name: Create Pull Request
+  uses: peter-evans/create-pull-request@v7
+  with:
+    commit-message: ${{ steps.vars.outputs.commit_msg }}
+    title: "Update Daily ${{ steps.vars.outputs.date }}"
+    body: Automated daily update.
+```
+
+**Solution 2: Use environment variables**
+
+Set environment variables in a shell step and reference them in the action:
+
+```yml
+- name: Set environment variables
+  run: |
+    echo "PR_DATE=$(date -u +'%B %d, %Y')" >> $GITHUB_ENV
+
+- name: Create Pull Request
+  uses: peter-evans/create-pull-request@v7
+  with:
+    commit-message: "Update Daily ${{ env.PR_DATE }}"
+    title: "Update Daily ${{ env.PR_DATE }}"
+    body: Automated daily update.
+```
+
+For more examples of using dynamic values in pull requests, see [Dynamic configuration using variables](examples.md#dynamic-configuration-using-variables).
 
 ### Create using an existing branch as the PR branch
 
