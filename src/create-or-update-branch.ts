@@ -173,7 +173,10 @@ export async function createOrUpdateBranch(
   branch: string,
   branchRemoteName: string,
   signoff: boolean,
-  addPaths: string[]
+  addPaths: string[],
+  skipIfCommitsFromOtherAuthors = false,
+  authorEmail = '',
+  committerEmail = ''
 ): Promise<CreateOrUpdateBranchResult> {
   // Get the working base.
   // When a ref, it may or may not be the actual base.
@@ -293,6 +296,68 @@ export async function createOrUpdateBranch(
     )
     // Checkout the pull request branch
     await git.checkout(branch)
+
+    // Check if the branch has commits from other authors
+    if (skipIfCommitsFromOtherAuthors && authorEmail && committerEmail) {
+      core.info('Checking if branch has commits from other authors...')
+      const branchCommitsAheadCount = await commitsAhead(git, base, branch)
+      if (branchCommitsAheadCount > 0) {
+        try {
+          const commitAuthors = await git.getCommitAuthors(`${base}..${branch}`)
+          const hasOtherAuthors = commitAuthors.some(
+            commit =>
+              commit.authorEmail !== authorEmail &&
+              commit.committerEmail !== committerEmail
+          )
+          if (hasOtherAuthors) {
+            core.info(
+              `Branch '${branch}' has commits from other authors. Skipping update to prevent overwriting their changes.`
+            )
+            core.info(
+              `Configured author: ${authorEmail}, committer: ${committerEmail}`
+            )
+            const otherAuthors = commitAuthors.filter(
+              commit =>
+                commit.authorEmail !== authorEmail ||
+                commit.committerEmail !== committerEmail
+            )
+            core.info(
+              `Found commits from: ${otherAuthors.map(c => `${c.authorEmail} (committer: ${c.committerEmail})`).join(', ')}`
+            )
+            action = 'not-updated'
+            hasDiffWithBase = await isAhead(git, base, branch)
+            const baseSha = await git.revParse(base)
+            const baseCommit = await git.getCommit(baseSha)
+            const headSha = await git.revParse(branch)
+            let branchCommits: Commit[] = []
+            if (hasDiffWithBase) {
+              branchCommits = await buildBranchCommits(git, base, branch)
+            }
+            await git.exec(['branch', '--delete', '--force', tempBranch])
+            await git.checkout(workingBase)
+            if (stashed) {
+              await git.stashPop()
+            }
+            return {
+              action: action,
+              base: base,
+              hasDiffWithBase: hasDiffWithBase,
+              baseCommit: baseCommit,
+              headSha: headSha,
+              branchCommits: branchCommits
+            }
+          }
+          core.info(
+            'No commits from other authors found. Proceeding with update.'
+          )
+        } catch (error) {
+          core.warning(
+            `Failed to check commit authors: ${utils.getErrorMessage(error)}`
+          )
+          core.info('Proceeding with update despite check failure.')
+        }
+      }
+    }
 
     // Reset the branch if one of the following conditions is true.
     // - If the branch differs from the recreated temp branch.

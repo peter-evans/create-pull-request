@@ -37,6 +37,7 @@ export interface Inputs {
     always: boolean
   }
   maintainerCanModify: boolean
+  skipIfCommitsFromOtherAuthors: boolean
 }
 
 export async function createPullRequest(inputs: Inputs): Promise<void> {
@@ -194,7 +195,10 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       inputs.branch,
       branchRemoteName,
       inputs.signoff,
-      inputs.addPaths
+      inputs.addPaths,
+      inputs.skipIfCommitsFromOtherAuthors,
+      parsedAuthor.email,
+      parsedCommitter.email
     )
     outputs.set('pull-request-head-sha', result.headSha)
     // Set the base. It would have been '' if not specified as an input

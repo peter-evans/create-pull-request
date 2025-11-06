@@ -168,8 +168,8 @@ function splitLines(multilineString) {
         .map(s => s.trim())
         .filter(x => x !== '');
 }
-function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName, signoff, addPaths) {
-    return __awaiter(this, void 0, void 0, function* () {
+function createOrUpdateBranch(git_1, commitMessage_1, base_1, branch_1, branchRemoteName_1, signoff_1, addPaths_1) {
+    return __awaiter(this, arguments, void 0, function* (git, commitMessage, base, branch, branchRemoteName, signoff, addPaths, skipIfCommitsFromOtherAuthors = false, authorEmail = '', committerEmail = '') {
         // Get the working base.
         // When a ref, it may or may not be the actual base.
         // When a commit, we must rebase onto the actual base.
@@ -268,6 +268,52 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             core.info(`Pull request branch '${branch}' already exists as remote branch '${branchRemoteName}/${branch}'`);
             // Checkout the pull request branch
             yield git.checkout(branch);
+            // Check if the branch has commits from other authors
+            if (skipIfCommitsFromOtherAuthors && authorEmail && committerEmail) {
+                core.info('Checking if branch has commits from other authors...');
+                const branchCommitsAheadCount = yield commitsAhead(git, base, branch);
+                if (branchCommitsAheadCount > 0) {
+                    try {
+                        const commitAuthors = yield git.getCommitAuthors(`${base}..${branch}`);
+                        const hasOtherAuthors = commitAuthors.some(commit => commit.authorEmail !== authorEmail &&
+                            commit.committerEmail !== committerEmail);
+                        if (hasOtherAuthors) {
+                            core.info(`Branch '${branch}' has commits from other authors. Skipping update to prevent overwriting their changes.`);
+                            core.info(`Configured author: ${authorEmail}, committer: ${committerEmail}`);
+                            const otherAuthors = commitAuthors.filter(commit => commit.authorEmail !== authorEmail ||
+                                commit.committerEmail !== committerEmail);
+                            core.info(`Found commits from: ${otherAuthors.map(c => `${c.authorEmail} (committer: ${c.committerEmail})`).join(', ')}`);
+                            action = 'not-updated';
+                            hasDiffWithBase = yield isAhead(git, base, branch);
+                            const baseSha = yield git.revParse(base);
+                            const baseCommit = yield git.getCommit(baseSha);
+                            const headSha = yield git.revParse(branch);
+                            let branchCommits = [];
+                            if (hasDiffWithBase) {
+                                branchCommits = yield buildBranchCommits(git, base, branch);
+                            }
+                            yield git.exec(['branch', '--delete', '--force', tempBranch]);
+                            yield git.checkout(workingBase);
+                            if (stashed) {
+                                yield git.stashPop();
+                            }
+                            return {
+                                action: action,
+                                base: base,
+                                hasDiffWithBase: hasDiffWithBase,
+                                baseCommit: baseCommit,
+                                headSha: headSha,
+                                branchCommits: branchCommits
+                            };
+                        }
+                        core.info('No commits from other authors found. Proceeding with update.');
+                    }
+                    catch (error) {
+                        core.warning(`Failed to check commit authors: ${utils.getErrorMessage(error)}`);
+                        core.info('Proceeding with update despite check failure.');
+                    }
+                }
+            }
             // Reset the branch if one of the following conditions is true.
             // - If the branch differs from the recreated temp branch.
             // - If the number of commits ahead of the base branch differs between the branch and
@@ -505,7 +551,7 @@ function createPullRequest(inputs) {
             outputs.set('pull-request-operation', 'none');
             // Create or update the pull request branch
             core.startGroup('Create or update the pull request branch');
-            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths);
+            const result = yield (0, create_or_update_branch_1.createOrUpdateBranch)(git, inputs.commitMessage, inputs.base, inputs.branch, branchRemoteName, inputs.signoff, inputs.addPaths, inputs.skipIfCommitsFromOtherAuthors, parsedAuthor.email, parsedCommitter.email);
             outputs.set('pull-request-head-sha', result.headSha);
             // Set the base. It would have been '' if not specified as an input
             inputs.base = result.base;
@@ -813,6 +859,22 @@ class GitCommandManager {
                 }),
                 unparsedChanges: unparsedChanges
             };
+        });
+    }
+    getCommitAuthors(commitRange) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const output = yield this.exec(['log', '--format=%ae%n%ce%n###COMMIT###', commitRange], { suppressGitCmdOutput: true });
+            const commits = [];
+            const lines = output.stdout.split('\n').filter(x => x !== '');
+            for (let i = 0; i < lines.length; i += 3) {
+                if (lines[i + 2] === '###COMMIT###') {
+                    commits.push({
+                        authorEmail: lines[i],
+                        committerEmail: lines[i + 1]
+                    });
+                }
+            }
+            return commits;
         });
     }
     getConfigValue(configKey_1) {
@@ -1654,7 +1716,8 @@ function run() {
                 teamReviewers: utils.getInputAsArray('team-reviewers'),
                 milestone: Number(core.getInput('milestone')),
                 draft: getDraftInput(),
-                maintainerCanModify: core.getBooleanInput('maintainer-can-modify')
+                maintainerCanModify: core.getBooleanInput('maintainer-can-modify'),
+                skipIfCommitsFromOtherAuthors: core.getBooleanInput('skip-if-commits-from-other-authors')
             };
             core.debug(`Inputs: ${(0, util_1.inspect)(inputs)}`);
             if (!inputs.token) {
