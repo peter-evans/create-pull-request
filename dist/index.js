@@ -1377,6 +1377,13 @@ class GitHubHelper {
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
             const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            if (pulls.length === 0) {
+                throw new Error(`No open pull request found for head branch '${headBranch}' and base branch '${inputs.base}'. ` +
+                    `This may occur if: (1) the pull request was already merged or closed, ` +
+                    `(2) the token lacks sufficient permissions to list pull requests in this repository, or ` +
+                    `(3) there is an issue with the branch reference format. ` +
+                    `Please verify the pull request exists and the token has 'pull-requests: read' permission.`);
+            }
             core.info(`Attempting update of pull request`);
             const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
