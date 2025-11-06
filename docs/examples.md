@@ -73,17 +73,16 @@ jobs:
   productionPromotion:
     runs-on: ubuntu-latest
     steps:
+      # Checkout the source branch (main) that contains the changes
       - uses: actions/checkout@v4
         with:
-          ref: production
-      - name: Reset promotion branch
-        run: |
-          git fetch origin main:main
-          git reset --hard main
+          ref: main
+      # Create a pull request to merge main into production
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           branch: production-promotion
+          base: production
 ```
 
 ## Use case: Create a pull request to update X on release
