@@ -1320,6 +1320,7 @@ const utils = __importStar(__nccwpck_require__(9277));
 const ERROR_PR_ALREADY_EXISTS = 'A pull request already exists for';
 const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a node with the global id of';
 const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`;
+const ERROR_PR_REVIEWER_NOT_COLLABORATOR = 'Reviews may only be requested from collaborators';
 const blobCreationLimit = (0, p_limit_1.default)(8);
 class GitHubHelper {
     constructor(githubServerHostname, token) {
@@ -1433,10 +1434,23 @@ class GitHubHelper {
                     yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
                 }
                 catch (e) {
-                    if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+                    const errorMessage = utils.getErrorMessage(e);
+                    if (errorMessage.includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
                         core.error(`Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`);
+                        throw e;
                     }
-                    throw e;
+                    else if (errorMessage.includes(ERROR_PR_REVIEWER_NOT_COLLABORATOR)) {
+                        core.warning(`Unable to request reviewers. One or more of the users or teams you specified is not a collaborator of this repository.`);
+                        core.warning(`Reviews may only be requested from collaborators. To resolve this issue, you can:`);
+                        core.warning(`  1. Add the user(s) as collaborators to the repository`);
+                        core.warning(`  2. Add the user(s) to a team with repository access and use 'team-reviewers' instead`);
+                        core.warning(`  3. Remove the non-collaborator user(s) from the 'reviewers' input`);
+                        core.warning(`The pull request was created/updated successfully, but reviewer requests were not applied.`);
+                        core.warning(`See: https://docs.github.com/rest/pulls/review-requests#request-reviewers-for-a-pull-request`);
+                    }
+                    else {
+                        throw e;
+                    }
                 }
             }
             return pull;

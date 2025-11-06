@@ -9,6 +9,8 @@ const ERROR_PR_ALREADY_EXISTS = 'A pull request already exists for'
 const ERROR_PR_REVIEW_TOKEN_SCOPE =
   'Validation Failed: "Could not resolve to a node with the global id of'
 const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`
+const ERROR_PR_REVIEWER_NOT_COLLABORATOR =
+  'Reviews may only be requested from collaborators'
 
 const blobCreationLimit = pLimit(8)
 
@@ -207,12 +209,37 @@ export class GitHubHelper {
           ...requestReviewersParams
         })
       } catch (e) {
-        if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
+        const errorMessage = utils.getErrorMessage(e)
+        if (errorMessage.includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
           core.error(
             `Unable to request reviewers. If requesting team reviewers a 'repo' scoped PAT is required.`
           )
+          throw e
+        } else if (errorMessage.includes(ERROR_PR_REVIEWER_NOT_COLLABORATOR)) {
+          core.warning(
+            `Unable to request reviewers. One or more of the users or teams you specified is not a collaborator of this repository.`
+          )
+          core.warning(
+            `Reviews may only be requested from collaborators. To resolve this issue, you can:`
+          )
+          core.warning(
+            `  1. Add the user(s) as collaborators to the repository`
+          )
+          core.warning(
+            `  2. Add the user(s) to a team with repository access and use 'team-reviewers' instead`
+          )
+          core.warning(
+            `  3. Remove the non-collaborator user(s) from the 'reviewers' input`
+          )
+          core.warning(
+            `The pull request was created/updated successfully, but reviewer requests were not applied.`
+          )
+          core.warning(
+            `See: https://docs.github.com/rest/pulls/review-requests#request-reviewers-for-a-pull-request`
+          )
+        } else {
+          throw e
         }
-        throw e
       }
     }
 
