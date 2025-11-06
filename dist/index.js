@@ -285,10 +285,12 @@ function createOrUpdateBranch(git, commitMessage, base, branch, branchRemoteName
             //
             // For changes on base this reset is equivalent to a rebase of the pull request branch.
             const branchCommitsAhead = yield commitsAhead(git, base, branch);
-            if ((yield git.hasDiff([`${branch}..${tempBranch}`])) ||
+            const shouldReset = (yield git.hasDiff([`${branch}..${tempBranch}`])) ||
                 branchCommitsAhead != tempBranchCommitsAhead ||
                 !(tempBranchCommitsAhead > 0) || // !isAhead
-                (yield commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))) {
+                (tempBranchCommitsAhead > 0 &&
+                    (yield commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead)));
+            if (shouldReset) {
                 core.info(`Resetting '${branch}'`);
                 // Alternatively, git switch -C branch tempBranch
                 yield git.checkout(branch, tempBranch);

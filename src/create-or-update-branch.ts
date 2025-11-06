@@ -311,12 +311,19 @@ export async function createOrUpdateBranch(
     //
     // For changes on base this reset is equivalent to a rebase of the pull request branch.
     const branchCommitsAhead = await commitsAhead(git, base, branch)
-    if (
+    const shouldReset =
       (await git.hasDiff([`${branch}..${tempBranch}`])) ||
       branchCommitsAhead != tempBranchCommitsAhead ||
       !(tempBranchCommitsAhead > 0) || // !isAhead
-      (await commitsHaveDiff(git, branch, tempBranch, tempBranchCommitsAhead))
-    ) {
+      (tempBranchCommitsAhead > 0 &&
+        (await commitsHaveDiff(
+          git,
+          branch,
+          tempBranch,
+          tempBranchCommitsAhead
+        )))
+
+    if (shouldReset) {
       core.info(`Resetting '${branch}'`)
       // Alternatively, git switch -C branch tempBranch
       await git.checkout(branch, tempBranch)
