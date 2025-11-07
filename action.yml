@@ -34,7 +34,10 @@ inputs:
     description: 'Add `Signed-off-by` line by the committer at the end of the commit log message.'
     default: false
   branch:
-    description: 'The pull request branch name.'
+    description: >
+      The pull request branch name.
+      Supports the placeholder `${base}` which will be replaced with the base branch name.
+      For example, `${base}/patch` becomes `main/patch` when base is `main`.
     default: 'create-pull-request/patch'
   delete-branch:
     description: >
