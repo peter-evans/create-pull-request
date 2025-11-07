@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import {GitCommandManager, Commit} from './git-command-manager'
 import {v4 as uuidv4} from 'uuid'
-import * as utils from './utils'
 
 const CHERRYPICK_EMPTY =
   'The previous cherry-pick is now empty, possibly due to conflict resolution.'
@@ -135,19 +134,27 @@ async function commitsHaveDiff(
   // Some action use cases lead to the depth being a very large number and the diff fails.
   // I've made this check optional for now because it was a fix for an edge case that is
   // very rare, anyway.
-  try {
-    const diff1 = (
-      await git.exec(['diff', '--stat', `${branch1}..${branch1}~${depth}`])
-    ).stdout.trim()
-    const diff2 = (
-      await git.exec(['diff', '--stat', `${branch2}..${branch2}~${depth}`])
-    ).stdout.trim()
-    return diff1 !== diff2
-  } catch (error) {
+  const result1 = await git.exec(
+    ['diff', '--stat', `${branch1}..${branch1}~${depth}`],
+    {allowAllExitCodes: true}
+  )
+  if (result1.exitCode !== 0) {
     core.info('Failed optional check of commits diff; Skipping.')
-    core.debug(utils.getErrorMessage(error))
+    core.debug(result1.stderr)
     return false
   }
+
+  const result2 = await git.exec(
+    ['diff', '--stat', `${branch2}..${branch2}~${depth}`],
+    {allowAllExitCodes: true}
+  )
+  if (result2.exitCode !== 0) {
+    core.info('Failed optional check of commits diff; Skipping.')
+    core.debug(result2.stderr)
+    return false
+  }
+
+  return result1.stdout.trim() !== result2.stdout.trim()
 }
 
 function splitLines(multilineString: string): string[] {
