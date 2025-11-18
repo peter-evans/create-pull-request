@@ -82,6 +82,11 @@ inputs:
   maintainer-can-modify:
     description: 'Indicates whether maintainers can modify the pull request.'
     default: true
+  skip-if-commits-from-other-authors:
+    description: >
+      Skip updating the pull request branch if it contains commits from authors other than the configured action author/committer.
+      This prevents overwriting changes made by other users to the branch.
+    default: false
 outputs:
   pull-request-number:
     description: 'The pull request number'

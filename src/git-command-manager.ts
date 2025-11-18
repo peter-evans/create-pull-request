@@ -208,6 +208,26 @@ export class GitCommandManager {
     }
   }
 
+  async getCommitAuthors(
+    commitRange: string
+  ): Promise<{authorEmail: string; committerEmail: string}[]> {
+    const output = await this.exec(
+      ['log', '--format=%ae%n%ce%n###COMMIT###', commitRange],
+      {suppressGitCmdOutput: true}
+    )
+    const commits: {authorEmail: string; committerEmail: string}[] = []
+    const lines = output.stdout.split('\n').filter(x => x !== '')
+    for (let i = 0; i < lines.length; i += 3) {
+      if (lines[i + 2] === '###COMMIT###') {
+        commits.push({
+          authorEmail: lines[i],
+          committerEmail: lines[i + 1]
+        })
+      }
+    }
+    return commits
+  }
+
   async getConfigValue(configKey: string, configValue = '.'): Promise<string> {
     const output = await this.exec([
       'config',
