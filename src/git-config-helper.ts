@@ -144,6 +144,27 @@ export class GitConfigHelper {
     ).toString('base64')
     core.setSecret(basicCredential)
     const extraheaderConfigValue = `AUTHORIZATION: basic ${basicCredential}`
+
+    // Check if the same token is already configured (e.g., by checkout@v6)
+    // If so, skip reconfiguration to avoid duplicate headers
+    if (
+      await this.git.configExists(
+        this.extraheaderConfigKey,
+        this.extraheaderConfigValueRegex
+      )
+    ) {
+      const existingValue = await this.git.getConfigValue(
+        this.extraheaderConfigKey,
+        this.extraheaderConfigValueRegex
+      )
+      if (existingValue === extraheaderConfigValue) {
+        core.info(
+          'Git credentials already configured with the same token, skipping reconfiguration'
+        )
+        return
+      }
+    }
+
     await this.setExtraheaderConfig(extraheaderConfigValue)
   }
 

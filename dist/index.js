@@ -738,6 +738,7 @@ class GitCommandManager {
             const output = yield this.exec([
                 'config',
                 globalConfig ? '--global' : '--local',
+                '--includes', // Detect configs from included files (e.g., checkout@v6)
                 '--name-only',
                 '--get-regexp',
                 configKey,
@@ -820,6 +821,7 @@ class GitCommandManager {
             const output = yield this.exec([
                 'config',
                 '--local',
+                '--includes', // Get configs from included files (e.g., checkout@v6)
                 '--get-regexp',
                 configKey,
                 configValue
@@ -1205,6 +1207,15 @@ class GitConfigHelper {
             const basicCredential = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
             core.setSecret(basicCredential);
             const extraheaderConfigValue = `AUTHORIZATION: basic ${basicCredential}`;
+            // Check if the same token is already configured (e.g., by checkout@v6)
+            // If so, skip reconfiguration to avoid duplicate headers
+            if (yield this.git.configExists(this.extraheaderConfigKey, this.extraheaderConfigValueRegex)) {
+                const existingValue = yield this.git.getConfigValue(this.extraheaderConfigKey, this.extraheaderConfigValueRegex);
+                if (existingValue === extraheaderConfigValue) {
+                    core.info('Git credentials already configured with the same token, skipping reconfiguration');
+                    return;
+                }
+            }
             yield this.setExtraheaderConfig(extraheaderConfigValue);
         });
     }

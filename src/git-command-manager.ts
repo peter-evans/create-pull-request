@@ -115,6 +115,7 @@ export class GitCommandManager {
       [
         'config',
         globalConfig ? '--global' : '--local',
+        '--includes', // Detect configs from included files (e.g., checkout@v6)
         '--name-only',
         '--get-regexp',
         configKey,
@@ -212,6 +213,7 @@ export class GitCommandManager {
     const output = await this.exec([
       'config',
       '--local',
+      '--includes', // Get configs from included files (e.g., checkout@v6)
       '--get-regexp',
       configKey,
       configValue
