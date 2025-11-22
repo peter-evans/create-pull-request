@@ -22,6 +22,7 @@ export class GitConfigHelper {
   private extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***'
   private extraheaderConfigValueRegex = '^AUTHORIZATION:'
   private persistedExtraheaderConfigValue = ''
+  private backedUpCredentialFiles: string[] = []
 
   private constructor(git: GitCommandManager) {
     this.git = git
@@ -121,11 +122,15 @@ export class GitConfigHelper {
   async savePersistedAuth(): Promise<void> {
     const serverUrl = new URL(`https://${this.getGitRemote().hostname}`)
     this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`
+    // Backup checkout@v6 credential files if they exist
+    await this.hideCredentialFiles()
     // Save and unset persisted extraheader credential in git config if it exists
     this.persistedExtraheaderConfigValue = await this.getAndUnset()
   }
 
   async restorePersistedAuth(): Promise<void> {
+    // Restore checkout@v6 credential files if they were backed up
+    await this.unhideCredentialFiles()
     if (this.persistedExtraheaderConfigValue) {
       try {
         await this.setExtraheaderConfig(this.persistedExtraheaderConfigValue)
@@ -167,6 +172,51 @@ export class GitConfigHelper {
       this.extraheaderConfigPlaceholderValue,
       extraheaderConfigValue
     )
+  }
+
+  private async hideCredentialFiles(): Promise<void> {
+    // Temporarily hide checkout@v6 credential files to avoid duplicate auth headers
+    const runnerTemp = process.env['RUNNER_TEMP']
+    if (!runnerTemp) {
+      return
+    }
+
+    try {
+      const files = await fs.promises.readdir(runnerTemp)
+      for (const file of files) {
+        if (file.startsWith('git-credentials-') && file.endsWith('.config')) {
+          const sourcePath = path.join(runnerTemp, file)
+          const backupPath = `${sourcePath}.bak`
+          await fs.promises.rename(sourcePath, backupPath)
+          this.backedUpCredentialFiles.push(backupPath)
+          core.info(
+            `Temporarily hiding checkout credential file: ${file} (will be restored after)`
+          )
+        }
+      }
+    } catch (e) {
+      // If directory doesn't exist or we can't read it, just continue
+      core.debug(
+        `Could not backup credential files: ${utils.getErrorMessage(e)}`
+      )
+    }
+  }
+
+  private async unhideCredentialFiles(): Promise<void> {
+    // Restore checkout@v6 credential files that were backed up
+    for (const backupPath of this.backedUpCredentialFiles) {
+      try {
+        const originalPath = backupPath.replace(/\.bak$/, '')
+        await fs.promises.rename(backupPath, originalPath)
+        const fileName = path.basename(originalPath)
+        core.info(`Restored checkout credential file: ${fileName}`)
+      } catch (e) {
+        core.warning(
+          `Failed to restore credential file ${backupPath}: ${utils.getErrorMessage(e)}`
+        )
+      }
+    }
+    this.backedUpCredentialFiles = []
   }
 
   private async getAndUnset(): Promise<string> {
