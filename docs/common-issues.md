@@ -2,7 +2,8 @@
 
 - [Troubleshooting](#troubleshooting)
   - [Create using an existing branch as the PR branch](#create-using-an-existing-branch-as-the-pr-branch)
-- [Frequently requested features](#use-case-create-a-pull-request-to-update-x-on-release)
+  - [Pull request shows "This branch is out-of-date with the base branch"](#pull-request-shows-this-branch-is-out-of-date-with-the-base-branch)
+- [Frequently requested features](#frequently-requested-features)
   - [Disable force updates to existing PR branches](#disable-force-updates-to-existing-pr-branches)
   - [Add a no-verify option to bypass git hooks](#add-a-no-verify-option-to-bypass-git-hooks)
 
@@ -15,6 +16,82 @@ A common point of confusion is to try and use an existing branch containing chan
 If you have an existing branch that you just want to create a PR for, then I recommend using the official [GitHub CLI](https://cli.github.com/manual/gh_pr_create) in a workflow step.
 
 Alternatively, if you are trying to keep a branch up to date with another branch, then you can follow [this example](https://github.com/peter-evans/create-pull-request/blob/main/docs/examples.md#keep-a-branch-up-to-date-with-another).
+
+### Pull request shows "This branch is out-of-date with the base branch"
+
+When creating pull requests to promote changes from one branch to another (e.g., `dev` → `prod`), you may see a warning from GitHub stating "This branch is out-of-date with the base branch" even though the pull request should contain all the latest changes.
+
+#### Root Cause
+
+This issue occurs when the workflow checks out the **target** branch (e.g., `prod`), resets it locally to match the **source** branch (e.g., `dev`), and then creates a pull request. The problem is:
+
+1. The local target branch is reset to match the source
+2. The pull request branch is created from the locally reset target
+3. However, the **remote** target branch remains unchanged
+4. GitHub compares the pull request branch against the remote target branch
+5. Since the remote target is behind, GitHub shows the "out-of-date" warning
+
+#### Incorrect Workflow Pattern
+
+```yml
+# ❌ This pattern causes the "out-of-date" warning
+name: Auto PR from dev to prod
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  check-and-create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: prod  # ❌ Checking out target branch
+      - name: Reset promotion branch
+        run: |
+          git fetch origin dev:dev
+          git reset --hard dev
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: prod-promotion
+          title: "Auto PR: Merge changes from dev to prod"
+```
+
+#### Correct Solution
+
+Check out the **source** branch and specify the **target** branch using the `base` input:
+
+```yml
+# ✅ Correct pattern - no "out-of-date" warning
+name: Auto PR from dev to prod
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  check-and-create-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev  # ✅ Check out source branch
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: prod-promotion
+          base: prod  # ✅ Specify target branch as base
+          title: "Auto PR: Merge changes from dev to prod"
+          body: "This pull request has been automatically created to merge changes from the dev branch into the prod branch."
+```
+
+This approach ensures that:
+- The pull request branch is created from the source branch (`dev`)
+- The pull request targets the correct base branch (`prod`)
+- GitHub correctly shows the diff between source and target
+- No "out-of-date" warning appears
+
+For more examples of branch promotion workflows, see [Keep a branch up-to-date with another](https://github.com/peter-evans/create-pull-request/blob/main/docs/examples.md#keep-a-branch-up-to-date-with-another).
 
 ## Frequently requested features
 
