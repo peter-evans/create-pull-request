@@ -1103,6 +1103,7 @@ class GitConfigHelper {
         this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
         this.extraheaderConfigValueRegex = '^AUTHORIZATION:';
         this.persistedExtraheaderConfigValue = '';
+        this.backedUpCredentialFiles = [];
         this.git = git;
         this.workingDirectory = this.git.getWorkingDirectory();
     }
@@ -1182,12 +1183,16 @@ class GitConfigHelper {
         return __awaiter(this, void 0, void 0, function* () {
             const serverUrl = new url_1.URL(`https://${this.getGitRemote().hostname}`);
             this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
+            // Backup checkout@v6 credential files if they exist
+            yield this.hideCredentialFiles();
             // Save and unset persisted extraheader credential in git config if it exists
             this.persistedExtraheaderConfigValue = yield this.getAndUnset();
         });
     }
     restorePersistedAuth() {
         return __awaiter(this, void 0, void 0, function* () {
+            // Restore checkout@v6 credential files if they were backed up
+            yield this.unhideCredentialFiles();
             if (this.persistedExtraheaderConfigValue) {
                 try {
                     yield this.setExtraheaderConfig(this.persistedExtraheaderConfigValue);
@@ -1222,6 +1227,48 @@ class GitConfigHelper {
             yield this.git.config(this.extraheaderConfigKey, this.extraheaderConfigPlaceholderValue);
             // Replace the placeholder
             yield this.gitConfigStringReplace(this.extraheaderConfigPlaceholderValue, extraheaderConfigValue);
+        });
+    }
+    hideCredentialFiles() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Temporarily hide checkout@v6 credential files to avoid duplicate auth headers
+            const runnerTemp = process.env['RUNNER_TEMP'];
+            if (!runnerTemp) {
+                return;
+            }
+            try {
+                const files = yield fs.promises.readdir(runnerTemp);
+                for (const file of files) {
+                    if (file.startsWith('git-credentials-') && file.endsWith('.config')) {
+                        const sourcePath = path.join(runnerTemp, file);
+                        const backupPath = `${sourcePath}.bak`;
+                        yield fs.promises.rename(sourcePath, backupPath);
+                        this.backedUpCredentialFiles.push(backupPath);
+                        core.info(`Temporarily hiding checkout credential file: ${file} (will be restored after)`);
+                    }
+                }
+            }
+            catch (e) {
+                // If directory doesn't exist or we can't read it, just continue
+                core.debug(`Could not backup credential files: ${utils.getErrorMessage(e)}`);
+            }
+        });
+    }
+    unhideCredentialFiles() {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Restore checkout@v6 credential files that were backed up
+            for (const backupPath of this.backedUpCredentialFiles) {
+                try {
+                    const originalPath = backupPath.replace(/\.bak$/, '');
+                    yield fs.promises.rename(backupPath, originalPath);
+                    const fileName = path.basename(originalPath);
+                    core.info(`Restored checkout credential file: ${fileName}`);
+                }
+                catch (e) {
+                    core.warning(`Failed to restore credential file ${backupPath}: ${utils.getErrorMessage(e)}`);
+                }
+            }
+            this.backedUpCredentialFiles = [];
         });
     }
     getAndUnset() {
