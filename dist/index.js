@@ -1397,9 +1397,45 @@ class GitHubHelper {
             repo: repo
         };
     }
-    createOrUpdate(inputs, baseRepository, headRepository) {
+    getPullNumber(baseRepository, headBranch, baseBranch) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
+            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: baseBranch }));
+            let pullNumber = undefined;
+            if ((pulls === null || pulls === void 0 ? void 0 : pulls.length) === 0 || pulls === null || pulls === undefined) {
+                // This is a fallback due to a bug that affects the list endpoint when called on forks with the same owner as the repository parent.
+                core.info(`Pull request not found via list endpoint; attempting fallback mechanism`);
+                try {
+                    for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(this.octokit.rest.pulls.list, Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', base: baseBranch }))), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                        _c = _f.value;
+                        _d = false;
+                        const response = _c;
+                        const existingPull = response.data.find(pull => pull.head.label === headBranch);
+                        if (existingPull !== undefined) {
+                            pullNumber = existingPull.number;
+                            break;
+                        }
+                    }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                    }
+                    finally { if (e_1) throw e_1.error; }
+                }
+            }
+            else {
+                pullNumber = pulls[0].number;
+            }
+            if (pullNumber === undefined) {
+                throw new Error(`Failed to find pull request number for branch ${headBranch}`);
+            }
+            return pullNumber;
+        });
+    }
+    createOrUpdate(inputs, baseRepository, headRepository) {
+        return __awaiter(this, void 0, void 0, function* () {
             const [headOwner] = headRepository.split('/');
             const headBranch = `${headOwner}:${inputs.branch}`;
             // Try to create the pull request
@@ -1431,38 +1467,9 @@ class GitHubHelper {
             }
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
-            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
-            let existingPullNumber = undefined;
-            if ((pulls === null || pulls === void 0 ? void 0 : pulls.length) === 0 || pulls === null || pulls === undefined) {
-                core.error(`Failed to fetch existing pull request details through API - fetching all pull requests to manually check`);
-                try {
-                    for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(this.octokit.rest.pulls.list, Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', base: inputs.base }))), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
-                        _c = _f.value;
-                        _d = false;
-                        const response = _c;
-                        const existingPull = response.data.find(pull => pull.head.label === headBranch);
-                        if (existingPull !== undefined) {
-                            existingPullNumber = existingPull.number;
-                            break;
-                        }
-                    }
-                }
-                catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                finally {
-                    try {
-                        if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
-                    }
-                    finally { if (e_1) throw e_1.error; }
-                }
-            }
-            else {
-                existingPullNumber = pulls[0].number;
-            }
-            if (existingPullNumber === undefined) {
-                throw new Error(`A pull request already exists for ${headBranch} but couldn't acquire the pull number`);
-            }
+            const pullNumber = yield this.getPullNumber(baseRepository, headBranch, inputs.base);
             core.info(`Attempting update of pull request`);
-            const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: existingPullNumber, title: inputs.title, body: inputs.body }));
+            const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pullNumber, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
             return {
                 number: pull.number,

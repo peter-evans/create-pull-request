@@ -63,6 +63,50 @@ export class GitHubHelper {
     }
   }
 
+  private async getPullNumber(
+    baseRepository: string,
+    headBranch: string,
+    baseBranch: string
+  ): Promise<number> {
+    const {data: pulls} = await this.octokit.rest.pulls.list({
+      ...this.parseRepository(baseRepository),
+      state: 'open',
+      head: headBranch,
+      base: baseBranch
+    })
+    let pullNumber: number | undefined = undefined
+    if (pulls?.length === 0 || pulls === null || pulls === undefined) {
+      // This is a fallback due to a bug that affects the list endpoint when called on forks with the same owner as the repository parent.
+      core.info(
+        `Pull request not found via list endpoint; attempting fallback mechanism`
+      )
+      for await (const response of this.octokit.paginate.iterator(
+        this.octokit.rest.pulls.list,
+        {
+          ...this.parseRepository(baseRepository),
+          state: 'open',
+          base: baseBranch
+        }
+      )) {
+        const existingPull = response.data.find(
+          pull => pull.head.label === headBranch
+        )
+        if (existingPull !== undefined) {
+          pullNumber = existingPull.number
+          break
+        }
+      }
+    } else {
+      pullNumber = pulls[0].number
+    }
+    if (pullNumber === undefined) {
+      throw new Error(
+        `Failed to find pull request number for branch ${headBranch}`
+      )
+    }
+    return pullNumber
+  }
+
   private async createOrUpdate(
     inputs: Inputs,
     baseRepository: string,
@@ -113,45 +157,15 @@ export class GitHubHelper {
 
     // Update the pull request that exists for this branch and base
     core.info(`Fetching existing pull request`)
-    const {data: pulls} = await this.octokit.rest.pulls.list({
-      ...this.parseRepository(baseRepository),
-      state: 'open',
-      head: headBranch,
-      base: inputs.base
-    })
-    let existingPullNumber: number | undefined = undefined
-    if (pulls?.length === 0 || pulls === null || pulls === undefined) {
-      core.error(
-        `Failed to fetch existing pull request details through API - fetching all pull requests to manually check`
-      )
-      for await (const response of this.octokit.paginate.iterator(
-        this.octokit.rest.pulls.list,
-        {
-          ...this.parseRepository(baseRepository),
-          state: 'open',
-          base: inputs.base
-        }
-      )) {
-        const existingPull = response.data.find(
-          pull => pull.head.label === headBranch
-        )
-        if (existingPull !== undefined) {
-          existingPullNumber = existingPull.number
-          break
-        }
-      }
-    } else {
-      existingPullNumber = pulls[0].number
-    }
-    if (existingPullNumber === undefined) {
-      throw new Error(
-        `A pull request already exists for ${headBranch} but couldn't acquire the pull number`
-      )
-    }
+    const pullNumber = await this.getPullNumber(
+      baseRepository,
+      headBranch,
+      inputs.base
+    )
     core.info(`Attempting update of pull request`)
     const {data: pull} = await this.octokit.rest.pulls.update({
       ...this.parseRepository(baseRepository),
-      pull_number: existingPullNumber,
+      pull_number: pullNumber,
       title: inputs.title,
       body: inputs.body
     })
