@@ -1355,6 +1355,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __asyncValues = (this && this.__asyncValues) || function (o) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var m = o[Symbol.asyncIterator], i;
+    return m ? m.call(o) : (o = typeof __values === "function" ? __values(o) : o[Symbol.iterator](), i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i);
+    function verb(n) { i[n] = o[n] && function (v) { return new Promise(function (resolve, reject) { v = o[n](v), settle(resolve, reject, v.done, v.value); }); }; }
+    function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -1390,6 +1397,43 @@ class GitHubHelper {
             repo: repo
         };
     }
+    getPullNumber(baseRepository, headBranch, baseBranch) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, e_1, _b, _c;
+            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: baseBranch }));
+            let pullNumber = undefined;
+            if ((pulls === null || pulls === void 0 ? void 0 : pulls.length) === 0 || pulls === null || pulls === undefined) {
+                // This is a fallback due to a bug that affects the list endpoint when called on forks with the same owner as the repository parent.
+                core.info(`Pull request not found via list endpoint; attempting fallback mechanism`);
+                try {
+                    for (var _d = true, _e = __asyncValues(this.octokit.paginate.iterator(this.octokit.rest.pulls.list, Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', base: baseBranch }))), _f; _f = yield _e.next(), _a = _f.done, !_a; _d = true) {
+                        _c = _f.value;
+                        _d = false;
+                        const response = _c;
+                        const existingPull = response.data.find(pull => pull.head.label === headBranch);
+                        if (existingPull !== undefined) {
+                            pullNumber = existingPull.number;
+                            break;
+                        }
+                    }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (!_d && !_a && (_b = _e.return)) yield _b.call(_e);
+                    }
+                    finally { if (e_1) throw e_1.error; }
+                }
+            }
+            else {
+                pullNumber = pulls[0].number;
+            }
+            if (pullNumber === undefined) {
+                throw new Error(`Failed to find pull request number for branch ${headBranch}`);
+            }
+            return pullNumber;
+        });
+    }
     createOrUpdate(inputs, baseRepository, headRepository) {
         return __awaiter(this, void 0, void 0, function* () {
             const [headOwner] = headRepository.split('/');
@@ -1423,9 +1467,9 @@ class GitHubHelper {
             }
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
-            const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: inputs.base }));
+            const pullNumber = yield this.getPullNumber(baseRepository, headBranch, inputs.base);
             core.info(`Attempting update of pull request`);
-            const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pulls[0].number, title: inputs.title, body: inputs.body }));
+            const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pullNumber, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
             return {
                 number: pull.number,
