@@ -135,3 +135,8 @@ export function getErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message
   return String(error)
 }
+
+export const isSelfHosted = (): boolean =>
+  process.env['RUNNER_ENVIRONMENT'] !== 'github-hosted' &&
+  (process.env['AGENT_ISSELFHOSTED'] === '1' ||
+    process.env['AGENT_ISSELFHOSTED'] === undefined)

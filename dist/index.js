@@ -452,12 +452,14 @@ function createPullRequest(inputs) {
             if (branchRemoteName == 'origin' && base == inputs.branch) {
                 throw new Error(`The 'base' and 'branch' for a pull request must be different branches. Unable to continue.`);
             }
-            // For self-hosted runners the repository state persists between runs.
-            // This command prunes the stale remote ref when the pull request branch was
-            // deleted after being merged or closed. Without this the push using
-            // '--force-with-lease' fails due to "stale info."
-            // https://github.com/peter-evans/create-pull-request/issues/633
-            yield git.exec(['remote', 'prune', branchRemoteName]);
+            if (utils.isSelfHosted()) {
+                // For self-hosted runners the repository state persists between runs.
+                // This command prunes the stale remote ref when the pull request branch was
+                // deleted after being merged or closed. Without this the push using
+                // '--force-with-lease' fails due to "stale info."
+                // https://github.com/peter-evans/create-pull-request/issues/633
+                yield git.exec(['remote', 'prune', branchRemoteName]);
+            }
             core.endGroup();
             // Apply the branch suffix if set
             if (inputs.branchSuffix) {
@@ -1888,6 +1890,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.isSelfHosted = void 0;
 exports.getInputAsArray = getInputAsArray;
 exports.getStringAsArray = getStringAsArray;
 exports.stripOrgPrefixFromTeams = stripOrgPrefixFromTeams;
@@ -1996,6 +1999,10 @@ function getErrorMessage(error) {
         return error.message;
     return String(error);
 }
+const isSelfHosted = () => process.env['RUNNER_ENVIRONMENT'] !== 'github-hosted' &&
+    (process.env['AGENT_ISSELFHOSTED'] === '1' ||
+        process.env['AGENT_ISSELFHOSTED'] === undefined);
+exports.isSelfHosted = isSelfHosted;
 
 
 /***/ }),
