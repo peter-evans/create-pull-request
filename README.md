@@ -21,7 +21,7 @@ Create Pull Request action will:
 
 - [Concepts, guidelines and advanced usage](docs/concepts-guidelines.md)
 - [Examples](docs/examples.md)
-- [Updating to v7](docs/updating.md)
+- [Updating between versions](docs/updating.md)
 - [Common issues](docs/common-issues.md)
 
 ## Usage
