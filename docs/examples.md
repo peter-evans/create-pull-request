@@ -42,7 +42,7 @@ jobs:
   updateAuthors:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Update AUTHORS
@@ -73,7 +73,7 @@ jobs:
   productionPromotion:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: production
       - name: Reset promotion branch
@@ -106,7 +106,7 @@ jobs:
   updateChangelog:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Update Changelog
@@ -144,7 +144,7 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
@@ -180,7 +180,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v3
         with:
           node-version: 16.x
@@ -204,7 +204,7 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v2
         with:
           distribution: 'temurin'
@@ -242,7 +242,7 @@ jobs:
   update-dep:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Update dependencies
         run: |
           cargo install cargo-edit
@@ -277,7 +277,7 @@ jobs:
   updateSwagger:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Get Latest Swagger UI Release
         id: swagger-ui
         run: |
@@ -342,7 +342,7 @@ jobs:
   updateFork:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: fork-owner/repo
       - name: Reset the default branch with upstream changes
@@ -370,7 +370,7 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download website
         run: |
           wget \
@@ -466,7 +466,7 @@ jobs:
     if: startsWith(github.head_ref, 'autopep8-patches') == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.head_ref }}
       - name: autopep8
@@ -515,13 +515,13 @@ jobs:
     if: startsWith(github.ref, 'refs/heads/')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       ...
 
   someOtherJob:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       ...
 ```
 
