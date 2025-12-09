@@ -88,7 +88,7 @@
 
   e.g.
   ```yaml
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v2
 
       # Make changes to pull request here
 
@@ -117,11 +117,11 @@
 
 ### Behaviour changes
 
-- `v2` now expects repositories to be checked out with `actions/checkout@v6`
+- `v2` now expects repositories to be checked out with `actions/checkout@v2`
 
-  To use `actions/checkout@v6` the following step to checkout the branch is necessary.
+  To use `actions/checkout@v1` the following step to checkout the branch is necessary.
   ```yml
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v1
       - name: Checkout branch
         run: git checkout "${GITHUB_REF:11}"
   ```
