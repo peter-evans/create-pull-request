@@ -35,7 +35,7 @@ Create Pull Request action will:
         uses: peter-evans/create-pull-request@v8
 ```
 
-You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v7.x.x`
+You can also pin to a [specific release](https://github.com/peter-evans/create-pull-request/releases) version in the format `@v8.x.x`
 
 ### Workflow permissions
 
