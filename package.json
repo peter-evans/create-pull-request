@@ -58,8 +58,8 @@
     "jest-circus": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "js-yaml": "^4.1.1",
-    "prettier": "^3.7.3",
-    "ts-jest": "^29.4.5",
+    "prettier": "^3.7.4",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
     "undici": "^6.22.0"
   }
