@@ -458,7 +458,12 @@ function createPullRequest(inputs) {
                 // deleted after being merged or closed. Without this the push using
                 // '--force-with-lease' fails due to "stale info."
                 // https://github.com/peter-evans/create-pull-request/issues/633
-                yield git.exec(['remote', 'prune', branchRemoteName]);
+                try {
+                    yield git.exec(['remote', 'prune', branchRemoteName]);
+                }
+                catch (error) {
+                    core.warning(`Failed to prune remote '${branchRemoteName}': ${error.message}`);
+                }
             }
             core.endGroup();
             // Apply the branch suffix if set
