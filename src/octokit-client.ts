@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import {Octokit as OctokitCore} from '@octokit/core'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
 import {restEndpointMethods} from '@octokit/plugin-rest-endpoint-methods'
+import {retry} from '@octokit/plugin-retry'
 import {throttling} from '@octokit/plugin-throttling'
 import {fetch} from 'node-fetch-native/proxy'
 export {RestEndpointMethodTypes} from '@octokit/plugin-rest-endpoint-methods'
@@ -11,6 +12,7 @@ export {OctokitOptions} from '@octokit/core/dist-types/types'
 export const Octokit = OctokitCore.plugin(
   paginateRest,
   restEndpointMethods,
+  retry,
   throttling,
   autoProxyAgent
 )
@@ -30,6 +32,11 @@ export const throttleOptions = {
     )
     core.warning(`Requests may be retried after ${retryAfter} seconds.`)
   }
+}
+
+export const retryOptions = {
+  // 429 is handled by the throttling plugin, so we exclude it from retry
+  doNotRetry: [400, 401, 403, 404, 410, 422, 429, 451]
 }
 
 // Octokit plugin to support the standard environment variables http_proxy, https_proxy and no_proxy
