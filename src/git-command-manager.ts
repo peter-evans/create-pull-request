@@ -368,7 +368,7 @@ export class GitCommandManager {
     } else {
       args.push(globalConfig ? '--global' : '--local')
     }
-    args.push('--unset', configKey, configValue)
+    args.push('--fixed-value', '--unset', configKey, configValue)
     const output = await this.exec(args, {allowAllExitCodes: true})
     return output.exitCode === 0
   }

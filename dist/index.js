@@ -979,7 +979,9 @@ class GitCommandManager {
             else {
                 args.push(globalConfig ? '--global' : '--local');
             }
-            args.push('--unset', configKey, configValue);
+            // Use --fixed-value to treat configValue as a literal string, not a regex pattern.
+            // This is important for file paths which contain regex special characters like '.'
+            args.push('--fixed-value', '--unset', configKey, configValue);
             const output = yield this.exec(args, { allowAllExitCodes: true });
             return output.exitCode === 0;
         });
