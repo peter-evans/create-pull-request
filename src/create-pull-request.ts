@@ -127,7 +127,13 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
       // deleted after being merged or closed. Without this the push using
       // '--force-with-lease' fails due to "stale info."
       // https://github.com/peter-evans/create-pull-request/issues/633
-      await git.exec(['remote', 'prune', branchRemoteName])
+      try {
+        await git.exec(['remote', 'prune', branchRemoteName])
+      } catch (error) {
+        core.warning(
+          `Failed to prune remote '${branchRemoteName}': ${(error as Error).message}`
+        )
+      }
     }
     core.endGroup()
 
