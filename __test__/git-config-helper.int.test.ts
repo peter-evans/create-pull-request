@@ -82,7 +82,7 @@ describe('git-config-helper integration tests', () => {
     const includeIfKeysAfter = await git.tryGetConfigKeys(
       '^includeIf\\.gitdir:'
     )
-    const credentialIncludes = []
+    const credentialIncludes: string[] = []
     for (const key of includeIfKeysAfter) {
       const values = await git.tryGetConfigValues(key)
       for (const value of values) {
