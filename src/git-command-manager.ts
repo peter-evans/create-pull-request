@@ -96,9 +96,15 @@ export class GitCommandManager {
     configKey: string,
     configValue: string,
     globalConfig?: boolean,
-    add?: boolean
+    add?: boolean,
+    configFile?: string
   ): Promise<void> {
-    const args: string[] = ['config', globalConfig ? '--global' : '--local']
+    const args: string[] = ['config']
+    if (configFile) {
+      args.push('--file', configFile)
+    } else {
+      args.push(globalConfig ? '--global' : '--local')
+    }
     if (add) {
       args.push('--add')
     }
@@ -348,6 +354,67 @@ export class GitCommandManager {
       {allowAllExitCodes: true}
     )
     return output.exitCode === 0
+  }
+
+  async tryConfigUnsetValue(
+    configKey: string,
+    configValue: string,
+    globalConfig?: boolean,
+    configFile?: string
+  ): Promise<boolean> {
+    const args = ['config']
+    if (configFile) {
+      args.push('--file', configFile)
+    } else {
+      args.push(globalConfig ? '--global' : '--local')
+    }
+    args.push('--unset', configKey, configValue)
+    const output = await this.exec(args, {allowAllExitCodes: true})
+    return output.exitCode === 0
+  }
+
+  async tryGetConfigValues(
+    configKey: string,
+    globalConfig?: boolean,
+    configFile?: string
+  ): Promise<string[]> {
+    const args = ['config']
+    if (configFile) {
+      args.push('--file', configFile)
+    } else {
+      args.push(globalConfig ? '--global' : '--local')
+    }
+    args.push('--get-all', configKey)
+    const output = await this.exec(args, {allowAllExitCodes: true})
+    if (output.exitCode !== 0) {
+      return []
+    }
+    return output.stdout
+      .trim()
+      .split('\n')
+      .filter(value => value.trim())
+  }
+
+  async tryGetConfigKeys(
+    pattern: string,
+    globalConfig?: boolean,
+    configFile?: string
+  ): Promise<string[]> {
+    const args = ['config']
+    if (configFile) {
+      args.push('--file', configFile)
+    } else {
+      args.push(globalConfig ? '--global' : '--local')
+    }
+    args.push('--name-only', '--get-regexp', pattern)
+    const output = await this.exec(args, {allowAllExitCodes: true})
+    if (output.exitCode !== 0) {
+      return []
+    }
+    return output.stdout
+      .trim()
+      .split('\n')
+      .filter(key => key.trim())
   }
 
   async tryGetRemoteUrl(): Promise<string> {

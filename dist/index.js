@@ -730,9 +730,15 @@ class GitCommandManager {
             return yield this.exec(args, { allowAllExitCodes: allowAllExitCodes });
         });
     }
-    config(configKey, configValue, globalConfig, add) {
+    config(configKey, configValue, globalConfig, add, configFile) {
         return __awaiter(this, void 0, void 0, function* () {
-            const args = ['config', globalConfig ? '--global' : '--local'];
+            const args = ['config'];
+            if (configFile) {
+                args.push('--file', configFile);
+            }
+            else {
+                args.push(globalConfig ? '--global' : '--local');
+            }
             if (add) {
                 args.push('--add');
             }
@@ -964,6 +970,60 @@ class GitCommandManager {
             return output.exitCode === 0;
         });
     }
+    tryConfigUnsetValue(configKey, configValue, globalConfig, configFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['config'];
+            if (configFile) {
+                args.push('--file', configFile);
+            }
+            else {
+                args.push(globalConfig ? '--global' : '--local');
+            }
+            args.push('--unset', configKey, configValue);
+            const output = yield this.exec(args, { allowAllExitCodes: true });
+            return output.exitCode === 0;
+        });
+    }
+    tryGetConfigValues(configKey, globalConfig, configFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['config'];
+            if (configFile) {
+                args.push('--file', configFile);
+            }
+            else {
+                args.push(globalConfig ? '--global' : '--local');
+            }
+            args.push('--get-all', configKey);
+            const output = yield this.exec(args, { allowAllExitCodes: true });
+            if (output.exitCode !== 0) {
+                return [];
+            }
+            return output.stdout
+                .trim()
+                .split('\n')
+                .filter(value => value.trim());
+        });
+    }
+    tryGetConfigKeys(pattern, globalConfig, configFile) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const args = ['config'];
+            if (configFile) {
+                args.push('--file', configFile);
+            }
+            else {
+                args.push(globalConfig ? '--global' : '--local');
+            }
+            args.push('--name-only', '--get-regexp', pattern);
+            const output = yield this.exec(args, { allowAllExitCodes: true });
+            if (output.exitCode !== 0) {
+                return [];
+            }
+            return output.stdout
+                .trim()
+                .split('\n')
+                .filter(key => key.trim());
+        });
+    }
     tryGetRemoteUrl() {
         return __awaiter(this, void 0, void 0, function* () {
             const output = yield this.exec(['config', '--local', '--get', 'remote.origin.url'], { allowAllExitCodes: true });
@@ -1100,9 +1160,9 @@ const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
 const url_1 = __nccwpck_require__(7016);
 const utils = __importStar(__nccwpck_require__(9277));
+const uuid_1 = __nccwpck_require__(2048);
 class GitConfigHelper {
     constructor(git) {
-        this.gitConfigPath = '';
         this.safeDirectoryConfigKey = 'safe.directory';
         this.safeDirectoryAdded = false;
         this.remoteUrl = '';
@@ -1110,7 +1170,8 @@ class GitConfigHelper {
         this.extraheaderConfigPlaceholderValue = 'AUTHORIZATION: basic ***';
         this.extraheaderConfigValueRegex = '^AUTHORIZATION:';
         this.persistedExtraheaderConfigValue = '';
-        this.backedUpCredentialFiles = [];
+        // Path to the credentials config file in RUNNER_TEMP (new v6-style auth)
+        this.credentialsConfigPath = '';
         this.git = git;
         this.workingDirectory = this.git.getWorkingDirectory();
     }
@@ -1190,16 +1251,15 @@ class GitConfigHelper {
         return __awaiter(this, void 0, void 0, function* () {
             const serverUrl = new url_1.URL(`https://${this.getGitRemote().hostname}`);
             this.extraheaderConfigKey = `http.${serverUrl.origin}/.extraheader`;
-            // Backup checkout@v6 credential files if they exist
-            yield this.hideCredentialFiles();
-            // Save and unset persisted extraheader credential in git config if it exists
+            // Save and unset persisted extraheader credential in git config if it exists (old-style auth)
+            // Note: checkout@v6 uses credentials files with includeIf, so we don't need to
+            // manipulate those - they work independently via git's include mechanism
             this.persistedExtraheaderConfigValue = yield this.getAndUnset();
         });
     }
     restorePersistedAuth() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Restore checkout@v6 credential files if they were backed up
-            yield this.unhideCredentialFiles();
+            // Restore old-style extraheader config if it was persisted
             if (this.persistedExtraheaderConfigValue) {
                 try {
                     yield this.setExtraheaderConfig(this.persistedExtraheaderConfigValue);
@@ -1213,69 +1273,165 @@ class GitConfigHelper {
     }
     configureToken(token) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Encode and configure the basic credential for HTTPS access
+            // Encode the basic credential for HTTPS access
             const basicCredential = Buffer.from(`x-access-token:${token}`, 'utf8').toString('base64');
             core.setSecret(basicCredential);
             const extraheaderConfigValue = `AUTHORIZATION: basic ${basicCredential}`;
-            yield this.setExtraheaderConfig(extraheaderConfigValue);
+            // Get or create the credentials config file path
+            const credentialsConfigPath = this.getCredentialsConfigPath();
+            // Write placeholder to the separate credentials config file using git config.
+            // This approach avoids the credential being captured by process creation audit events,
+            // which are commonly logged. For more information, refer to
+            // https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing
+            yield this.git.config(this.extraheaderConfigKey, this.extraheaderConfigPlaceholderValue, false, // globalConfig
+            false, // add
+            credentialsConfigPath);
+            // Replace the placeholder in the credentials config file
+            let content = (yield fs.promises.readFile(credentialsConfigPath)).toString();
+            const placeholderIndex = content.indexOf(this.extraheaderConfigPlaceholderValue);
+            if (placeholderIndex < 0 ||
+                placeholderIndex !=
+                    content.lastIndexOf(this.extraheaderConfigPlaceholderValue)) {
+                throw new Error(`Unable to replace auth placeholder in ${credentialsConfigPath}`);
+            }
+            content = content.replace(this.extraheaderConfigPlaceholderValue, extraheaderConfigValue);
+            yield fs.promises.writeFile(credentialsConfigPath, content);
+            // Configure includeIf entries to reference the credentials config file
+            yield this.configureIncludeIf(credentialsConfigPath);
         });
     }
     removeAuth() {
         return __awaiter(this, void 0, void 0, function* () {
+            // Remove old-style extraheader config if it exists
             yield this.getAndUnset();
+            // Remove includeIf entries that point to git-credentials-*.config files
+            // and clean up the credentials config files
+            yield this.removeIncludeIfCredentials();
         });
     }
+    /**
+     * Gets or creates the path to the credentials config file in RUNNER_TEMP.
+     * @returns The absolute path to the credentials config file
+     */
+    getCredentialsConfigPath() {
+        if (this.credentialsConfigPath) {
+            return this.credentialsConfigPath;
+        }
+        const runnerTemp = process.env['RUNNER_TEMP'] || '';
+        if (!runnerTemp) {
+            throw new Error('RUNNER_TEMP is not defined');
+        }
+        // Create a unique filename for this action instance
+        const configFileName = `git-credentials-${(0, uuid_1.v4)()}.config`;
+        this.credentialsConfigPath = path.join(runnerTemp, configFileName);
+        core.debug(`Credentials config path: ${this.credentialsConfigPath}`);
+        return this.credentialsConfigPath;
+    }
+    /**
+     * Configures includeIf entries in the local git config to reference the credentials file.
+     * Sets up entries for both host and container paths to support Docker container actions.
+     */
+    configureIncludeIf(credentialsConfigPath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Host git directory
+            const gitDir = yield this.git.getGitDirectory();
+            let hostGitDir = path.join(this.workingDirectory, gitDir);
+            hostGitDir = hostGitDir.replace(/\\/g, '/'); // Use forward slashes, even on Windows
+            // Configure host includeIf
+            const hostIncludeKey = `includeIf.gitdir:${hostGitDir}.path`;
+            yield this.git.config(hostIncludeKey, credentialsConfigPath);
+            // Configure host includeIf for worktrees
+            const hostWorktreeIncludeKey = `includeIf.gitdir:${hostGitDir}/worktrees/*.path`;
+            yield this.git.config(hostWorktreeIncludeKey, credentialsConfigPath);
+            // Container paths for Docker container actions
+            const githubWorkspace = process.env['GITHUB_WORKSPACE'];
+            if (githubWorkspace) {
+                let relativePath = path.relative(githubWorkspace, this.workingDirectory);
+                relativePath = relativePath.replace(/\\/g, '/'); // Use forward slashes, even on Windows
+                const containerGitDir = path.posix.join('/github/workspace', relativePath, '.git');
+                // Container credentials config path
+                const containerCredentialsPath = path.posix.join('/github/runner_temp', path.basename(credentialsConfigPath));
+                // Configure container includeIf
+                const containerIncludeKey = `includeIf.gitdir:${containerGitDir}.path`;
+                yield this.git.config(containerIncludeKey, containerCredentialsPath);
+                // Configure container includeIf for worktrees
+                const containerWorktreeIncludeKey = `includeIf.gitdir:${containerGitDir}/worktrees/*.path`;
+                yield this.git.config(containerWorktreeIncludeKey, containerCredentialsPath);
+            }
+        });
+    }
+    /**
+     * Removes includeIf entries that point to git-credentials-*.config files
+     * and deletes the credentials config files.
+     */
+    removeIncludeIfCredentials() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const credentialsPaths = new Set();
+            try {
+                // Get all includeIf.gitdir keys from local config
+                const keys = yield this.git.tryGetConfigKeys('^includeIf\\.gitdir:');
+                for (const key of keys) {
+                    // Get all values for this key
+                    const values = yield this.git.tryGetConfigValues(key);
+                    for (const value of values) {
+                        // Check if value matches git-credentials-<uuid>.config pattern
+                        if (this.isCredentialsConfigPath(value)) {
+                            credentialsPaths.add(value);
+                            yield this.git.tryConfigUnsetValue(key, value);
+                            core.debug(`Removed includeIf entry: ${key} = ${value}`);
+                        }
+                    }
+                }
+            }
+            catch (e) {
+                // Ignore errors during cleanup
+                core.debug(`Error during includeIf cleanup: ${utils.getErrorMessage(e)}`);
+            }
+            // Delete credentials config files that are under RUNNER_TEMP
+            const runnerTemp = process.env['RUNNER_TEMP'];
+            if (runnerTemp) {
+                for (const credentialsPath of credentialsPaths) {
+                    // Only remove files under RUNNER_TEMP for safety
+                    if (credentialsPath.startsWith(runnerTemp)) {
+                        try {
+                            yield fs.promises.unlink(credentialsPath);
+                            core.info(`Removed credentials config file: ${credentialsPath}`);
+                        }
+                        catch (e) {
+                            core.debug(`Could not remove credentials file ${credentialsPath}: ${utils.getErrorMessage(e)}`);
+                        }
+                    }
+                }
+            }
+        });
+    }
+    /**
+     * Tests if a path matches the git-credentials-*.config pattern.
+     */
+    isCredentialsConfigPath(filePath) {
+        return /git-credentials-[0-9a-f-]+\.config$/i.test(filePath);
+    }
+    /**
+     * Sets extraheader config directly in .git/config (old-style auth).
+     * Used only for restoring persisted credentials from checkout@v4/v5.
+     */
     setExtraheaderConfig(extraheaderConfigValue) {
         return __awaiter(this, void 0, void 0, function* () {
             // Configure a placeholder value. This approach avoids the credential being captured
             // by process creation audit events, which are commonly logged. For more information,
             // refer to https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/command-line-process-auditing
-            // See https://github.com/actions/checkout/blob/main/src/git-auth-helper.ts#L267-L274
             yield this.git.config(this.extraheaderConfigKey, this.extraheaderConfigPlaceholderValue);
-            // Replace the placeholder
-            yield this.gitConfigStringReplace(this.extraheaderConfigPlaceholderValue, extraheaderConfigValue);
-        });
-    }
-    hideCredentialFiles() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Temporarily hide checkout@v6 credential files to avoid duplicate auth headers
-            const runnerTemp = process.env['RUNNER_TEMP'];
-            if (!runnerTemp) {
-                return;
+            // Replace the placeholder in the local git config
+            const gitDir = yield this.git.getGitDirectory();
+            const gitConfigPath = path.join(this.workingDirectory, gitDir, 'config');
+            let content = (yield fs.promises.readFile(gitConfigPath)).toString();
+            const index = content.indexOf(this.extraheaderConfigPlaceholderValue);
+            if (index < 0 ||
+                index != content.lastIndexOf(this.extraheaderConfigPlaceholderValue)) {
+                throw new Error(`Unable to replace '${this.extraheaderConfigPlaceholderValue}' in ${gitConfigPath}`);
             }
-            try {
-                const files = yield fs.promises.readdir(runnerTemp);
-                for (const file of files) {
-                    if (file.startsWith('git-credentials-') && file.endsWith('.config')) {
-                        const sourcePath = path.join(runnerTemp, file);
-                        const backupPath = `${sourcePath}.bak`;
-                        yield fs.promises.rename(sourcePath, backupPath);
-                        this.backedUpCredentialFiles.push(backupPath);
-                        core.info(`Temporarily hiding checkout credential file: ${file} (will be restored after)`);
-                    }
-                }
-            }
-            catch (e) {
-                // If directory doesn't exist or we can't read it, just continue
-                core.debug(`Could not backup credential files: ${utils.getErrorMessage(e)}`);
-            }
-        });
-    }
-    unhideCredentialFiles() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Restore checkout@v6 credential files that were backed up
-            for (const backupPath of this.backedUpCredentialFiles) {
-                try {
-                    const originalPath = backupPath.replace(/\.bak$/, '');
-                    yield fs.promises.rename(backupPath, originalPath);
-                    const fileName = path.basename(originalPath);
-                    core.info(`Restored checkout credential file: ${fileName}`);
-                }
-                catch (e) {
-                    core.warning(`Failed to restore credential file ${backupPath}: ${utils.getErrorMessage(e)}`);
-                }
-            }
-            this.backedUpCredentialFiles = [];
+            content = content.replace(this.extraheaderConfigPlaceholderValue, extraheaderConfigValue);
+            yield fs.promises.writeFile(gitConfigPath, content);
         });
     }
     getAndUnset() {
@@ -1292,21 +1448,6 @@ class GitConfigHelper {
                 }
             }
             return configValue;
-        });
-    }
-    gitConfigStringReplace(find, replace) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (this.gitConfigPath.length === 0) {
-                const gitDir = yield this.git.getGitDirectory();
-                this.gitConfigPath = path.join(this.workingDirectory, gitDir, 'config');
-            }
-            let content = (yield fs.promises.readFile(this.gitConfigPath)).toString();
-            const index = content.indexOf(find);
-            if (index < 0 || index != content.lastIndexOf(find)) {
-                throw new Error(`Unable to replace '${find}' in ${this.gitConfigPath}`);
-            }
-            content = content.replace(find, replace);
-            yield fs.promises.writeFile(this.gitConfigPath, content);
         });
     }
 }
