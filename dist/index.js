@@ -1392,7 +1392,10 @@ class GitConfigHelper {
             }
             // Delete only our credentials config file
             const runnerTemp = process.env['RUNNER_TEMP'];
-            if (runnerTemp && this.credentialsConfigPath.startsWith(runnerTemp)) {
+            const resolvedCredentialsPath = path.resolve(this.credentialsConfigPath);
+            const resolvedRunnerTemp = runnerTemp ? path.resolve(runnerTemp) : '';
+            if (resolvedRunnerTemp &&
+                resolvedCredentialsPath.startsWith(resolvedRunnerTemp + path.sep)) {
                 try {
                     yield fs.promises.unlink(this.credentialsConfigPath);
                     core.info(`Removed credentials config file: ${this.credentialsConfigPath}`);
