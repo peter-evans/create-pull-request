@@ -69,6 +69,18 @@ describe('git-config-helper integration tests', () => {
     const includeIfKeys = await git.tryGetConfigKeys('^includeIf\\.gitdir:')
     expect(includeIfKeys.length).toBeGreaterThan(0)
 
+    // Count credential includes pointing to this action's credentials file
+    let credentialIncludesForThisAction = 0
+    for (const key of includeIfKeys) {
+      const values = await git.tryGetConfigValues(key)
+      for (const value of values) {
+        if (value === credentialsPath) {
+          credentialIncludesForThisAction++
+        }
+      }
+    }
+    expect(credentialIncludesForThisAction).toBeGreaterThan(0)
+
     await gitConfigHelper.close()
 
     // Verify credentials file was removed
@@ -78,20 +90,20 @@ describe('git-config-helper integration tests', () => {
     )
     expect(credentialsFilesAfter.length).toBe(0)
 
-    // Verify includeIf entries were removed
+    // Verify includeIf entries pointing to our specific credentials file were removed
     const includeIfKeysAfter = await git.tryGetConfigKeys(
       '^includeIf\\.gitdir:'
     )
-    const credentialIncludes: string[] = []
+    let credentialIncludesForThisActionAfter = 0
     for (const key of includeIfKeysAfter) {
       const values = await git.tryGetConfigValues(key)
       for (const value of values) {
-        if (/git-credentials-[0-9a-f-]+\.config$/i.test(value)) {
-          credentialIncludes.push(value)
+        if (value === credentialsPath) {
+          credentialIncludesForThisActionAfter++
         }
       }
     }
-    expect(credentialIncludes.length).toBe(0)
+    expect(credentialIncludesForThisActionAfter).toBe(0)
   })
 
   it('tests save and restore of persisted auth (old-style)', async () => {

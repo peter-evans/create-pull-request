@@ -271,11 +271,15 @@ export class GitConfigHelper {
   }
 
   /**
-   * Removes includeIf entries that point to git-credentials-*.config files
-   * and deletes the credentials config files.
+   * Removes the includeIf entry and credentials config file created by this action instance.
+   * Only cleans up the specific credentials file tracked in this.credentialsConfigPath,
+   * leaving credentials created by other actions (e.g., actions/checkout) intact.
    */
   private async removeIncludeIfCredentials(): Promise<void> {
-    const credentialsPaths = new Set<string>()
+    // Only clean up if this action instance created a credentials config file
+    if (!this.credentialsConfigPath) {
+      return
+    }
 
     try {
       // Get all includeIf.gitdir keys from local config
@@ -285,9 +289,8 @@ export class GitConfigHelper {
         // Get all values for this key
         const values = await this.git.tryGetConfigValues(key)
         for (const value of values) {
-          // Check if value matches git-credentials-<uuid>.config pattern
-          if (this.isCredentialsConfigPath(value)) {
-            credentialsPaths.add(value)
+          // Only remove entries pointing to our specific credentials file
+          if (value === this.credentialsConfigPath) {
             await this.git.tryConfigUnsetValue(key, value)
             core.debug(`Removed includeIf entry: ${key} = ${value}`)
           }
@@ -298,30 +301,20 @@ export class GitConfigHelper {
       core.debug(`Error during includeIf cleanup: ${utils.getErrorMessage(e)}`)
     }
 
-    // Delete credentials config files that are under RUNNER_TEMP
+    // Delete only our credentials config file
     const runnerTemp = process.env['RUNNER_TEMP']
-    if (runnerTemp) {
-      for (const credentialsPath of credentialsPaths) {
-        // Only remove files under RUNNER_TEMP for safety
-        if (credentialsPath.startsWith(runnerTemp)) {
-          try {
-            await fs.promises.unlink(credentialsPath)
-            core.info(`Removed credentials config file: ${credentialsPath}`)
-          } catch (e) {
-            core.debug(
-              `Could not remove credentials file ${credentialsPath}: ${utils.getErrorMessage(e)}`
-            )
-          }
-        }
+    if (runnerTemp && this.credentialsConfigPath.startsWith(runnerTemp)) {
+      try {
+        await fs.promises.unlink(this.credentialsConfigPath)
+        core.info(
+          `Removed credentials config file: ${this.credentialsConfigPath}`
+        )
+      } catch (e) {
+        core.debug(
+          `Could not remove credentials file ${this.credentialsConfigPath}: ${utils.getErrorMessage(e)}`
+        )
       }
     }
-  }
-
-  /**
-   * Tests if a path matches the git-credentials-*.config pattern.
-   */
-  private isCredentialsConfigPath(filePath: string): boolean {
-    return /git-credentials-[0-9a-f-]+\.config$/i.test(filePath)
   }
 
   /**
