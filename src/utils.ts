@@ -140,3 +140,26 @@ export const isSelfHosted = (): boolean =>
   process.env['RUNNER_ENVIRONMENT'] !== 'github-hosted' &&
   (process.env['AGENT_ISSELFHOSTED'] === '1' ||
     process.env['AGENT_ISSELFHOSTED'] === undefined)
+
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  shouldRetry: (error: unknown) => boolean,
+  maxRetries = 2,
+  delayMs = 1000
+): Promise<T> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (e) {
+      if (attempt < maxRetries && shouldRetry(e)) {
+        core.info(
+          `Request failed, retrying (attempt ${attempt + 2} of ${maxRetries + 1})...`
+        )
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      } else {
+        throw e
+      }
+    }
+  }
+  throw new Error('Unexpected retry failure') // unreachable
+}

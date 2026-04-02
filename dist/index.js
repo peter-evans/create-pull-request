@@ -1501,20 +1501,27 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             // Create or update the pull request
             const pull = yield this.createOrUpdate(inputs, baseRepository, headRepository);
+            // Helper to conditionally retry on 422 for newly created PRs.
+            // GitHub's API may not immediately resolve the PR node after creation,
+            // causing 422 errors on follow-up requests (see issue #4321).
+            const isRetryable422 = (e) => typeof e === 'object' && e !== null && e.status === 422;
+            const maybeRetry = (fn) => pull.created
+                ? utils.retryWithBackoff(fn, isRetryable422)
+                : fn();
             // Apply milestone
             if (inputs.milestone) {
                 core.info(`Applying milestone '${inputs.milestone}'`);
-                yield this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
+                yield maybeRetry(() => this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone })));
             }
             // Apply labels
             if (inputs.labels.length > 0) {
                 core.info(`Applying labels '${inputs.labels}'`);
-                yield this.octokit.rest.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels }));
+                yield maybeRetry(() => this.octokit.rest.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels })));
             }
             // Apply assignees
             if (inputs.assignees.length > 0) {
                 core.info(`Applying assignees '${inputs.assignees}'`);
-                yield this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
+                yield maybeRetry(() => this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees })));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
@@ -1529,7 +1536,7 @@ class GitHubHelper {
             }
             if (Object.keys(requestReviewersParams).length > 0) {
                 try {
-                    yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
+                    yield maybeRetry(() => this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams)));
                 }
                 catch (e) {
                     if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
@@ -1900,6 +1907,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isSelfHosted = void 0;
 exports.getInputAsArray = getInputAsArray;
@@ -1913,6 +1929,7 @@ exports.parseDisplayNameEmail = parseDisplayNameEmail;
 exports.fileExistsSync = fileExistsSync;
 exports.readFile = readFile;
 exports.getErrorMessage = getErrorMessage;
+exports.retryWithBackoff = retryWithBackoff;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
@@ -2014,6 +2031,25 @@ const isSelfHosted = () => process.env['RUNNER_ENVIRONMENT'] !== 'github-hosted'
     (process.env['AGENT_ISSELFHOSTED'] === '1' ||
         process.env['AGENT_ISSELFHOSTED'] === undefined);
 exports.isSelfHosted = isSelfHosted;
+function retryWithBackoff(fn_1, shouldRetry_1) {
+    return __awaiter(this, arguments, void 0, function* (fn, shouldRetry, maxRetries = 2, delayMs = 1000) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return yield fn();
+            }
+            catch (e) {
+                if (attempt < maxRetries && shouldRetry(e)) {
+                    core.info(`Request failed, retrying (attempt ${attempt + 2} of ${maxRetries + 1})...`);
+                    yield new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+                else {
+                    throw e;
+                }
+            }
+        }
+        throw new Error('Unexpected retry failure'); // unreachable
+    });
+}
 
 
 /***/ }),

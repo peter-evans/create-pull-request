@@ -209,32 +209,48 @@ export class GitHubHelper {
       headRepository
     )
 
+    // Helper to conditionally retry on 422 for newly created PRs.
+    // GitHub's API may not immediately resolve the PR node after creation,
+    // causing 422 errors on follow-up requests (see issue #4321).
+    const isRetryable422 = (e: unknown): boolean =>
+      typeof e === 'object' && e !== null && (e as any).status === 422
+    const maybeRetry = <T>(fn: () => Promise<T>): Promise<T> =>
+      pull.created
+        ? utils.retryWithBackoff(fn, isRetryable422)
+        : fn()
+
     // Apply milestone
     if (inputs.milestone) {
       core.info(`Applying milestone '${inputs.milestone}'`)
-      await this.octokit.rest.issues.update({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        milestone: inputs.milestone
-      })
+      await maybeRetry(() =>
+        this.octokit.rest.issues.update({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          milestone: inputs.milestone
+        })
+      )
     }
     // Apply labels
     if (inputs.labels.length > 0) {
       core.info(`Applying labels '${inputs.labels}'`)
-      await this.octokit.rest.issues.addLabels({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        labels: inputs.labels
-      })
+      await maybeRetry(() =>
+        this.octokit.rest.issues.addLabels({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          labels: inputs.labels
+        })
+      )
     }
     // Apply assignees
     if (inputs.assignees.length > 0) {
       core.info(`Applying assignees '${inputs.assignees}'`)
-      await this.octokit.rest.issues.addAssignees({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        assignees: inputs.assignees
-      })
+      await maybeRetry(() =>
+        this.octokit.rest.issues.addAssignees({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          assignees: inputs.assignees
+        })
+      )
     }
 
     // Request reviewers and team reviewers
@@ -250,11 +266,13 @@ export class GitHubHelper {
     }
     if (Object.keys(requestReviewersParams).length > 0) {
       try {
-        await this.octokit.rest.pulls.requestReviewers({
-          ...this.parseRepository(baseRepository),
-          pull_number: pull.number,
-          ...requestReviewersParams
-        })
+        await maybeRetry(() =>
+          this.octokit.rest.pulls.requestReviewers({
+            ...this.parseRepository(baseRepository),
+            pull_number: pull.number,
+            ...requestReviewersParams
+          })
+        )
       } catch (e) {
         if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
           core.error(
