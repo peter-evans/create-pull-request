@@ -80,7 +80,7 @@ jobs:
           branch: ci-test-${{ matrix.target }}-${{ github.sha }}
 
       - name: Close Pull
-        uses: peter-evans/close-pull@v3
+        uses: peter-evans/close-pull@a192af8d70f2d49c49643134605c3b73d4f80fae # v3
         with:
           pull-request-number: ${{ steps.cpr.outputs.pull-request-number }}
           comment: '[CI] test ${{ matrix.target }}'
@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Find Comment
-        uses: peter-evans/find-comment@v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4
         id: fc
         with:
           issue-number: ${{ github.event.number }}
@@ -101,7 +101,7 @@ jobs:
 
       - if: steps.fc.outputs.comment-id == ''
         name: Create comment
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5
         with:
           issue-number: ${{ github.event.number }}
           body: |
@@ -124,7 +124,7 @@ jobs:
           name: dist
           path: dist
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           token: ${{ secrets.ACTIONS_BOT_TOKEN }}
           commit-message: 'build: update distribution'

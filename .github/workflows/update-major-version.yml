@@ -27,6 +27,11 @@ jobs:
         git config user.name actions-bot
         git config user.email actions-bot@users.noreply.github.com
     - name: Tag new target
-      run: git tag -f ${{ github.event.inputs.main_version }} ${{ github.event.inputs.target }}
+      run: git tag -f "${INPUT_MAIN_VERSION}" "${INPUT_TARGET}"
+      env:
+        INPUT_MAIN_VERSION: ${{ github.event.inputs.main_version }}
+        INPUT_TARGET: ${{ github.event.inputs.target }}
     - name: Push new tag
-      run: git push origin ${{ github.event.inputs.main_version }} --force
+      run: git push origin "${INPUT_MAIN_VERSION}" --force
+      env:
+        INPUT_MAIN_VERSION: ${{ github.event.inputs.main_version }}
