@@ -118,3 +118,71 @@ describe('utils tests', () => {
     }
   })
 })
+
+describe('retryWithBackoff', () => {
+  const makeConsistencyError = () => {
+    const error = new Error(
+      'Validation Failed: "Could not resolve to a node with the global id of \'PR_abc123\'."'
+    )
+    ;(error as any).status = 422
+    return error
+  }
+
+  const shouldRetry = (e: unknown): boolean =>
+    e instanceof Error &&
+    (e as any).status === 422 &&
+    e.message.includes('Could not resolve to a node')
+
+  test('succeeds on first attempt without retrying', async () => {
+    const fn = jest.fn().mockResolvedValue('success')
+    const result = await utils.retryWithBackoff(fn, shouldRetry, 2, 1)
+    expect(result).toBe('success')
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  test('retries on eventual consistency 422 and succeeds', async () => {
+    const fn = jest
+      .fn()
+      .mockRejectedValueOnce(makeConsistencyError())
+      .mockResolvedValue('success')
+    const result = await utils.retryWithBackoff(fn, shouldRetry, 2, 1)
+    expect(result).toBe('success')
+    expect(fn).toHaveBeenCalledTimes(2)
+  })
+
+  test('exhausts retries on persistent 422 and throws', async () => {
+    const fn = jest.fn().mockRejectedValue(makeConsistencyError())
+    await expect(utils.retryWithBackoff(fn, shouldRetry, 2, 1)).rejects.toThrow(
+      'Could not resolve to a node'
+    )
+    expect(fn).toHaveBeenCalledTimes(3) // 1 initial + 2 retries
+  })
+
+  test('does not retry on non-422 errors', async () => {
+    const error = new Error('Forbidden')
+    ;(error as any).status = 403
+    const fn = jest.fn().mockRejectedValue(error)
+    await expect(utils.retryWithBackoff(fn, shouldRetry, 2, 1)).rejects.toThrow(
+      'Forbidden'
+    )
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not retry on 422 without the consistency error message', async () => {
+    const error = new Error('Validation Failed: invalid label')
+    ;(error as any).status = 422
+    const fn = jest.fn().mockRejectedValue(error)
+    await expect(utils.retryWithBackoff(fn, shouldRetry, 2, 1)).rejects.toThrow(
+      'Validation Failed: invalid label'
+    )
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+
+  test('does not retry on plain Error objects', async () => {
+    const fn = jest.fn().mockRejectedValue(new Error('Something broke'))
+    await expect(utils.retryWithBackoff(fn, shouldRetry, 2, 1)).rejects.toThrow(
+      'Something broke'
+    )
+    expect(fn).toHaveBeenCalledTimes(1)
+  })
+})

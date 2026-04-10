@@ -1,4 +1,5 @@
 import * as core from '@actions/core'
+import {RequestError} from '@octokit/request-error'
 import {Inputs} from './create-pull-request'
 import {Commit, GitCommandManager} from './git-command-manager'
 import {
@@ -209,32 +210,51 @@ export class GitHubHelper {
       headRepository
     )
 
+    // After creating a new PR, follow-up API calls can fail with a 422
+    // "Could not resolve to a node" error due to GitHub API eventual
+    // consistency. Wrap post-creation calls with targeted retry logic.
+    // See: https://github.com/peter-evans/create-pull-request/issues/4321
+    const isEventualConsistencyError = (e: unknown): boolean =>
+      e instanceof RequestError &&
+      e.status === 422 &&
+      e.message.includes('Could not resolve to a node')
+    const withRetryForNewPr = <T>(fn: () => Promise<T>): Promise<T> =>
+      pull.created
+        ? utils.retryWithBackoff(fn, isEventualConsistencyError)
+        : fn()
+
     // Apply milestone
     if (inputs.milestone) {
       core.info(`Applying milestone '${inputs.milestone}'`)
-      await this.octokit.rest.issues.update({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        milestone: inputs.milestone
-      })
+      await withRetryForNewPr(() =>
+        this.octokit.rest.issues.update({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          milestone: inputs.milestone
+        })
+      )
     }
     // Apply labels
     if (inputs.labels.length > 0) {
       core.info(`Applying labels '${inputs.labels}'`)
-      await this.octokit.rest.issues.addLabels({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        labels: inputs.labels
-      })
+      await withRetryForNewPr(() =>
+        this.octokit.rest.issues.addLabels({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          labels: inputs.labels
+        })
+      )
     }
     // Apply assignees
     if (inputs.assignees.length > 0) {
       core.info(`Applying assignees '${inputs.assignees}'`)
-      await this.octokit.rest.issues.addAssignees({
-        ...this.parseRepository(baseRepository),
-        issue_number: pull.number,
-        assignees: inputs.assignees
-      })
+      await withRetryForNewPr(() =>
+        this.octokit.rest.issues.addAssignees({
+          ...this.parseRepository(baseRepository),
+          issue_number: pull.number,
+          assignees: inputs.assignees
+        })
+      )
     }
 
     // Request reviewers and team reviewers
@@ -250,11 +270,13 @@ export class GitHubHelper {
     }
     if (Object.keys(requestReviewersParams).length > 0) {
       try {
-        await this.octokit.rest.pulls.requestReviewers({
-          ...this.parseRepository(baseRepository),
-          pull_number: pull.number,
-          ...requestReviewersParams
-        })
+        await withRetryForNewPr(() =>
+          this.octokit.rest.pulls.requestReviewers({
+            ...this.parseRepository(baseRepository),
+            pull_number: pull.number,
+            ...requestReviewersParams
+          })
+        )
       } catch (e) {
         if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
           core.error(

@@ -1375,6 +1375,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.GitHubHelper = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+const request_error_1 = __nccwpck_require__(1015);
 const octokit_client_1 = __nccwpck_require__(3489);
 const p_limit_1 = __importDefault(__nccwpck_require__(7989));
 const utils = __importStar(__nccwpck_require__(9277));
@@ -1501,20 +1502,28 @@ class GitHubHelper {
         return __awaiter(this, void 0, void 0, function* () {
             // Create or update the pull request
             const pull = yield this.createOrUpdate(inputs, baseRepository, headRepository);
+            // After creating a new PR, follow-up API calls can fail with a 422
+            // "Could not resolve to a node" error due to GitHub API eventual
+            // consistency. Wrap post-creation calls with targeted retry logic.
+            // See: https://github.com/peter-evans/create-pull-request/issues/4321
+            const isEventualConsistencyError = (e) => e instanceof request_error_1.RequestError &&
+                e.status === 422 &&
+                e.message.includes('Could not resolve to a node');
+            const withRetryForNewPr = (fn) => pull.created ? utils.retryWithBackoff(fn, isEventualConsistencyError) : fn();
             // Apply milestone
             if (inputs.milestone) {
                 core.info(`Applying milestone '${inputs.milestone}'`);
-                yield this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone }));
+                yield withRetryForNewPr(() => this.octokit.rest.issues.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, milestone: inputs.milestone })));
             }
             // Apply labels
             if (inputs.labels.length > 0) {
                 core.info(`Applying labels '${inputs.labels}'`);
-                yield this.octokit.rest.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels }));
+                yield withRetryForNewPr(() => this.octokit.rest.issues.addLabels(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, labels: inputs.labels })));
             }
             // Apply assignees
             if (inputs.assignees.length > 0) {
                 core.info(`Applying assignees '${inputs.assignees}'`);
-                yield this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees }));
+                yield withRetryForNewPr(() => this.octokit.rest.issues.addAssignees(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { issue_number: pull.number, assignees: inputs.assignees })));
             }
             // Request reviewers and team reviewers
             const requestReviewersParams = {};
@@ -1529,7 +1538,7 @@ class GitHubHelper {
             }
             if (Object.keys(requestReviewersParams).length > 0) {
                 try {
-                    yield this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams));
+                    yield withRetryForNewPr(() => this.octokit.rest.pulls.requestReviewers(Object.assign(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pull.number }), requestReviewersParams)));
                 }
                 catch (e) {
                     if (utils.getErrorMessage(e).includes(ERROR_PR_REVIEW_TOKEN_SCOPE)) {
@@ -1900,6 +1909,15 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.isSelfHosted = void 0;
 exports.getInputAsArray = getInputAsArray;
@@ -1913,6 +1931,7 @@ exports.parseDisplayNameEmail = parseDisplayNameEmail;
 exports.fileExistsSync = fileExistsSync;
 exports.readFile = readFile;
 exports.getErrorMessage = getErrorMessage;
+exports.retryWithBackoff = retryWithBackoff;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
 const path = __importStar(__nccwpck_require__(6928));
@@ -2014,6 +2033,26 @@ const isSelfHosted = () => process.env['RUNNER_ENVIRONMENT'] !== 'github-hosted'
     (process.env['AGENT_ISSELFHOSTED'] === '1' ||
         process.env['AGENT_ISSELFHOSTED'] === undefined);
 exports.isSelfHosted = isSelfHosted;
+function retryWithBackoff(fn_1, shouldRetry_1) {
+    return __awaiter(this, arguments, void 0, function* (fn, shouldRetry, maxRetries = 2, delayMs = 1000) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return yield fn();
+            }
+            catch (e) {
+                if (attempt < maxRetries && shouldRetry(e)) {
+                    const delay = delayMs * Math.pow(2, attempt);
+                    core.info(`Request failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms...`);
+                    yield new Promise(resolve => setTimeout(resolve, delay));
+                }
+                else {
+                    throw e;
+                }
+            }
+        }
+        throw new Error('Unexpected: retry loop exited without return or throw');
+    });
+}
 
 
 /***/ }),
@@ -32825,7 +32864,7 @@ async function fetchWrapper(requestOptions) {
         }
       }
     }
-    const requestError = new dist_src/* RequestError */.G(message, 500, {
+    const requestError = new dist_src.RequestError(message, 500, {
       request: requestOptions
     });
     requestError.cause = error;
@@ -32857,21 +32896,21 @@ async function fetchWrapper(requestOptions) {
     if (status < 400) {
       return octokitResponse;
     }
-    throw new dist_src/* RequestError */.G(fetchResponse.statusText, status, {
+    throw new dist_src.RequestError(fetchResponse.statusText, status, {
       response: octokitResponse,
       request: requestOptions
     });
   }
   if (status === 304) {
     octokitResponse.data = await getResponseData(fetchResponse);
-    throw new dist_src/* RequestError */.G("Not modified", status, {
+    throw new dist_src.RequestError("Not modified", status, {
       response: octokitResponse,
       request: requestOptions
     });
   }
   if (status >= 400) {
     octokitResponse.data = await getResponseData(fetchResponse);
-    throw new dist_src/* RequestError */.G(toErrorMessage(octokitResponse.data), status, {
+    throw new dist_src.RequestError(toErrorMessage(octokitResponse.data), status, {
       response: octokitResponse,
       request: requestOptions
     });
@@ -36220,7 +36259,7 @@ async function requestWithGraphqlErrorHandling(state, octokit, request, options)
   if (response.data && response.data.errors && response.data.errors.length > 0 && /Something went wrong while executing your query/.test(
     response.data.errors[0].message
   )) {
-    const error = new _octokit_request_error__WEBPACK_IMPORTED_MODULE_1__/* .RequestError */ .G(response.data.errors[0].message, 500, {
+    const error = new _octokit_request_error__WEBPACK_IMPORTED_MODULE_1__.RequestError(response.data.errors[0].message, 500, {
       request: options,
       response
     });
@@ -36505,8 +36544,9 @@ throttling.triggersNotification = triggersNotification;
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
+__nccwpck_require__.r(__webpack_exports__);
 /* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
-/* harmony export */   G: () => (/* binding */ RequestError)
+/* harmony export */   RequestError: () => (/* binding */ RequestError)
 /* harmony export */ });
 class RequestError extends Error {
   name;

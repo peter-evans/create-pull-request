@@ -39,6 +39,7 @@
     "@octokit/plugin-rest-endpoint-methods": "^13.5.0",
     "@octokit/plugin-retry": "^7.2.1",
     "@octokit/plugin-throttling": "^9.6.1",
+    "@octokit/request-error": "^6.1.8",
     "node-fetch-native": "^1.6.7",
     "p-limit": "^6.2.0",
     "uuid": "^9.0.1"
