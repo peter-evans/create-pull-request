@@ -5,6 +5,8 @@ updates:
     schedule:
       interval: "monthly"
       day: "tuesday"
+    cooldown:
+      default-days: 3
     labels:
       - "dependencies"
     groups:
@@ -17,6 +19,8 @@ updates:
     schedule:
       interval: "monthly"
       day: "tuesday"
+    cooldown:
+      default-days: 3
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
