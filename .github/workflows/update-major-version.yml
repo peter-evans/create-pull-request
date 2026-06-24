@@ -18,7 +18,7 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
         token: ${{ secrets.ACTIONS_BOT_TOKEN }}
         fetch-depth: 0
@@ -27,6 +27,11 @@ jobs:
         git config user.name actions-bot
         git config user.email actions-bot@users.noreply.github.com
     - name: Tag new target
-      run: git tag -f ${{ github.event.inputs.main_version }} ${{ github.event.inputs.target }}
+      run: git tag -f "${INPUT_MAIN_VERSION}" "${INPUT_TARGET}"
+      env:
+        INPUT_MAIN_VERSION: ${{ github.event.inputs.main_version }}
+        INPUT_TARGET: ${{ github.event.inputs.target }}
     - name: Push new tag
-      run: git push origin ${{ github.event.inputs.main_version }} --force
+      run: git push origin "${INPUT_MAIN_VERSION}" --force
+      env:
+        INPUT_MAIN_VERSION: ${{ github.event.inputs.main_version }}
