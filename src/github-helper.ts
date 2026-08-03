@@ -47,16 +47,12 @@ type TreeObject = {
 export class GitHubHelper {
   private octokit: InstanceType<typeof Octokit>
 
-  constructor(githubServerHostname: string, token: string) {
+  constructor(apiUrl: string, token: string) {
     const options: OctokitOptions = {}
     if (token) {
       options.auth = `${token}`
     }
-    if (githubServerHostname !== 'github.com') {
-      options.baseUrl = `https://${githubServerHostname}/api/v3`
-    } else {
-      options.baseUrl = 'https://api.github.com'
-    }
+    options.baseUrl = apiUrl
     options.throttle = throttleOptions
     options.retry = retryOptions
     this.octokit = new Octokit(options)
@@ -147,7 +143,10 @@ export class GitHubHelper {
       }
     } catch (e) {
       const errorMessage = utils.getErrorMessage(e)
-      if (errorMessage.includes(ERROR_PR_ALREADY_EXISTS)) {
+      if (
+        errorMessage.includes(ERROR_PR_ALREADY_EXISTS) ||
+        (e instanceof RequestError && e.status === 409)
+      ) {
         core.info(`A pull request already exists for ${headBranch}`)
       } else if (errorMessage.includes(ERROR_PR_FORK_COLLAB)) {
         core.warning(

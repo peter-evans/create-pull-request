@@ -405,8 +405,10 @@ function createPullRequest(inputs) {
             core.startGroup('Determining the base and head repositories');
             const baseRemote = gitConfigHelper.getGitRemote();
             // Init the GitHub clients
-            const ghBranch = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.branchToken);
-            const ghPull = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.token);
+            const apiUrl = yield utils.determineApiBaseUrl(baseRemote.hostname);
+            core.info(`Using API base URL: ${apiUrl}`);
+            const ghBranch = new github_helper_1.GitHubHelper(apiUrl, inputs.branchToken);
+            const ghPull = new github_helper_1.GitHubHelper(apiUrl, inputs.token);
             // Determine the head repository; the target for the pull request branch
             const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin';
             const branchRepository = inputs.pushToFork
@@ -1384,17 +1386,12 @@ const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a 
 const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`;
 const blobCreationLimit = (0, p_limit_1.default)(8);
 class GitHubHelper {
-    constructor(githubServerHostname, token) {
+    constructor(apiUrl, token) {
         const options = {};
         if (token) {
             options.auth = `${token}`;
         }
-        if (githubServerHostname !== 'github.com') {
-            options.baseUrl = `https://${githubServerHostname}/api/v3`;
-        }
-        else {
-            options.baseUrl = 'https://api.github.com';
-        }
+        options.baseUrl = apiUrl;
         options.throttle = octokit_client_1.throttleOptions;
         options.retry = octokit_client_1.retryOptions;
         this.octokit = new octokit_client_1.Octokit(options);
@@ -1462,7 +1459,8 @@ class GitHubHelper {
             }
             catch (e) {
                 const errorMessage = utils.getErrorMessage(e);
-                if (errorMessage.includes(ERROR_PR_ALREADY_EXISTS)) {
+                if (errorMessage.includes(ERROR_PR_ALREADY_EXISTS) ||
+                    (e instanceof request_error_1.RequestError && e.status === 409)) {
                     core.info(`A pull request already exists for ${headBranch}`);
                 }
                 else if (errorMessage.includes(ERROR_PR_FORK_COLLAB)) {
@@ -1927,6 +1925,7 @@ exports.getStringAsArray = getStringAsArray;
 exports.stripOrgPrefixFromTeams = stripOrgPrefixFromTeams;
 exports.getRepoPath = getRepoPath;
 exports.getRemoteUrl = getRemoteUrl;
+exports.determineApiBaseUrl = determineApiBaseUrl;
 exports.secondsSinceEpoch = secondsSinceEpoch;
 exports.randomString = randomString;
 exports.parseDisplayNameEmail = parseDisplayNameEmail;
@@ -1936,6 +1935,7 @@ exports.getErrorMessage = getErrorMessage;
 exports.retryWithBackoff = retryWithBackoff;
 const core = __importStar(__nccwpck_require__(7484));
 const fs = __importStar(__nccwpck_require__(9896));
+const proxy_1 = __nccwpck_require__(3459);
 const path = __importStar(__nccwpck_require__(6928));
 function getInputAsArray(name, options) {
     return getStringAsArray(core.getInput(name, options));
@@ -1972,6 +1972,32 @@ function getRemoteUrl(protocol, hostname, repository) {
     return protocol == 'HTTPS'
         ? `https://${hostname}/${repository}`
         : `git@${hostname}:${repository}.git`;
+}
+function determineApiBaseUrl(hostname_1) {
+    return __awaiter(this, arguments, void 0, function* (hostname, probe = proxy_1.fetch) {
+        var _a;
+        const apiUrl = process.env['FORGEJO_API_URL'] || process.env['GITHUB_API_URL'];
+        if (apiUrl) {
+            return apiUrl.replace(/\/$/, '');
+        }
+        if (hostname === 'github.com') {
+            return 'https://api.github.com';
+        }
+        const forgejoApiUrl = `https://${hostname}/api/v1`;
+        try {
+            const response = yield probe(`${forgejoApiUrl}/version`, {
+                signal: AbortSignal.timeout(5000)
+            });
+            if (response.ok &&
+                ((_a = response.headers.get('content-type')) === null || _a === void 0 ? void 0 : _a.includes('application/json'))) {
+                return forgejoApiUrl;
+            }
+        }
+        catch (error) {
+            core.debug(`API discovery failed: ${getErrorMessage(error)}`);
+        }
+        return `https://${hostname}/api/v3`;
+    });
 }
 function secondsSinceEpoch() {
     const now = new Date();

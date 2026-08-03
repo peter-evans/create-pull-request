@@ -1,5 +1,6 @@
 import * as core from '@actions/core'
 import * as fs from 'fs'
+import {fetch} from 'node-fetch-native/proxy'
 import * as path from 'path'
 
 export function getInputAsArray(
@@ -49,6 +50,48 @@ export function getRemoteUrl(
   return protocol == 'HTTPS'
     ? `https://${hostname}/${repository}`
     : `git@${hostname}:${repository}.git`
+}
+
+interface ApiProbeResponse {
+  ok: boolean
+  headers: {
+    get(name: string): string | null
+  }
+}
+
+type ApiProbe = (
+  url: string,
+  options: {signal: AbortSignal}
+) => Promise<ApiProbeResponse>
+
+export async function determineApiBaseUrl(
+  hostname: string,
+  probe: ApiProbe = fetch
+): Promise<string> {
+  const apiUrl = process.env['FORGEJO_API_URL'] || process.env['GITHUB_API_URL']
+  if (apiUrl) {
+    return apiUrl.replace(/\/$/, '')
+  }
+  if (hostname === 'github.com') {
+    return 'https://api.github.com'
+  }
+
+  const forgejoApiUrl = `https://${hostname}/api/v1`
+  try {
+    const response = await probe(`${forgejoApiUrl}/version`, {
+      signal: AbortSignal.timeout(5000)
+    })
+    if (
+      response.ok &&
+      response.headers.get('content-type')?.includes('application/json')
+    ) {
+      return forgejoApiUrl
+    }
+  } catch (error) {
+    core.debug(`API discovery failed: ${getErrorMessage(error)}`)
+  }
+
+  return `https://${hostname}/api/v3`
 }
 
 export function secondsSinceEpoch(): number {

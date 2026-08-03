@@ -2,6 +2,8 @@ import * as path from 'path'
 import * as utils from '../lib/utils'
 
 const originalGitHubWorkspace = process.env['GITHUB_WORKSPACE']
+const originalForgejoApiUrl = process.env['FORGEJO_API_URL']
+const originalGitHubApiUrl = process.env['GITHUB_API_URL']
 
 describe('utils tests', () => {
   beforeAll(() => {
@@ -15,6 +17,8 @@ describe('utils tests', () => {
     if (originalGitHubWorkspace) {
       process.env['GITHUB_WORKSPACE'] = originalGitHubWorkspace
     }
+    restoreEnvironmentVariable('FORGEJO_API_URL', originalForgejoApiUrl)
+    restoreEnvironmentVariable('GITHUB_API_URL', originalGitHubApiUrl)
   })
 
   test('getStringAsArray splits string input by newlines and commas', async () => {
@@ -69,6 +73,65 @@ describe('utils tests', () => {
     )
   })
 
+  test('determineApiBaseUrl uses the API URL supplied by the runner', async () => {
+    process.env['FORGEJO_API_URL'] = 'https://forgejo.example.com/api/v1/'
+    process.env['GITHUB_API_URL'] = 'https://forgejo.example.com/api/v1'
+    const probe = jest.fn()
+
+    await expect(
+      utils.determineApiBaseUrl('forgejo.example.com', probe)
+    ).resolves.toEqual('https://forgejo.example.com/api/v1')
+    expect(probe).not.toHaveBeenCalled()
+  })
+
+  test('determineApiBaseUrl uses the GitHub API URL supplied by the runner', async () => {
+    delete process.env['FORGEJO_API_URL']
+    process.env['GITHUB_API_URL'] = 'https://github.example.com/api/v3'
+
+    await expect(
+      utils.determineApiBaseUrl('github.example.com')
+    ).resolves.toEqual('https://github.example.com/api/v3')
+  })
+
+  test('determineApiBaseUrl returns the public GitHub API URL', async () => {
+    delete process.env['FORGEJO_API_URL']
+    delete process.env['GITHUB_API_URL']
+
+    await expect(utils.determineApiBaseUrl('github.com')).resolves.toEqual(
+      'https://api.github.com'
+    )
+  })
+
+  test('determineApiBaseUrl discovers the Forgejo API', async () => {
+    delete process.env['FORGEJO_API_URL']
+    delete process.env['GITHUB_API_URL']
+    const probe = jest.fn().mockResolvedValue({
+      ok: true,
+      headers: {get: () => 'application/json; charset=utf-8'}
+    })
+
+    await expect(
+      utils.determineApiBaseUrl('forgejo.example.com', probe)
+    ).resolves.toEqual('https://forgejo.example.com/api/v1')
+    expect(probe).toHaveBeenCalledWith(
+      'https://forgejo.example.com/api/v1/version',
+      {signal: expect.any(AbortSignal)}
+    )
+  })
+
+  test('determineApiBaseUrl falls back to the GitHub Enterprise API', async () => {
+    delete process.env['FORGEJO_API_URL']
+    delete process.env['GITHUB_API_URL']
+    const probe = jest.fn().mockResolvedValue({
+      ok: false,
+      headers: {get: () => 'application/json'}
+    })
+
+    await expect(
+      utils.determineApiBaseUrl('github.example.com', probe)
+    ).resolves.toEqual('https://github.example.com/api/v3')
+  })
+
   test('secondsSinceEpoch returns the number of seconds since the Epoch', async () => {
     const seconds = `${utils.secondsSinceEpoch()}`
     expect(seconds.length).toEqual(10)
@@ -118,6 +181,17 @@ describe('utils tests', () => {
     }
   })
 })
+
+function restoreEnvironmentVariable(
+  name: string,
+  value: string | undefined
+): void {
+  if (value === undefined) {
+    delete process.env[name]
+  } else {
+    process.env[name] = value
+  }
+}
 
 describe('retryWithBackoff', () => {
   const makeConsistencyError = () => {
