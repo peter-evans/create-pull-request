@@ -51,5 +51,4 @@ jobs:
             iso
             automated pr
           assignees: Analyzesa
-          reviewers: Analyzesa
           draft: false
