@@ -17,8 +17,10 @@ jobs:
   createPullRequest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
+          token: ${{ secrets.CPR_PAT }}
           fetch-depth: 0
 
       - name: Generate report from ISO cases
@@ -38,6 +40,7 @@ jobs:
         id: cpr
         uses: ./
         with:
+          token: ${{ secrets.CPR_PAT }}
           commit-message: "Update ISO domain dispute report"
           branch: iso-report-patch
           delete-branch: true
