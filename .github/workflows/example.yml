@@ -4,6 +4,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'data/iso-domain-cases.json'
 
 permissions:
   contents: write
@@ -14,6 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Generate report from ISO cases
         run: |
@@ -32,6 +38,7 @@ jobs:
         id: cpr
         uses: ./
         with:
+          token: ${{ secrets.CPR_PAT }}
           commit-message: "Update ISO domain dispute report"
           branch: iso-report-patch
           delete-branch: true
@@ -43,3 +50,6 @@ jobs:
             report
             iso
             automated pr
+          assignees: Analyzesa
+          reviewers: Analyzesa
+          draft: false
