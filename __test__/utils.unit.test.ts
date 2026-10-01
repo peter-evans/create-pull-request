@@ -117,6 +117,38 @@ describe('utils tests', () => {
       )
     }
   })
+
+  test('composeNoReplyIdentity produces the unchanged github.com identity', async () => {
+    const identity = utils.composeNoReplyIdentity(
+      'github-actions[bot]',
+      41898282,
+      'github.com'
+    )
+    expect(identity).toEqual(
+      'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+    )
+    const parsed = utils.parseDisplayNameEmail(identity)
+    expect(parsed.name).toEqual('github-actions[bot]')
+    expect(parsed.email).toEqual(
+      '41898282+github-actions[bot]@users.noreply.github.com'
+    )
+  })
+
+  test('composeNoReplyIdentity derives a server-aware identity on GHES', async () => {
+    const identity = utils.composeNoReplyIdentity(
+      'github-actions[bot]',
+      5,
+      'ghe.example.com'
+    )
+    expect(identity).toEqual(
+      'github-actions[bot] <5+github-actions[bot]@users.noreply.ghe.example.com>'
+    )
+    const parsed = utils.parseDisplayNameEmail(identity)
+    expect(parsed.name).toEqual('github-actions[bot]')
+    expect(parsed.email).toEqual(
+      '5+github-actions[bot]@users.noreply.ghe.example.com'
+    )
+  })
 })
 
 describe('retryWithBackoff', () => {
