@@ -168,6 +168,41 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
 
     // Configure the committer and author
     core.startGroup('Configuring the committer and author')
+    // Resolve the default committer from the token identity
+    if (!inputs.committer) {
+      try {
+        const user = await ghBranch.getServerUser()
+        inputs.committer = utils.composeNoReplyIdentity(
+          user.login,
+          user.id,
+          baseRemote.hostname
+        )
+        core.info(
+          `Committer not supplied; derived from token as '${inputs.committer}'`
+        )
+      } catch (e) {
+        core.warning(
+          `Failed to derive committer from token: ${utils.getErrorMessage(e)}`
+        )
+        inputs.committer =
+          'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>'
+      }
+    }
+    // Resolve the author default from the triggering actor, with a server-aware
+    // no-reply email domain.
+    if (!inputs.author) {
+      const actor = process.env['GITHUB_ACTOR']
+      const actorId = process.env['GITHUB_ACTOR_ID']
+      if (actor && actorId) {
+        inputs.author = utils.composeNoReplyIdentity(
+          actor,
+          actorId,
+          baseRemote.hostname
+        )
+      } else {
+        inputs.author = inputs.committer
+      }
+    }
     const parsedAuthor = utils.parseDisplayNameEmail(inputs.author)
     const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer)
     git.setIdentityGitOptions([

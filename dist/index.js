@@ -491,6 +491,31 @@ function createPullRequest(inputs) {
             core.info(`Pull request branch to create or update set to '${inputs.branch}'`);
             // Configure the committer and author
             core.startGroup('Configuring the committer and author');
+            // Resolve the default committer from the token identity
+            if (!inputs.committer) {
+                try {
+                    const user = yield ghBranch.getServerUser();
+                    inputs.committer = utils.composeNoReplyIdentity(user.login, user.id, baseRemote.hostname);
+                    core.info(`Committer not supplied; derived from token as '${inputs.committer}'`);
+                }
+                catch (e) {
+                    core.warning(`Failed to derive committer from token: ${utils.getErrorMessage(e)}`);
+                    inputs.committer =
+                        'github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>';
+                }
+            }
+            // Resolve the author default from the triggering actor, with a server-aware
+            // no-reply email domain.
+            if (!inputs.author) {
+                const actor = process.env['GITHUB_ACTOR'];
+                const actorId = process.env['GITHUB_ACTOR_ID'];
+                if (actor && actorId) {
+                    inputs.author = utils.composeNoReplyIdentity(actor, actorId, baseRemote.hostname);
+                }
+                else {
+                    inputs.author = inputs.committer;
+                }
+            }
             const parsedAuthor = utils.parseDisplayNameEmail(inputs.author);
             const parsedCommitter = utils.parseDisplayNameEmail(inputs.committer);
             git.setIdentityGitOptions([
@@ -1406,6 +1431,21 @@ class GitHubHelper {
             repo: repo
         };
     }
+    getServerUser() {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            // Resolve the identity behind the authenticated token.
+            // The GraphQL `viewer` resolves installation tokens (the default
+            // `GITHUB_TOKEN` and GitHub App tokens) as well as PAT tokens.
+            // REST `users.getAuthenticated()` is NOT used since it does not work for
+            // installation tokens.
+            const resp = yield this.octokit.graphql(`query { viewer { login databaseId } }`);
+            if (!((_a = resp === null || resp === void 0 ? void 0 : resp.viewer) === null || _a === void 0 ? void 0 : _a.login) || !((_b = resp === null || resp === void 0 ? void 0 : resp.viewer) === null || _b === void 0 ? void 0 : _b.databaseId)) {
+                throw new Error('GraphQL viewer did not return login and databaseId');
+            }
+            return { login: resp.viewer.login, id: resp.viewer.databaseId };
+        });
+    }
     getPullNumber(baseRepository, headBranch, baseBranch) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
@@ -1929,6 +1969,7 @@ exports.getRepoPath = getRepoPath;
 exports.getRemoteUrl = getRemoteUrl;
 exports.secondsSinceEpoch = secondsSinceEpoch;
 exports.randomString = randomString;
+exports.composeNoReplyIdentity = composeNoReplyIdentity;
 exports.parseDisplayNameEmail = parseDisplayNameEmail;
 exports.fileExistsSync = fileExistsSync;
 exports.readFile = readFile;
@@ -1979,6 +2020,11 @@ function secondsSinceEpoch() {
 }
 function randomString() {
     return Math.random().toString(36).substr(2, 7);
+}
+function composeNoReplyIdentity(login, id, hostname) {
+    // The GitHub no-reply commit identity, e.g.
+    // `github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>`.
+    return `${login} <${id}+${login}@users.noreply.${hostname}>`;
 }
 function parseDisplayNameEmail(displayNameEmail) {
     // Parse the name and email address from a string in the following format
