@@ -70,7 +70,7 @@ export function parseDisplayNameEmail(
 ): DisplayNameEmail {
   // Parse the name and email address from a string in the following format
   // Display Name <email@address.com>
-  const pattern = /^([^<]+)\s*<([^>]+)>$/i
+  const pattern = /^([^<]+)\s*<([^>]*)>$/i
 
   // Check we have a match
   const match = displayNameEmail.match(pattern)
