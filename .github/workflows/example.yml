@@ -1,0 +1,54 @@
+name: Create Pull Request Example
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'data/iso-domain-cases.json'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  createPullRequest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate report from ISO cases
+        run: |
+          mkdir -p data
+          echo "# ISO Domain Dispute Cases — Generated $(date -u +%F)" > report.md
+          echo "" >> report.md
+          echo "Generated at: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> report.md
+          echo "Source: WIPO UDRP case index" >> report.md
+          if [ -f data/iso-domain-cases.json ]; then
+            echo "" >> report.md
+            echo "## Summary" >> report.md
+            echo "- Total cases: $(grep -c '"case"' data/iso-domain-cases.json)" >> report.md
+          fi
+
+      - name: Create Pull Request
+        id: cpr
+        uses: ./
+        with:
+          commit-message: "Update ISO domain dispute report"
+          branch: iso-report-patch
+          delete-branch: true
+          title: '[Report] ISO Domain Dispute Cases'
+          body: |
+            Automated update of ISO domain dispute cases report.
+            Generated from the WIPO UDRP case index.
+          labels: |
+            report
+            iso
+            automated pr
+          assignees: Analyzesa
+          draft: false

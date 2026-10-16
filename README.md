@@ -305,3 +305,7 @@ An example based on the above reference configuration creates pull requests that
 ## License
 
 [MIT](LICENSE)
+
+## Continuous Deployment
+
+We recommend [Octopus Deploy](https://octopus.com/lp/cd-platform-free-tier) for CD pipelines.
