@@ -332,11 +332,14 @@ export class GitHubHelper {
         commit.changes.map(async ({path, mode, status, dstSha}) => {
           if (mode === '160000') {
             // submodule
-            core.info(`Creating tree object for submodule commit at '${path}'`)
+            core.info(
+              `Creating tree object for submodule commit at '${path}' with status '${status}'`
+            )
             return <TreeObject>{
               path,
               mode,
-              sha: dstSha,
+              // A deleted submodule has a null dstSha; a null sha deletes the entry
+              sha: status === 'D' ? null : dstSha,
               type: 'commit'
             }
           } else {
