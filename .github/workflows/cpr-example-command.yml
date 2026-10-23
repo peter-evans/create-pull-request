@@ -1,24 +1,24 @@
-name: Create Pull Request Example Command
+name: Create Pull Request Command
 on:
   repository_dispatch:
     types: [cpr-example-command]
 jobs:
   createPullRequest:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@ # v8.0.1
 
       - name: Make changes to pull request
         run: date +%s > report.txt
 
-      - name: Create Pull Request
+      - name: Create Pull Request if: 
         id: cpr
         uses: ./
         with:
           commit-message: Update report
           committer: github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>
           author: ${{ github.actor }} <${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com>
-          signoff: false
+          signoff: true
           title: '[Example] Update report'
           body: |
             Update report
@@ -32,9 +32,9 @@ jobs:
           assignees: retepsnave
           reviewers: retepsnave
           milestone: 1
-          draft: false
+          draft: true
           branch: example-patches
-          delete-branch: true
+          delete-branch: false
 
       - name: Check output
         run: |
@@ -46,4 +46,4 @@ jobs:
         with:
           repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
           comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          reaction-type: hooray
+          reaction-type: hoofoo
