@@ -1509,7 +1509,9 @@ class GitHubHelper {
             const isEventualConsistencyError = (e) => e instanceof request_error_1.RequestError &&
                 e.status === 422 &&
                 e.message.includes('Could not resolve to a node');
-            const withRetryForNewPr = (fn) => pull.created ? utils.retryWithBackoff(fn, isEventualConsistencyError) : fn();
+            const withRetryForNewPr = (fn) => pull.created
+                ? utils.retryWithBackoff(fn, isEventualConsistencyError)
+                : fn();
             // Apply milestone
             if (inputs.milestone) {
                 core.info(`Applying milestone '${inputs.milestone}'`);
