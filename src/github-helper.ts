@@ -441,7 +441,7 @@ export class GitHubHelper {
         branch: branch
       })
       .then(
-        () => true,
+        ({data}) => data.name === branch,
         () => false
       )
 
