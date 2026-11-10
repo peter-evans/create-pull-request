@@ -438,10 +438,12 @@ export class GitHubHelper {
     newHead: string
   ) {
     const repository = this.parseRepository(branchRepository)
-    const branchExists = await this.octokit.rest.repos
-      .getBranch({
+    // Check the git ref directly rather than using the branches API, which
+    // follows branch rename redirects and can return a different branch.
+    const branchExists = await this.octokit.rest.git
+      .getRef({
         ...repository,
-        branch: branch
+        ref: `heads/${branch}`
       })
       .then(
         () => true,
