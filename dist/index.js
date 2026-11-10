@@ -1644,8 +1644,10 @@ class GitHubHelper {
     createOrUpdateRef(branchRepository, branch, newHead) {
         return __awaiter(this, void 0, void 0, function* () {
             const repository = this.parseRepository(branchRepository);
-            const branchExists = yield this.octokit.rest.repos
-                .getBranch(Object.assign(Object.assign({}, repository), { branch: branch }))
+            // Check the git ref directly rather than using the branches API, which
+            // follows branch rename redirects and can return a different branch.
+            const branchExists = yield this.octokit.rest.git
+                .getRef(Object.assign(Object.assign({}, repository), { ref: `heads/${branch}` }))
                 .then(() => true, () => false);
             if (branchExists) {
                 core.info(`Branch ${branch} exists; Updating ref`);
