@@ -7,7 +7,9 @@ const mockOctokit = {
       createBlob: jest.fn(),
       createTree: jest.fn(),
       createCommit: jest.fn(),
-      createRef: jest.fn()
+      createRef: jest.fn(),
+      getRef: jest.fn(),
+      updateRef: jest.fn()
     },
     repos: {
       getBranch: jest.fn()
@@ -38,8 +40,12 @@ function makeCommit(changes: Commit['changes']): Commit {
 }
 
 describe('github-helper unit tests', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
   test('pushSignedCommits deletes a removed submodule instead of pointing it at the null sha', async () => {
-    const {git: gitApi, repos: reposApi} = mockOctokit.rest
+    const {git: gitApi} = mockOctokit.rest
     gitApi.createBlob.mockResolvedValue({
       data: {sha: 'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'}
     })
@@ -54,7 +60,7 @@ describe('github-helper unit tests', () => {
       }
     })
     gitApi.createRef.mockResolvedValue({})
-    reposApi.getBranch.mockRejectedValue(new Error('Branch not found'))
+    gitApi.getRef.mockRejectedValue(new Error('Not Found'))
     const git = {
       showFileAtRefBase64: jest.fn().mockResolvedValue('Y29udGVudA==')
     }
@@ -114,5 +120,63 @@ describe('github-helper unit tests', () => {
         type: 'blob'
       }
     ])
+  })
+
+  test('pushSignedCommits creates the ref when the branch name only resolves via a branch rename redirect', async () => {
+    const {git: gitApi, repos: reposApi} = mockOctokit.rest
+    // The branches API follows rename redirects and returns the renamed branch
+    reposApi.getBranch.mockResolvedValue({data: {name: 'renamed-branch'}})
+    gitApi.getRef.mockRejectedValue(new Error('Not Found'))
+    gitApi.createRef.mockResolvedValue({})
+
+    const helper = new GitHubHelper('github.com', 'token')
+    const baseCommit = makeCommit([])
+    await helper.pushSignedCommits(
+      {} as GitCommandManager,
+      [],
+      baseCommit,
+      '/repo',
+      'owner/repo',
+      'branch'
+    )
+
+    expect(gitApi.getRef).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      ref: 'heads/branch'
+    })
+    expect(gitApi.createRef).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      sha: baseCommit.sha,
+      ref: 'refs/heads/branch'
+    })
+    expect(gitApi.updateRef).not.toHaveBeenCalled()
+  })
+
+  test('pushSignedCommits updates the ref when the branch exists', async () => {
+    const {git: gitApi} = mockOctokit.rest
+    gitApi.getRef.mockResolvedValue({data: {ref: 'refs/heads/branch'}})
+    gitApi.updateRef.mockResolvedValue({})
+
+    const helper = new GitHubHelper('github.com', 'token')
+    const baseCommit = makeCommit([])
+    await helper.pushSignedCommits(
+      {} as GitCommandManager,
+      [],
+      baseCommit,
+      '/repo',
+      'owner/repo',
+      'branch'
+    )
+
+    expect(gitApi.updateRef).toHaveBeenCalledWith({
+      owner: 'owner',
+      repo: 'repo',
+      sha: baseCommit.sha,
+      ref: 'heads/branch',
+      force: true
+    })
+    expect(gitApi.createRef).not.toHaveBeenCalled()
   })
 })
