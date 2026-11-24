@@ -27,7 +27,9 @@ jobs:
         git config user.name actions-bot
         git config user.email actions-bot@users.noreply.github.com
     - name: Tag new target
-      run: git tag -f "${INPUT_MAIN_VERSION}" "${INPUT_TARGET}"
+      run: |
+        sha=$(git rev-parse --verify --end-of-options "${INPUT_TARGET}^{commit}")
+        git tag -f "${INPUT_MAIN_VERSION}" "${sha}"
       env:
         INPUT_MAIN_VERSION: ${{ github.event.inputs.main_version }}
         INPUT_TARGET: ${{ github.event.inputs.target }}
