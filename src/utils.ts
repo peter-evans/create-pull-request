@@ -65,6 +65,16 @@ interface DisplayNameEmail {
   email: string
 }
 
+export function composeNoReplyIdentity(
+  login: string,
+  id: number | string,
+  hostname: string
+): string {
+  // The GitHub no-reply commit identity, e.g.
+  // `github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>`.
+  return `${login} <${id}+${login}@users.noreply.${hostname}>`
+}
+
 export function parseDisplayNameEmail(
   displayNameEmail: string
 ): DisplayNameEmail {

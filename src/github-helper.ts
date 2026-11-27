@@ -37,6 +37,11 @@ interface CommitResponse {
   verified: boolean
 }
 
+interface TokenIdentity {
+  login: string
+  id: number
+}
+
 type TreeObject = {
   path: string
   mode: '100644' | '100755' | '040000' | '160000' | '120000'
@@ -68,6 +73,21 @@ export class GitHubHelper {
       owner: owner,
       repo: repo
     }
+  }
+
+  async getServerUser(): Promise<TokenIdentity> {
+    // Resolve the identity behind the authenticated token.
+    // The GraphQL `viewer` resolves installation tokens (the default
+    // `GITHUB_TOKEN` and GitHub App tokens) as well as PAT tokens.
+    // REST `users.getAuthenticated()` is NOT used since it does not work for
+    // installation tokens.
+    const resp = await this.octokit.graphql<{
+      viewer: {login: string; databaseId: number}
+    }>(`query { viewer { login databaseId } }`)
+    if (!resp?.viewer?.login || !resp?.viewer?.databaseId) {
+      throw new Error('GraphQL viewer did not return login and databaseId')
+    }
+    return {login: resp.viewer.login, id: resp.viewer.databaseId}
   }
 
   private async getPullNumber(
